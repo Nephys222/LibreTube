@@ -395,8 +395,15 @@
     <string name="swipe_controls">Swipe controls</string>
     <string name="swipe_controls_summary">Use swipe gesture to adjust the brightness and volume.</string>
     <string name="defaults">Defaults</string>
-    <string name="show_open_with">Open With</string>
-    <string name="show_open_with_summary">Show a button in the player to open the video with a third-party app.</string>
+    <string name="pop_up">Pop-Up</string>
+    <string name="comments_disabled">Comments are disabled by the uploader.</string>
+    <string name="no_comments_available">This video has no comments available.</string>
+    <string name="captions_size">Captions size</string>
+    <string name="double_tap_seek">Double tap to seek</string>
+    <string name="double_tap_seek_summary">Tap twice at the left or right to rewind or forward the player position.</string>
+    <string name="all_caught_up">You\'re all caught up</string>
+    <string name="all_caught_up_summary">You\'ve seen all new videos</string>
+
     <!-- Notification channel strings -->
     <string name="download_channel_name">Download Service</string>
     <string name="download_channel_description">Shows a notification when downloading media.</string>

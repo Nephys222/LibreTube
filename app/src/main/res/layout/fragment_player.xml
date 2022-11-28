@@ -125,7 +125,6 @@
                     android:id="@+id/player_description"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:autoLink="web"
                     android:padding="8dp"
                     android:textIsSelectable="true"
                     android:textSize="14sp" />
@@ -185,7 +184,7 @@
                     </LinearLayout>
 
                     <LinearLayout
-                        android:id="@+id/relPlayer_open"
+                        android:id="@+id/relPlayer_pip"
                         style="@style/PlayerActionsLayout"
                         android:layout_weight="1">
 
@@ -199,7 +198,7 @@
                             style="@style/PlayerActionsText"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="@string/open" />
+                            android:text="@string/pop_up" />
                     </LinearLayout>
 
                     <LinearLayout
@@ -346,15 +345,6 @@
                 android:layout_height="wrap_content"
                 android:animateLayoutChanges="true"
                 android:descendantFocusability="blocksDescendants">
-
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/comments_recView"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:layout_marginBottom="10dp"
-                    android:nestedScrollingEnabled="false"
-                    android:visibility="gone" />
 
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/related_rec_view"

@@ -401,6 +401,8 @@
     <string name="brightness">Brillo</string>
     <string name="swipe_controls_summary">Use el gesto de deslizar para ajustar el brillo y el volumen.</string>
     <string name="defaults">Por defecto</string>
-    <string name="show_open_with">Abrir con</string>
-    <string name="show_open_with_summary">Mostrar un botón para abrir el vídeo con una aplicación de terceros en el reproductor.</string>
+    <string name="pop_up">Ventana emergente</string>
+    <string name="no_comments_available">Este vídeo no tiene comentarios disponibles.</string>
+    <string name="comments_disabled">Los comentarios están desactivados por el creador del contenido.</string>
+    <string name="captions_size">Tamaño de los subtítulos</string>
 </resources>

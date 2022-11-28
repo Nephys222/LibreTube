@@ -85,7 +85,8 @@ object PreferenceKeys {
     const val QUEUE_AUTO_INSERT_RELATED = "queue_insert_related_videos"
     const val PLAYER_SWIPE_CONTROLS = "player_swipe_controls"
     const val PLAYER_SCREEN_BRIGHTNESS = "player_screen_brightness"
-    const val SHOW_OPEN_WITH = "show_open_with"
+    const val CAPTIONS_SIZE = "captions_size"
+    const val DOUBLE_TAP_TO_SEEK = "double_tap_seek"
 
     /**
      * Background mode
@@ -99,11 +100,16 @@ object PreferenceKeys {
     const val NOTIFICATION_ENABLED = "notification_toggle"
     const val CHECKING_FREQUENCY = "checking_frequency"
     const val REQUIRED_NETWORK = "required_network"
-    const val LAST_STREAM_VIDEO_ID = "last_stream_video_id"
     const val IGNORED_NOTIFICATION_CHANNELS = "ignored_notification_channels"
     const val NOTIFICATION_TIME_ENABLED = "notification_time"
     const val NOTIFICATION_START_TIME = "notification_start_time"
     const val NOTIFICATION_END_TIME = "notification_end_time"
+
+    /**
+     * Subscriptions
+     */
+    const val LAST_STREAM_VIDEO_ID = "last_stream_video_id"
+    const val LAST_WATCHED_FEED_TIME = "last_watched_feed_time"
 
     /**
      * Advanced

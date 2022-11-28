@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.app.ActivityManager
 import android.app.PictureInPictureParams
 import android.content.Context
-import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.content.res.Configuration
 import android.media.session.PlaybackState
@@ -15,8 +14,8 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.PowerManager
-import android.text.Html
 import android.text.format.DateUtils
+import android.text.util.Linkify
 import android.util.Base64
 import android.util.Log
 import android.view.LayoutInflater
@@ -28,7 +27,6 @@ import androidx.annotation.RequiresApi
 import androidx.constraintlayout.motion.widget.MotionLayout
 import androidx.core.net.toUri
 import androidx.core.os.bundleOf
-import androidx.core.view.isEmpty
 import androidx.core.view.isVisible
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
@@ -39,6 +37,7 @@ import com.github.libretube.R
 import com.github.libretube.api.CronetHelper
 import com.github.libretube.api.RetrofitInstance
 import com.github.libretube.api.obj.ChapterSegment
+import com.github.libretube.api.obj.Comment
 import com.github.libretube.api.obj.PipedStream
 import com.github.libretube.api.obj.Segment
 import com.github.libretube.api.obj.SegmentData
@@ -67,17 +66,19 @@ import com.github.libretube.services.BackgroundMode
 import com.github.libretube.services.DownloadService
 import com.github.libretube.ui.activities.MainActivity
 import com.github.libretube.ui.adapters.ChaptersAdapter
-import com.github.libretube.ui.adapters.CommentsAdapter
 import com.github.libretube.ui.adapters.VideosAdapter
 import com.github.libretube.ui.base.BaseFragment
 import com.github.libretube.ui.dialogs.AddToPlaylistDialog
 import com.github.libretube.ui.dialogs.DownloadDialog
 import com.github.libretube.ui.dialogs.ShareDialog
+import com.github.libretube.ui.extensions.setAspectRatio
+import com.github.libretube.ui.extensions.setFormattedHtml
 import com.github.libretube.ui.extensions.setInvisible
 import com.github.libretube.ui.extensions.setupSubscriptionButton
 import com.github.libretube.ui.interfaces.OnlinePlayerOptions
 import com.github.libretube.ui.models.PlayerViewModel
 import com.github.libretube.ui.sheets.BaseBottomSheet
+import com.github.libretube.ui.sheets.CommentsSheet
 import com.github.libretube.ui.sheets.PlayingQueueSheet
 import com.github.libretube.util.BackgroundHelper
 import com.github.libretube.util.DashHelper
@@ -138,19 +139,17 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
     private var transitioning = false
 
     /**
-     * for the comments
-     */
-    private var commentsAdapter: CommentsAdapter? = null
-    private var nextPage: String? = null
-    private var isLoading = true
-
-    /**
      * for the player
      */
     private lateinit var exoPlayer: ExoPlayer
     private lateinit var trackSelector: DefaultTrackSelector
-    private lateinit var segmentData: SegmentData
+
+    /**
+     * Chapters and comments
+     */
     private lateinit var chapters: List<ChapterSegment>
+    private val comments: MutableList<Comment> = mutableListOf()
+    private var commentsNextPage: String? = null
 
     /**
      * for the player view
@@ -159,14 +158,15 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
     private var subtitles = mutableListOf<SubtitleConfiguration>()
 
     /**
-     * user preferences
-     */
-    private var videoShownInExternalPlayer = false
-
-    /**
      * for the player notification
      */
     private lateinit var nowPlayingNotification: NowPlayingNotification
+
+    /**
+     * SponsorBlock
+     */
+    private lateinit var segmentData: SegmentData
+    private var sponsorBlockEnabled = PlayerHelper.sponsorBlockEnabled
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -287,7 +287,12 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
             binding.playerMotionLayout.transitionToStart()
         }
 
-        if (usePiP()) (activity as MainActivity).setPictureInPictureParams(getPipParams())
+        if (usePiP()) activity?.setPictureInPictureParams(getPipParams())
+
+        if (SDK_INT < Build.VERSION_CODES.O) {
+            binding.relPlayerPip.visibility = View.GONE
+            binding.optionsLL.weightSum = 4f
+        }
     }
 
     // actions that don't depend on video information
@@ -331,7 +336,10 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
         }
 
         binding.commentsToggle.setOnClickListener {
-            toggleComments()
+            CommentsSheet(videoId!!, comments, commentsNextPage) { comments, nextPage ->
+                this.comments.addAll(comments)
+                this.commentsNextPage = nextPage
+            }.show(childFragmentManager)
         }
 
         playerBinding.queueToggle.visibility = View.VISIBLE
@@ -353,6 +361,17 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
                 // exit fullscreen mode
                 unsetFullscreen()
             }
+        }
+
+        val updateSbImageResource = {
+            playerBinding.sbToggle.setImageResource(
+                if (sponsorBlockEnabled) R.drawable.ic_sb_enabled else R.drawable.ic_sb_disabled
+            )
+        }
+        updateSbImageResource()
+        playerBinding.sbToggle.setOnClickListener {
+            sponsorBlockEnabled = !sponsorBlockEnabled
+            updateSbImageResource()
         }
 
         // share button
@@ -383,19 +402,6 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
             )
         }
 
-        binding.playerScrollView.viewTreeObserver
-            .addOnScrollChangedListener {
-                if (binding.playerScrollView.getChildAt(0).bottom
-                    == (binding.playerScrollView.height + binding.playerScrollView.scrollY) &&
-                    nextPage != null
-                ) {
-                    fetchNextComments()
-                }
-            }
-
-        binding.commentsRecView.layoutManager = LinearLayoutManager(view?.context)
-        binding.commentsRecView.setItemViewCacheSize(20)
-
         binding.relatedRecView.layoutManager = VideosAdapter.getLayout(requireContext())
 
         binding.alternativeTrendingRec.layoutManager = LinearLayoutManager(
@@ -403,11 +409,6 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
             LinearLayoutManager.HORIZONTAL,
             false
         )
-
-        if (!PreferenceHelper.getBoolean(PreferenceKeys.SHOW_OPEN_WITH, false)) {
-            binding.relPlayerOpen.visibility = View.GONE
-            binding.optionsLL.weightSum = 4f
-        }
     }
 
     private fun setFullscreen() {
@@ -474,24 +475,6 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
         }
     }
 
-    private fun toggleComments() {
-        if (binding.commentsRecView.isVisible) {
-            binding.commentsRecView.visibility = View.GONE
-            binding.relatedRecView.visibility = View.VISIBLE
-        } else {
-            binding.commentsRecView.visibility = View.VISIBLE
-            binding.relatedRecView.visibility = View.GONE
-            if (binding.commentsRecView.isEmpty()) fetchComments()
-        }
-    }
-
-    override fun onStart() {
-        super.onStart()
-
-        // Assuming the video is not playing in external player when returning to app
-        videoShownInExternalPlayer = false
-    }
-
     override fun onPause() {
         // pauses the player if the screen is turned off
 
@@ -554,6 +537,8 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
 
         Handler(Looper.getMainLooper()).postDelayed(this::checkForSegments, 100)
 
+        if (!sponsorBlockEnabled) return
+
         if (!::segmentData.isInitialized || segmentData.segments.isEmpty()) return
 
         val currentPosition = exoPlayer.currentPosition
@@ -572,12 +557,7 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
                 }
 
                 if (PlayerHelper.sponsorBlockNotifications) {
-                    Toast
-                        .makeText(
-                            context,
-                            R.string.segment_skipped,
-                            Toast.LENGTH_SHORT
-                        ).show()
+                    Toast.makeText(context, R.string.segment_skipped, Toast.LENGTH_SHORT).show()
                 }
 
                 // skip the segment automatically
@@ -590,7 +570,9 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
     }
 
     private fun playVideo() {
+        // reset the player view
         playerBinding.exoProgress.clearSegments()
+        playerBinding.sbToggle.visibility = View.GONE
 
         lifecycleScope.launchWhenCreated {
             streams = try {
@@ -649,9 +631,6 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
                 initializePlayerNotification()
                 if (PlayerHelper.sponsorBlockEnabled) fetchSponsorBlockSegments()
 
-                // show comments if related streams are disabled or the alternative related streams layout is chosen
-                if (!PlayerHelper.relatedStreamsEnabled || PlayerHelper.alternativeVideoLayout) toggleComments()
-
                 // add the video to the watch history
                 if (PlayerHelper.watchHistoryEnabled) {
                     DatabaseHelper.addToWatchHistory(videoId!!, streams)
@@ -681,6 +660,9 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
                         ObjectMapper().writeValueAsString(categories)
                     )
                 playerBinding.exoProgress.setSegments(segmentData.segments)
+                runOnUiThread {
+                    playerBinding.sbToggle.visibility = View.VISIBLE
+                }
             }
         }
     }
@@ -740,8 +722,11 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
         if (nextVideoId != null) {
             videoId = nextVideoId
 
-            // forces the comments to reload for the new video
-            binding.commentsRecView.adapter = null
+            // reset the comments to be reloaded later
+            comments.clear()
+            commentsNextPage = null
+
+            // play the next video
             playVideo()
         }
     }
@@ -766,7 +751,7 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
         val captionStyle = PlayerHelper.getCaptionStyle(requireContext())
         exoPlayerView.subtitleView?.apply {
             setApplyEmbeddedFontSizes(false)
-            setFixedTextSize(TEXT_SIZE_TYPE_ABSOLUTE, 18F)
+            setFixedTextSize(TEXT_SIZE_TYPE_ABSOLUTE, PlayerHelper.captionsTextSize)
             if (!PlayerHelper.useSystemCaptionStyle) return
             setApplyEmbeddedStyles(captionStyle == CaptionStyleCompat.DEFAULT)
             setStyle(captionStyle)
@@ -861,6 +846,8 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
                         // media actually playing
                         transitioning = false
                         binding.playImageView.setImageResource(R.drawable.ic_pause)
+                        // update the PiP params to use the correct aspect ratio
+                        if (usePiP()) activity?.setPictureInPictureParams(getPipParams())
                     }
                     Player.STATE_ENDED -> {
                         // video has finished
@@ -915,44 +902,27 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
         }
 
         if (response.hls != null) {
-            binding.relPlayerOpen.setOnClickListener {
-                // Do not start picture in picture when playing in external player
-                videoShownInExternalPlayer = true
-
-                // start an intent with video as mimetype using the hls stream
-                val uri: Uri = Uri.parse(response.hls)
-                val intent = Intent()
-
-                intent.action = Intent.ACTION_VIEW
-                intent.setDataAndType(uri, "video/*")
-                intent.putExtra(Intent.EXTRA_TITLE, streams.title)
-                intent.putExtra("title", streams.title)
-                intent.putExtra("artist", streams.uploader)
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-
+            binding.relPlayerPip.setOnClickListener {
+                if (SDK_INT < Build.VERSION_CODES.O) return@setOnClickListener
                 try {
-                    startActivity(intent)
+                    activity?.enterPictureInPictureMode(getPipParams())
                 } catch (e: Exception) {
-                    Toast.makeText(context, R.string.no_player_found, Toast.LENGTH_SHORT).show()
+                    e.printStackTrace()
                 }
             }
         }
         initializeRelatedVideos(response.relatedStreams)
         // set video description
         val description = response.description!!
-        binding.playerDescription.text =
-            // detect whether the description is html formatted
-            if (description.contains("<") && description.contains(">")) {
-                if (SDK_INT >= Build.VERSION_CODES.N) {
-                    Html.fromHtml(description, Html.FROM_HTML_MODE_COMPACT)
-                        .trim()
-                } else {
-                    @Suppress("DEPRECATION")
-                    Html.fromHtml(description).trim()
-                }
-            } else {
-                description
-            }
+
+        // detect whether the description is html formatted
+        if (description.contains("<") && description.contains(">")) {
+            binding.playerDescription.setFormattedHtml(description)
+        } else {
+            // Links can be present as plain text
+            binding.playerDescription.autoLinkMask = Linkify.WEB_URLS
+            binding.playerDescription.text = description
+        }
 
         binding.playerChannel.setOnClickListener {
             val activity = view?.context as MainActivity
@@ -1271,47 +1241,6 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
         nowPlayingNotification.updatePlayerNotification(videoId!!, streams)
     }
 
-    private fun fetchComments() {
-        lifecycleScope.launchWhenCreated {
-            val commentsResponse = try {
-                RetrofitInstance.api.getComments(videoId!!)
-            } catch (e: IOException) {
-                println(e)
-                Log.e(TAG(), "IOException, you might not have internet connection")
-                Toast.makeText(context, R.string.unknown_error, Toast.LENGTH_SHORT).show()
-                return@launchWhenCreated
-            } catch (e: HttpException) {
-                Log.e(TAG(), "HttpException, unexpected response")
-                return@launchWhenCreated
-            }
-            commentsAdapter = CommentsAdapter(videoId!!, commentsResponse.comments)
-            binding.commentsRecView.adapter = commentsAdapter
-            nextPage = commentsResponse.nextpage
-            isLoading = false
-        }
-    }
-
-    private fun fetchNextComments() {
-        lifecycleScope.launchWhenCreated {
-            if (!isLoading) {
-                isLoading = true
-                val response = try {
-                    RetrofitInstance.api.getCommentsNextPage(videoId!!, nextPage!!)
-                } catch (e: IOException) {
-                    println(e)
-                    Log.e(TAG(), "IOException, you might not have internet connection")
-                    return@launchWhenCreated
-                } catch (e: HttpException) {
-                    Log.e(TAG(), "HttpException, unexpected response," + e.response())
-                    return@launchWhenCreated
-                }
-                nextPage = response.nextpage
-                commentsAdapter?.updateItems(response.comments)
-                isLoading = false
-            }
-        }
-    }
-
     /**
      * Use the sensor mode if auto fullscreen is enabled
      */
@@ -1456,13 +1385,15 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
             if (SDK_INT >= Build.VERSION_CODES.S) {
                 setAutoEnterEnabled(true)
             }
+            if (exoPlayer.isPlaying) {
+                setAspectRatio(exoPlayer.videoSize.width, exoPlayer.videoSize.height)
+            }
         }
         .build()
 
     private fun shouldStartPiP(): Boolean {
         if (!PlayerHelper.pipEnabled ||
-            exoPlayer.playbackState == PlaybackState.STATE_PAUSED ||
-            videoShownInExternalPlayer
+            exoPlayer.playbackState == PlaybackState.STATE_PAUSED
         ) {
             return false
         }
