@@ -272,7 +272,7 @@ internal class CustomExoPlayerView(
         binding.exoBottomBar.visibility = visibility
         binding.closeImageButton.visibility = visibility
         binding.exoTitle.visibility = visibility
-        binding.exoPlayPause.visibility = visibility
+        binding.playPauseBTN.visibility = visibility
 
         // disable tap and swipe gesture if the player is locked
         playerGestureController.isEnabled = isLocked
@@ -509,10 +509,12 @@ internal class CustomExoPlayerView(
     }
 
     override fun onZoom() {
+        if (!PlayerHelper.pinchGestureEnabled) return
         resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
     }
 
     override fun onMinimize() {
+        if (!PlayerHelper.pinchGestureEnabled) return
         resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
     }
 
