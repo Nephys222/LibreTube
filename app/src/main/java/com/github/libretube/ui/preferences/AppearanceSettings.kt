@@ -1,12 +1,13 @@
 package com.github.libretube.ui.preferences
 
+import android.os.Build
 import android.os.Bundle
 import androidx.preference.ListPreference
 import androidx.preference.Preference
 import androidx.preference.SwitchPreferenceCompat
+import com.github.libretube.BuildConfig
 import com.github.libretube.R
 import com.github.libretube.constants.PreferenceKeys
-import com.github.libretube.ui.activities.SettingsActivity
 import com.github.libretube.ui.adapters.IconsSheetAdapter
 import com.github.libretube.ui.base.BasePreferenceFragment
 import com.github.libretube.ui.dialogs.NavBarOptionsDialog
@@ -16,11 +17,9 @@ import com.github.libretube.util.PreferenceHelper
 import com.google.android.material.color.DynamicColors
 
 class AppearanceSettings : BasePreferenceFragment() {
+    override val titleResourceId: Int = R.string.appearance
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         setPreferencesFromResource(R.xml.appearance_settings, rootKey)
-
-        val settingsActivity = activity as? SettingsActivity
-        settingsActivity?.changeTopBarText(getString(R.string.appearance))
 
         val themeToggle = findPreference<ListPreference>(PreferenceKeys.THEME_MODE)
         themeToggle?.setOnPreferenceChangeListener { _, _ ->
@@ -81,16 +80,17 @@ class AppearanceSettings : BasePreferenceFragment() {
         }
     }
 
-    // remove material you from accent color option if not available
+    /**
+     * Remove material you from accent color option if not available
+     */
     private fun updateAccentColorValues(pref: ListPreference) {
-        val dynamicColorsAvailable = DynamicColors.isDynamicColorAvailable()
-        if (!dynamicColorsAvailable) {
-            val entries = pref.entries.toMutableList()
-            entries -= entries[0]
-            pref.entries = entries.toTypedArray()
-            val values = pref.entryValues.toMutableList()
-            values -= values[0]
-            pref.entryValues = values.toTypedArray()
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+            pref.entries = pref.entries.toMutableList().apply {
+                removeFirst()
+            }.toTypedArray()
+            pref.entryValues = pref.entryValues.toMutableList().apply {
+                removeFirst()
+            }.toTypedArray()
         }
     }
 }
