@@ -14,7 +14,7 @@ import com.github.libretube.databinding.DoubleTapOverlayBinding
 import com.github.libretube.databinding.ExoStyledPlayerControlViewBinding
 import com.github.libretube.databinding.PlayerGestureControlsViewBinding
 import com.github.libretube.extensions.normalize
-import com.github.libretube.extensions.toDp
+import com.github.libretube.extensions.toPixel
 import com.github.libretube.obj.BottomSheetItem
 import com.github.libretube.ui.activities.MainActivity
 import com.github.libretube.ui.base.BaseActivity
@@ -33,6 +33,7 @@ import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.trackselection.TrackSelector
 import com.google.android.exoplayer2.ui.AspectRatioFrameLayout
 import com.google.android.exoplayer2.ui.StyledPlayerView
+import com.google.android.exoplayer2.ui.SubtitleView
 import com.google.android.exoplayer2.util.RepeatModeUtil
 
 @SuppressLint("ClickableViewAccessibility")
@@ -124,6 +125,47 @@ internal class CustomExoPlayerView(
             "fill" -> AspectRatioFrameLayout.RESIZE_MODE_FILL
             "zoom" -> AspectRatioFrameLayout.RESIZE_MODE_ZOOM
             else -> AspectRatioFrameLayout.RESIZE_MODE_FIT
+        }
+
+        binding.playPauseBTN.setOnClickListener {
+            if (player?.isPlaying == false) {
+                // start or go on playing
+                if (player?.playbackState == Player.STATE_ENDED) {
+                    // restart video if finished
+                    player?.seekTo(0)
+                }
+                player?.play()
+            } else {
+                // pause the video
+                player?.pause()
+            }
+        }
+
+        player?.addListener(object : Player.Listener {
+            override fun onEvents(player: Player, events: Player.Events) {
+                super.onEvents(player, events)
+                if (events.containsAny(
+                        Player.EVENT_PLAYBACK_STATE_CHANGED,
+                        Player.EVENT_IS_PLAYING_CHANGED,
+                        Player.EVENT_PLAY_WHEN_READY_CHANGED
+                    )
+                ) {
+                    updatePlayPauseButton()
+                }
+            }
+        })
+    }
+
+    private fun updatePlayPauseButton() {
+        if (player?.isPlaying == true) {
+            // video is playing
+            binding.playPauseBTN.setImageResource(R.drawable.ic_pause)
+        } else if (player?.playbackState == Player.STATE_ENDED) {
+            // video has finished
+            binding.playPauseBTN.setImageResource(R.drawable.ic_restart)
+        } else {
+            // player in any other state
+            binding.playPauseBTN.setImageResource(R.drawable.ic_play)
         }
     }
 
@@ -452,8 +494,8 @@ internal class CustomExoPlayerView(
         super.onConfigurationChanged(newConfig)
 
         val offset = when (newConfig?.orientation) {
-            Configuration.ORIENTATION_LANDSCAPE -> 20.toDp(resources)
-            else -> 10.toDp(resources)
+            Configuration.ORIENTATION_LANDSCAPE -> 20.toPixel()
+            else -> 10.toPixel()
         }
 
         binding.progressBar.let {
@@ -511,20 +553,33 @@ internal class CustomExoPlayerView(
     override fun onZoom() {
         if (!PlayerHelper.pinchGestureEnabled) return
         resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+
+        if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            subtitleView?.setBottomPaddingFraction(SUBTITLE_BOTTOM_PADDING_FRACTION)
+        }
     }
 
     override fun onMinimize() {
         if (!PlayerHelper.pinchGestureEnabled) return
         resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+        subtitleView?.setBottomPaddingFraction(SubtitleView.DEFAULT_BOTTOM_PADDING_FRACTION)
     }
 
     override fun onFullscreenChange(isFullscreen: Boolean) {
         if (PlayerHelper.swipeGestureEnabled && this::brightnessHelper.isInitialized) {
             if (isFullscreen) {
                 brightnessHelper.restoreSavedBrightness()
+                if (resizeMode == AspectRatioFrameLayout.RESIZE_MODE_ZOOM) {
+                    subtitleView?.setBottomPaddingFraction(SUBTITLE_BOTTOM_PADDING_FRACTION)
+                }
             } else {
                 brightnessHelper.resetToSystemBrightness(false)
+                subtitleView?.setBottomPaddingFraction(SubtitleView.DEFAULT_BOTTOM_PADDING_FRACTION)
             }
         }
+    }
+
+    companion object {
+        private const val SUBTITLE_BOTTOM_PADDING_FRACTION = 0.158f
     }
 }

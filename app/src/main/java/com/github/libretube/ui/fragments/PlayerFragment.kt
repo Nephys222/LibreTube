@@ -18,7 +18,6 @@ import android.text.util.Linkify
 import android.util.Base64
 import android.util.Log
 import android.view.LayoutInflater
-import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
@@ -276,18 +275,6 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
         binding.playerMotionLayout.progress = 1.toFloat()
         binding.playerMotionLayout.transitionToStart()
 
-        // quitting miniPlayer on single click
-
-        binding.titleTextView.setOnTouchListener { view, motionEvent ->
-            view.onTouchEvent(motionEvent)
-            if (motionEvent.action == MotionEvent.ACTION_UP) view.performClick()
-            binding.root.onTouchEvent(motionEvent)
-        }
-        binding.titleTextView.setOnClickListener {
-            binding.playerMotionLayout.setTransitionDuration(300)
-            binding.playerMotionLayout.transitionToStart()
-        }
-
         if (usePiP()) activity?.setPictureInPictureParams(getPipParams())
 
         if (SDK_INT < Build.VERSION_CODES.O) {
@@ -317,7 +304,7 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
             BackgroundHelper.stopBackgroundPlay(requireContext())
         }
 
-        val playPauseClickListner = View.OnClickListener {
+        binding.playImageView.setOnClickListener {
             if (!exoPlayer.isPlaying) {
                 // start or go on playing
                 if (exoPlayer.playbackState == Player.STATE_ENDED) {
@@ -330,8 +317,6 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
                 exoPlayer.pause()
             }
         }
-        playerBinding.playPauseBTN.setOnClickListener(playPauseClickListner)
-        binding.playImageView.setOnClickListener(playPauseClickListner)
 
         // video description and chapters toggle
         binding.playerTitleLayout.setOnClickListener {
@@ -459,15 +444,24 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
     }
 
     private fun toggleDescription() {
+        var viewInfo = if (!isLive) TextUtils.SEPARATOR + streams.uploadDate else ""
         if (binding.descLinLayout.isVisible) {
             // hide the description and chapters
             binding.playerDescriptionArrow.animate().rotation(0F).setDuration(250).start()
             binding.descLinLayout.visibility = View.GONE
+
+            // show formatted short view count
+            viewInfo = getString(R.string.views, streams.views.formatShort()) + viewInfo
         } else {
             // show the description and chapters
             binding.playerDescriptionArrow.animate().rotation(180F).setDuration(250).start()
             binding.descLinLayout.visibility = View.VISIBLE
+
+            // show exact view count
+            viewInfo = getString(R.string.views, String.format("%,d", streams.views)) + viewInfo
         }
+        binding.playerViewsInfo.text = viewInfo
+
         if (this::chapters.isInitialized && chapters.isNotEmpty()) {
             val chapterIndex = getCurrentChapterIndex()
             // scroll to the current chapter in the chapterRecView in the description
@@ -873,10 +867,7 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
 
                 // save the watch position when paused
                 if (playbackState == PlaybackState.STATE_PAUSED) {
-                    val watchPosition = WatchPosition(videoId!!, exoPlayer.currentPosition)
-                    query {
-                        Database.watchPositionDao().insertAll(watchPosition)
-                    }
+                    saveWatchPosition()
                     disableAutoPiP()
                 }
 
@@ -976,15 +967,12 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
         if (exoPlayer.isPlaying) {
             // video is playing
             binding.playImageView.setImageResource(R.drawable.ic_pause)
-            playerBinding.playPauseBTN.setImageResource(R.drawable.ic_pause)
         } else if (exoPlayer.playbackState == Player.STATE_ENDED) {
             // video has finished
             binding.playImageView.setImageResource(R.drawable.ic_restart)
-            playerBinding.playPauseBTN.setImageResource(R.drawable.ic_restart)
         } else {
             // player in any other state
             binding.playImageView.setImageResource(R.drawable.ic_play)
-            playerBinding.playPauseBTN.setImageResource(R.drawable.ic_play)
         }
     }
 
