@@ -3,6 +3,7 @@ package com.github.libretube.ui.fragments
 import android.annotation.SuppressLint
 import android.app.PictureInPictureParams
 import android.content.Context
+import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.content.res.Configuration
 import android.media.session.PlaybackState
@@ -25,7 +26,6 @@ import androidx.annotation.RequiresApi
 import androidx.constraintlayout.motion.widget.MotionLayout
 import androidx.core.net.toUri
 import androidx.core.os.bundleOf
-import androidx.core.os.postDelayed
 import androidx.core.view.isVisible
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
@@ -327,7 +327,12 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
         }
 
         binding.commentsToggle.setOnClickListener {
-            CommentsSheet(videoId!!, comments, commentsNextPage) { comments, nextPage ->
+            CommentsSheet(
+                videoId!!,
+                comments,
+                commentsNextPage,
+                binding.root.height - binding.player.height
+            ) { comments, nextPage ->
                 this.comments.addAll(comments)
                 this.commentsNextPage = nextPage
             }.show(childFragmentManager)
@@ -378,6 +383,27 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
                     )
                 )
             shareDialog.show(childFragmentManager, ShareDialog::class.java.name)
+        }
+
+        binding.relPlayerShare.setOnLongClickListener {
+            streams.hls ?: return@setOnLongClickListener true
+
+            // start an intent with video as mimetype using the hls stream
+            val uri: Uri = Uri.parse(streams.hls)
+            val intent = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(uri, "video/*")
+                putExtra(Intent.EXTRA_TITLE, streams.title)
+                putExtra("title", streams.title)
+                putExtra("artist", streams.uploader)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+
+            try {
+                startActivity(intent)
+            } catch (e: Exception) {
+                Toast.makeText(context, R.string.no_player_found, Toast.LENGTH_SHORT).show()
+            }
+            true
         }
 
         binding.relPlayerBackground.setOnClickListener {
@@ -822,6 +848,9 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
                 if (isPlaying) {
                     // Stop [BackgroundMode] service if it is running.
                     BackgroundHelper.stopBackgroundPlay(requireContext())
+                    if (usePiP()) activity?.setPictureInPictureParams(getPipParams())
+                } else {
+                    disableAutoPiP()
                 }
 
                 if (isPlaying && PlayerHelper.sponsorBlockEnabled) {
@@ -850,6 +879,9 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
                         playbackState == Player.STATE_ENDED
                     )
 
+                // save the watch position every time the state changes
+                saveWatchPosition()
+
                 // check if video has ended, next video is available and autoplay is enabled.
                 @Suppress("DEPRECATION")
                 if (
@@ -858,7 +890,6 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
                     binding.player.autoplayEnabled
                 ) {
                     transitioning = true
-                    // check whether autoplay is enabled
                     playNextVideo()
                 }
 
@@ -867,12 +898,6 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
                     transitioning = false
                     // update the PiP params to use the correct aspect ratio
                     if (usePiP()) activity?.setPictureInPictureParams(getPipParams())
-                }
-
-                // save the watch position when paused
-                if (playbackState == PlaybackState.STATE_PAUSED) {
-                    saveWatchPosition()
-                    disableAutoPiP()
                 }
 
                 // listen for the stop button in the notification
@@ -1022,7 +1047,7 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
 
         // enable the chapters dialog in the player
         val titles = chapters.map { chapter ->
-            "${chapter.title} (${chapter.start?.let { DateUtils.formatElapsedTime(it) }})"
+            "(${chapter.start?.let { DateUtils.formatElapsedTime(it) }}) ${chapter.title}"
         }
         playerBinding.chapterLL.setOnClickListener {
             if (viewModel.isFullscreen.value!!) {
@@ -1422,9 +1447,7 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
         .build()
 
     private fun shouldStartPiP(): Boolean {
-        if (!PlayerHelper.pipEnabled ||
-            exoPlayer.playbackState == PlaybackState.STATE_PAUSED
-        ) {
+        if (!PlayerHelper.pipEnabled || SDK_INT >= Build.VERSION_CODES.S) {
             return false
         }
 
