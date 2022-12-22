@@ -150,7 +150,9 @@ class SubscriptionsFragment : BaseFragment() {
         // add an "all caught up item"
         if (sortOrder == 0) {
             val lastCheckedFeedTime = PreferenceHelper.getLastCheckedFeedTime()
-            val caughtUpIndex = feed.indexOfFirst { (it.uploaded ?: 0L) / 1000 < lastCheckedFeedTime }
+            val caughtUpIndex = feed.indexOfFirst {
+                (it.uploaded ?: 0L) / 1000 < lastCheckedFeedTime
+            }
             if (caughtUpIndex > 0) {
                 sortedFeed.add(caughtUpIndex, StreamItem(type = "caught"))
             }
@@ -165,7 +167,8 @@ class SubscriptionsFragment : BaseFragment() {
         binding.subProgress.visibility = View.GONE
         subscriptionAdapter = VideosAdapter(
             sortedFeed.toMutableList(),
-            showAllAtOnce = false
+            showAllAtOnce = false,
+            hideWatched = PreferenceHelper.getBoolean(PreferenceKeys.HIDE_WATCHED_FROM_FEED, false)
         )
         binding.subFeed.adapter = subscriptionAdapter
 
