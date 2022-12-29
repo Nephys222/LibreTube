@@ -36,7 +36,6 @@ import com.github.libretube.R
 import com.github.libretube.api.CronetHelper
 import com.github.libretube.api.RetrofitInstance
 import com.github.libretube.api.obj.ChapterSegment
-import com.github.libretube.api.obj.Comment
 import com.github.libretube.api.obj.PipedStream
 import com.github.libretube.api.obj.Segment
 import com.github.libretube.api.obj.SegmentData
@@ -76,6 +75,7 @@ import com.github.libretube.ui.extensions.setFormattedHtml
 import com.github.libretube.ui.extensions.setInvisible
 import com.github.libretube.ui.extensions.setupSubscriptionButton
 import com.github.libretube.ui.interfaces.OnlinePlayerOptions
+import com.github.libretube.ui.models.CommentsViewModel
 import com.github.libretube.ui.models.PlayerViewModel
 import com.github.libretube.ui.sheets.BaseBottomSheet
 import com.github.libretube.ui.sheets.CommentsSheet
@@ -124,13 +124,19 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
     private lateinit var doubleTapOverlayBinding: DoubleTapOverlayBinding
     private lateinit var playerGestureControlsViewBinding: PlayerGestureControlsViewBinding
     private val viewModel: PlayerViewModel by activityViewModels()
+    private val commentsViewModel: CommentsViewModel by activityViewModels()
 
     /**
-     * video information
+     * Video information passed by the intent
      */
     private var videoId: String? = null
     private var playlistId: String? = null
     private var channelId: String? = null
+    private var keepQueue: Boolean = false
+
+    /**
+     * Video information fetched at runtime
+     */
     private var isLive = false
     private lateinit var streams: Streams
 
@@ -152,8 +158,6 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
      * Chapters and comments
      */
     private lateinit var chapters: List<ChapterSegment>
-    private val comments: MutableList<Comment> = mutableListOf()
-    private var commentsNextPage: String? = null
 
     /**
      * for the player view
@@ -180,6 +184,7 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
             videoId = it.getString(IntentData.videoId)!!.toID()
             playlistId = it.getString(IntentData.playlistId)
             channelId = it.getString(IntentData.channelId)
+            keepQueue = it.getBoolean(IntentData.keepQueue, false)
         }
     }
 
@@ -203,7 +208,7 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
         context?.hideKeyboard(view)
 
         // clear the playing queue
-        PlayingQueue.resetToDefaults()
+        if (!keepQueue) PlayingQueue.resetToDefaults()
 
         changeOrientationMode()
 
@@ -330,15 +335,11 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
         }
 
         binding.commentsToggle.setOnClickListener {
-            CommentsSheet(
-                videoId!!,
-                comments,
-                commentsNextPage,
-                binding.root.height - binding.player.height
-            ) { comments, nextPage ->
-                this.comments.addAll(comments)
-                this.commentsNextPage = nextPage
-            }.show(childFragmentManager)
+            videoId ?: return@setOnClickListener
+            // set the max height to not cover the currently playing video
+            commentsViewModel.maxHeight = binding.root.height - binding.player.height
+            commentsViewModel.videoId = videoId
+            CommentsSheet().show(childFragmentManager)
         }
 
         playerBinding.queueToggle.visibility = View.VISIBLE
@@ -604,6 +605,9 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
         playerBinding.exoProgress.clearSegments()
         playerBinding.sbToggle.visibility = View.GONE
 
+        // reset the comments to become reloaded later
+        commentsViewModel.reset()
+
         lifecycleScope.launchWhenCreated {
             streams = try {
                 RetrofitInstance.api.getStreams(videoId!!)
@@ -754,10 +758,6 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
         if (nextVideoId != null) {
             videoId = nextVideoId
 
-            // reset the comments to be reloaded later
-            comments.clear()
-            commentsNextPage = null
-
             // play the next video
             playVideo()
         }
@@ -865,6 +865,7 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
             }
 
             override fun onEvents(player: Player, events: Player.Events) {
+                updateDisplayedDuration()
                 super.onEvents(player, events)
                 if (events.containsAny(
                         Player.EVENT_PLAYBACK_STATE_CHANGED,
@@ -877,15 +878,15 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
             }
 
             override fun onPlaybackStateChanged(playbackState: Int) {
-                updateDisplayedDuration()
-
                 exoPlayerView.keepScreenOn = !(
                     playbackState == Player.STATE_IDLE ||
                         playbackState == Player.STATE_ENDED
                     )
 
-                // save the watch position every time the state changes
-                saveWatchPosition()
+                // save the watch position to the database
+                // only called when the position is unequal to 0, otherwise it would become reset
+                // before the player can seek to the saved position from videos of the queue
+                if (exoPlayer.currentPosition != 0L) saveWatchPosition()
 
                 // check if video has ended, next video is available and autoplay is enabled.
                 @Suppress("DEPRECATION")
@@ -998,22 +999,21 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
      */
     @SuppressLint("SetTextI18n")
     private fun updateDisplayedDuration() {
-        if (exoPlayer.duration == Long.MAX_VALUE || isLive) return
-
-        val durationWithSponsorBlock = if (
-            !this::segmentData.isInitialized || this.segmentData.segments.isEmpty()
-        ) {
-            null
-        } else {
-            val difference = segmentData.segments.sumOf {
-                it.segment[1] - it.segment[0]
-            }.toInt()
-            DateUtils.formatElapsedTime(exoPlayer.duration.div(1000) - difference)
-        }
+        if (exoPlayer.duration < 0 || isLive) return
 
         playerBinding.duration.text = DateUtils.formatElapsedTime(
             exoPlayer.duration.div(1000)
-        ) + if (durationWithSponsorBlock != null) " ($durationWithSponsorBlock)" else ""
+        )
+        if (!this::segmentData.isInitialized || this.segmentData.segments.isEmpty()) {
+            return
+        }
+
+        val durationWithSb = DateUtils.formatElapsedTime(
+            exoPlayer.duration.div(1000) - segmentData.segments.sumOf {
+                it.segment[1] - it.segment[0]
+            }.toInt()
+        )
+        playerBinding.duration.text = playerBinding.duration.text.toString() + " ($durationWithSb)"
     }
 
     private fun syncQueueButtons() {
@@ -1448,7 +1448,7 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
             activity?.enterPictureInPictureMode(getPipParams())
             return
         }
-        if (!PlayerHelper.pipEnabled) exoPlayer.pause()
+        if (PlayerHelper.pauseOnQuit) exoPlayer.pause()
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
