@@ -314,6 +314,7 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
                 .commit()
             BackgroundHelper.stopBackgroundPlay(requireContext())
         }
+        playerBinding.autoPlay.visibility = View.VISIBLE
 
         binding.playImageView.setOnClickListener {
             if (!exoPlayer.isPlaying) {
