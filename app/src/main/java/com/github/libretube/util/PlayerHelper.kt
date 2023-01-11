@@ -1,16 +1,29 @@
 package com.github.libretube.util
 
+import android.app.Activity
+import android.app.PendingIntent
+import android.app.RemoteAction
 import android.content.Context
+import android.content.Intent
 import android.content.pm.ActivityInfo
+import android.graphics.drawable.Icon
+import android.os.Build
 import android.view.accessibility.CaptioningManager
+import androidx.annotation.RequiresApi
+import androidx.annotation.StringRes
+import com.github.libretube.R
 import com.github.libretube.api.obj.PipedStream
 import com.github.libretube.constants.PreferenceKeys
 import com.github.libretube.enums.AudioQuality
+import com.github.libretube.enums.PlayerEvent
 import com.google.android.exoplayer2.ui.CaptionStyleCompat
 import com.google.android.exoplayer2.video.VideoSize
 import kotlin.math.roundToInt
 
 object PlayerHelper {
+    private const val ACTION_MEDIA_CONTROL = "media_control"
+    const val CONTROL_TYPE = "control_type"
+
     /**
      * Get the audio source following the users preferences
      */
@@ -43,7 +56,7 @@ object PlayerHelper {
     /**
      * Get the best or worst bitrate from a list of audio streams
      * @param audios list of the audio streams
-     * @param getLeast whether the least bitrate should be returned
+     * @param quality Whether to use the best or worst quality available
      * @return Url of the audio source
      */
     private fun getBitRate(audios: List<PipedStream>, quality: AudioQuality): String {
@@ -319,6 +332,12 @@ object PlayerHelper {
             false
         )
 
+    val alternativePiPControls: Boolean
+        get() = PreferenceHelper.getBoolean(
+            PreferenceKeys.ALTERNATIVE_PIP_CONTROLS,
+            false
+        )
+
     fun getDefaultResolution(context: Context): String {
         return if (NetworkHelper.isNetworkMobile(context)) {
             PreferenceHelper.getString(
@@ -331,5 +350,96 @@ object PlayerHelper {
                 ""
             )
         }
+    }
+
+    fun getIntentActon(context: Context): String {
+        return context.packageName + "." + ACTION_MEDIA_CONTROL
+    }
+
+    private fun getPendingIntent(activity: Activity, code: Int): PendingIntent {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            PendingIntent.getBroadcast(
+                activity,
+                code,
+                Intent(getIntentActon(activity)).putExtra(CONTROL_TYPE, code),
+                PendingIntent.FLAG_IMMUTABLE
+            )
+        } else {
+            PendingIntent.getBroadcast(
+                activity,
+                code,
+                Intent(getIntentActon(activity)).putExtra(CONTROL_TYPE, code),
+                0
+            )
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun getRemoteAction(
+        activity: Activity,
+        id: Int,
+        @StringRes title: Int,
+        event: PlayerEvent
+    ): RemoteAction {
+        val text = activity.getString(title)
+        return RemoteAction(
+            Icon.createWithResource(activity, id),
+            text,
+            text,
+            getPendingIntent(activity, event.value)
+        )
+    }
+
+    /**
+     * Create controls to use in the PiP window
+     */
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun getPiPModeActions(activity: Activity, isPlaying: Boolean, isOfflinePlayer: Boolean = false): ArrayList<RemoteAction> {
+        val actions: ArrayList<RemoteAction> = ArrayList()
+        actions.add(
+            if (!isOfflinePlayer && alternativePiPControls) {
+                getRemoteAction(
+                    activity,
+                    R.drawable.ic_headphones,
+                    R.string.background_mode,
+                    PlayerEvent.Background
+                )
+            } else {
+                getRemoteAction(
+                    activity,
+                    R.drawable.ic_rewind,
+                    R.string.rewind,
+                    PlayerEvent.Rewind
+                )
+            }
+        )
+
+        actions.add(
+            getRemoteAction(
+                activity,
+                if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play,
+                R.string.pause,
+                if (isPlaying) PlayerEvent.Pause else PlayerEvent.Play
+            )
+        )
+
+        actions.add(
+            if (!isOfflinePlayer && alternativePiPControls) {
+                getRemoteAction(
+                    activity,
+                    R.drawable.ic_next,
+                    R.string.play_next,
+                    PlayerEvent.Next
+                )
+            } else {
+                getRemoteAction(
+                    activity,
+                    R.drawable.ic_forward,
+                    R.string.forward,
+                    PlayerEvent.Forward
+                )
+            }
+        )
+        return actions
     }
 }
