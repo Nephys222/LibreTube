@@ -17,6 +17,11 @@ object TextUtils {
      */
     const val EMAIL_REGEX = "^[A-Za-z](.*)([@]{1})(.{1,})(\\.)(.{1,})"
 
+    /**
+     * Reserved characters by unix which can not be used for file name.
+     */
+    const val RESERVED_CHARS = "?:\"*|/\\<>\u0000"
+
     fun toTwoDecimalsString(num: Int): String {
         return if (num >= 10) num.toString() else "0$num"
     }
@@ -40,7 +45,7 @@ object TextUtils {
      * @param locale The locale to use, otherwise uses system default
      * return Localized date string
      */
-    fun localizeDate(date: String?, locale: Locale? = null): String? {
+    fun localizeDate(date: String?, locale: Locale): String? {
         date ?: return null
 
         // relative time span

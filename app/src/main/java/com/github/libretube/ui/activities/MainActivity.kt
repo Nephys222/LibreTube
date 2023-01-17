@@ -6,15 +6,10 @@ import android.content.pm.ActivityInfo
 import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
-import android.view.WindowInsets
-import android.view.WindowInsetsController
-import android.view.WindowManager
 import android.widget.ScrollView
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.widget.SearchView
@@ -35,17 +30,18 @@ import com.github.libretube.extensions.toID
 import com.github.libretube.services.ClosingService
 import com.github.libretube.ui.base.BaseActivity
 import com.github.libretube.ui.dialogs.ErrorDialog
+import com.github.libretube.ui.fragments.DownloadsFragment
 import com.github.libretube.ui.fragments.PlayerFragment
 import com.github.libretube.ui.models.PlayerViewModel
 import com.github.libretube.ui.models.SearchViewModel
 import com.github.libretube.ui.models.SubscriptionsViewModel
-import com.github.libretube.ui.sheets.PlayingQueueSheet
 import com.github.libretube.ui.tools.BreakReminder
 import com.github.libretube.util.NavBarHelper
+import com.github.libretube.util.NavigationHelper
 import com.github.libretube.util.NetworkHelper
-import com.github.libretube.util.PlayingQueue
 import com.github.libretube.util.PreferenceHelper
 import com.github.libretube.util.ThemeHelper
+import com.github.libretube.util.WindowHelper
 import com.google.android.material.elevation.SurfaceColors
 
 class MainActivity : BaseActivity() {
@@ -59,6 +55,8 @@ class MainActivity : BaseActivity() {
 
     lateinit var searchView: SearchView
     private lateinit var searchItem: MenuItem
+
+    val windowHelper = WindowHelper(this)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -221,11 +219,6 @@ class MainActivity : BaseActivity() {
         }
     }
 
-    override fun onPrepareOptionsMenu(menu: Menu?): Boolean {
-        menu?.findItem(R.id.action_queue)?.isVisible = PlayingQueue.isNotEmpty()
-        return super.onPrepareOptionsMenu(menu)
-    }
-
     /**
      * Initialize the notification badge showing the amount of new videos
      */
@@ -250,6 +243,7 @@ class MainActivity : BaseActivity() {
             binding.bottomNav.getOrCreateBadge(R.id.subscriptionsFragment).apply {
                 number = lastSeenVideoIndex
                 backgroundColor = ThemeHelper.getThemeColor(this@MainActivity, R.attr.colorPrimary)
+                badgeTextColor = ThemeHelper.getThemeColor(this@MainActivity, R.attr.colorOnPrimary)
             }
         }
     }
@@ -373,10 +367,6 @@ class MainActivity : BaseActivity() {
                 startActivity(communityIntent)
                 true
             }
-            R.id.action_queue -> {
-                PlayingQueueSheet().show(supportFragmentManager, null)
-                true
-            }
             else -> super.onOptionsItemSelected(item)
         }
     }
@@ -389,6 +379,11 @@ class MainActivity : BaseActivity() {
             moveTaskToBack(true)
             intent?.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
             startActivity(intent)
+        }
+
+        if (intent?.getBooleanExtra(IntentData.openAudioPlayer, false) == true) {
+            NavigationHelper.startAudioPlayer(this)
+            return
         }
 
         intent?.getStringExtra(IntentData.channelId)?.let {
@@ -410,8 +405,13 @@ class MainActivity : BaseActivity() {
             )
         }
         intent?.getStringExtra(IntentData.videoId)?.let {
-            loadVideo(it, intent?.getLongExtra(IntentData.timeStamp, 0L))
+            NavigationHelper.navigateVideo(
+                context = this,
+                videoId = it,
+                timeStamp = intent?.getLongExtra(IntentData.timeStamp, 0L)
+            )
         }
+
         when (intent?.getStringExtra("fragmentToOpen")) {
             "home" ->
                 navController.navigate(R.id.homeFragment)
@@ -421,37 +421,15 @@ class MainActivity : BaseActivity() {
                 navController.navigate(R.id.subscriptionsFragment)
             "library" ->
                 navController.navigate(R.id.libraryFragment)
+            "downloads" ->
+                navController.navigate(R.id.downloadsFragment)
         }
-        if (intent?.getBooleanExtra(IntentData.openQueueOnce, false) == true) {
-            PlayingQueueSheet()
-                .show(supportFragmentManager)
+        if (intent?.getBooleanExtra(IntentData.downloading, false) == true) {
+            (supportFragmentManager.fragments.find { it is NavHostFragment })
+                ?.childFragmentManager?.fragments?.forEach { fragment ->
+                    (fragment as? DownloadsFragment)?.bindDownloadService()
+                }
         }
-    }
-
-    private fun loadVideo(videoId: String, timeStamp: Long?) {
-        val bundle = Bundle()
-
-        bundle.putString(IntentData.videoId, videoId)
-        if (timeStamp != null) bundle.putLong(IntentData.timeStamp, timeStamp)
-
-        val frag = PlayerFragment()
-        frag.arguments = bundle
-
-        supportFragmentManager.beginTransaction()
-            .remove(PlayerFragment())
-            .commit()
-        supportFragmentManager.beginTransaction()
-            .replace(R.id.container, frag)
-            .commitNow()
-        Handler(Looper.getMainLooper()).postDelayed({
-            supportFragmentManager.fragments.forEach { fragment ->
-                (fragment as? PlayerFragment)
-                    ?.binding?.playerMotionLayout?.apply {
-                        transitionToEnd()
-                        transitionToStart()
-                    }
-            }
-        }, 300)
     }
 
     private fun minimizePlayer() {
@@ -486,68 +464,8 @@ class MainActivity : BaseActivity() {
         super.onConfigurationChanged(newConfig)
 
         when (newConfig.orientation) {
-            Configuration.ORIENTATION_PORTRAIT -> unsetFullscreen()
-            Configuration.ORIENTATION_LANDSCAPE -> setFullscreen()
-        }
-    }
-
-    fun setFullscreen() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            window.attributes.layoutInDisplayCutoutMode =
-                WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
-        }
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            window.setDecorFitsSystemWindows(false)
-            window.insetsController?.apply {
-                hide(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
-                systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-            }
-        } else {
-            @Suppress("DEPRECATION")
-            window.decorView.systemUiVisibility = (
-                View.SYSTEM_UI_FLAG_FULLSCREEN
-                    or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                    or View.SYSTEM_UI_FLAG_IMMERSIVE
-                    or View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                    or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                    or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                )
-        }
-
-        window.setFlags(
-            WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
-            WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
-        )
-    }
-
-    private fun unsetFullscreen() {
-        window.clearFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS)
-
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
-            @Suppress("DEPRECATION")
-            window.clearFlags(
-                WindowManager.LayoutParams.FLAG_FULLSCREEN
-            )
-        }
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            window.attributes.layoutInDisplayCutoutMode =
-                WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_DEFAULT
-        }
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            window.setDecorFitsSystemWindows(true)
-            window.insetsController?.apply {
-                show(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    systemBarsBehavior = WindowInsetsController.BEHAVIOR_DEFAULT
-                }
-            }
-        } else {
-            @Suppress("DEPRECATION")
-            window.decorView.systemUiVisibility =
-                (View.SYSTEM_UI_FLAG_VISIBLE or View.SYSTEM_UI_FLAG_LAYOUT_STABLE)
+            Configuration.ORIENTATION_PORTRAIT -> windowHelper.unsetFullscreen()
+            Configuration.ORIENTATION_LANDSCAPE -> windowHelper.setFullscreen()
         }
     }
 

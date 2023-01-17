@@ -5,10 +5,12 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
+import android.os.Binder
 import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.util.Log
 import android.widget.Toast
 import androidx.core.app.ServiceCompat
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -23,6 +25,7 @@ import com.github.libretube.constants.PLAYER_NOTIFICATION_ID
 import com.github.libretube.constants.PreferenceKeys
 import com.github.libretube.db.DatabaseHolder.Companion.Database
 import com.github.libretube.db.obj.WatchPosition
+import com.github.libretube.extensions.TAG
 import com.github.libretube.extensions.awaitQuery
 import com.github.libretube.extensions.query
 import com.github.libretube.extensions.toID
@@ -88,6 +91,16 @@ class BackgroundMode : Service() {
     private val handler = Handler(Looper.getMainLooper())
 
     /**
+     * Used for connecting to the AudioPlayerFragment
+     */
+    private val binder = LocalBinder()
+
+    /**
+     * Listener for passing playback state changes to the AudioPlayerFragment
+     */
+    var onIsPlayingChanged: ((isPlaying: Boolean) -> Unit)? = null
+
+    /**
      * Setting the required [Notification] for running as a foreground service
      */
     override fun onCreate() {
@@ -116,16 +129,17 @@ class BackgroundMode : Service() {
      */
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         try {
-            // clear the playing queue
+            // reset the playing queue listeners
             PlayingQueue.resetToDefaults()
 
             // get the intent arguments
             videoId = intent?.getStringExtra(IntentData.videoId)!!
             playlistId = intent.getStringExtra(IntentData.playlistId)
             val position = intent.getLongExtra(IntentData.position, 0L)
+            val keepQueue = intent.getBooleanExtra(IntentData.keepQueue, false)
 
             // play the audio in the background
-            loadAudio(videoId, position)
+            loadAudio(videoId, position, keepQueue)
 
             PlayingQueue.setOnQueueTapListener { streamItem ->
                 streamItem.url?.toID()?.let { playNextVideo(it) }
@@ -133,6 +147,7 @@ class BackgroundMode : Service() {
 
             if (PlayerHelper.watchPositionsEnabled) updateWatchPosition()
         } catch (e: Exception) {
+            Log.e(TAG(), e.toString())
             onDestroy()
         }
         return super.onStartCommand(intent, flags, startId)
@@ -154,32 +169,28 @@ class BackgroundMode : Service() {
 
     /**
      * Gets the video data and prepares the [player].
+     * @param videoId The id of the video to play
+     * @param seekToPosition The position of the video to seek to
+     * @param keepQueue Whether to keep the queue or clear it instead
      */
     private fun loadAudio(
         videoId: String,
-        seekToPosition: Long = 0
+        seekToPosition: Long = 0,
+        keepQueue: Boolean = false
     ) {
         CoroutineScope(Dispatchers.IO).launch {
             streams = runCatching {
                 RetrofitInstance.api.getStreams(videoId)
             }.getOrNull() ?: return@launch
 
-            // add the playlist video to the queue
-            if (PlayingQueue.isEmpty() && playlistId != null) {
-                streams?.toStreamItem(videoId)?.let {
-                    PlayingQueue.insertPlaylist(playlistId!!, it)
-                }
-            } else if (PlayingQueue.isEmpty() && channelId != null) {
-                streams?.toStreamItem(videoId)?.let {
-                    PlayingQueue.insertChannel(channelId!!, it)
-                }
-            } else {
-                streams?.toStreamItem(videoId)?.let {
-                    PlayingQueue.updateCurrent(it)
-                }
-                streams?.relatedStreams?.toTypedArray()?.let {
-                    if (PlayerHelper.autoInsertRelatedVideos) PlayingQueue.add(*it)
-                }
+            // clear the queue if it shouldn't be kept explicitly
+            if (!keepQueue) PlayingQueue.clear()
+
+            if (PlayingQueue.isEmpty()) updateQueue()
+
+            // save the current stream to the queue
+            streams?.toStreamItem(videoId)?.let {
+                PlayingQueue.updateCurrent(it)
             }
 
             handler.post {
@@ -188,9 +199,7 @@ class BackgroundMode : Service() {
         }
     }
 
-    private fun playAudio(
-        seekToPosition: Long
-    ) {
+    private fun playAudio(seekToPosition: Long) {
         initializePlayer()
         setMediaItem()
 
@@ -251,6 +260,11 @@ class BackgroundMode : Service() {
          * Plays the next video when the current one ended
          */
         player?.addListener(object : Player.Listener {
+            override fun onIsPlayingChanged(isPlaying: Boolean) {
+                super.onIsPlayingChanged(isPlaying)
+                onIsPlayingChanged?.invoke(isPlaying)
+            }
+
             override fun onPlaybackStateChanged(state: Int) {
                 when (state) {
                     Player.STATE_ENDED -> {
@@ -287,7 +301,7 @@ class BackgroundMode : Service() {
         this.videoId = nextVideo
         this.streams = null
         this.segmentData = null
-        loadAudio(videoId)
+        loadAudio(videoId, keepQueue = true)
     }
 
     /**
@@ -355,6 +369,22 @@ class BackgroundMode : Service() {
         }
     }
 
+    private fun updateQueue() {
+        if (playlistId != null) {
+            streams?.toStreamItem(videoId)?.let {
+                PlayingQueue.insertPlaylist(playlistId!!, it)
+            }
+        } else if (channelId != null) {
+            streams?.toStreamItem(videoId)?.let {
+                PlayingQueue.insertChannel(channelId!!, it)
+            }
+        } else {
+            streams?.relatedStreams?.toTypedArray()?.let {
+                if (PlayerHelper.autoInsertRelatedVideos) PlayingQueue.add(*it)
+            }
+        }
+    }
+
     /**
      * Stop the service when app is removed from the task manager.
      */
@@ -381,7 +411,26 @@ class BackgroundMode : Service() {
         super.onDestroy()
     }
 
-    override fun onBind(p0: Intent?): IBinder? {
-        return null
+    inner class LocalBinder : Binder() {
+        // Return this instance of [BackgroundMode] so clients can call public methods
+        fun getService(): BackgroundMode = this@BackgroundMode
+    }
+
+    override fun onBind(p0: Intent?): IBinder {
+        return binder
+    }
+
+    fun getCurrentPosition() = player?.currentPosition
+
+    fun getDuration() = player?.duration
+
+    fun seekToPosition(position: Long) = player?.seekTo(position)
+
+    fun pause() {
+        player?.pause()
+    }
+
+    fun play() {
+        player?.play()
     }
 }

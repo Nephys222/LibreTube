@@ -27,6 +27,7 @@ import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.constraintlayout.motion.widget.MotionLayout
 import androidx.core.net.toUri
+import androidx.core.os.ConfigurationCompat
 import androidx.core.os.bundleOf
 import androidx.core.view.isVisible
 import androidx.fragment.app.activityViewModels
@@ -75,7 +76,6 @@ import com.github.libretube.ui.dialogs.DownloadDialog
 import com.github.libretube.ui.dialogs.ShareDialog
 import com.github.libretube.ui.extensions.setAspectRatio
 import com.github.libretube.ui.extensions.setFormattedHtml
-import com.github.libretube.ui.extensions.setInvisible
 import com.github.libretube.ui.extensions.setupSubscriptionButton
 import com.github.libretube.ui.interfaces.OnlinePlayerOptions
 import com.github.libretube.ui.models.CommentsViewModel
@@ -87,6 +87,7 @@ import com.github.libretube.util.BackgroundHelper
 import com.github.libretube.util.DashHelper
 import com.github.libretube.util.DataSaverMode
 import com.github.libretube.util.ImageHelper
+import com.github.libretube.util.NavigationHelper
 import com.github.libretube.util.NowPlayingNotification
 import com.github.libretube.util.PlayerHelper
 import com.github.libretube.util.PlayingQueue
@@ -103,9 +104,7 @@ import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.audio.AudioAttributes
 import com.google.android.exoplayer2.ext.cronet.CronetDataSource
 import com.google.android.exoplayer2.source.DefaultMediaSourceFactory
-import com.google.android.exoplayer2.text.Cue.TEXT_SIZE_TYPE_ABSOLUTE
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
-import com.google.android.exoplayer2.ui.CaptionStyleCompat
 import com.google.android.exoplayer2.ui.StyledPlayerView
 import com.google.android.exoplayer2.upstream.DefaultDataSource
 import com.google.android.exoplayer2.util.MimeTypes
@@ -251,8 +250,11 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
         super.onViewCreated(view, savedInstanceState)
         context?.hideKeyboard(view)
 
+        // reset the callbacks of the playing queue
+        PlayingQueue.resetToDefaults()
+
         // clear the playing queue
-        if (!keepQueue) PlayingQueue.resetToDefaults()
+        if (!keepQueue) PlayingQueue.clear()
 
         changeOrientationMode()
 
@@ -341,22 +343,14 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
     // actions that don't depend on video information
     private fun initializeOnClickActions() {
         binding.closeImageView.setOnClickListener {
-            viewModel.isMiniPlayerVisible.value = false
-            binding.playerMotionLayout.transitionToEnd()
-            val mainActivity = activity as MainActivity
-            mainActivity.supportFragmentManager.beginTransaction()
-                .remove(this)
-                .commit()
+            PlayingQueue.clear()
             BackgroundHelper.stopBackgroundPlay(requireContext())
+            killPlayerFragment()
         }
         playerBinding.closeImageButton.setOnClickListener {
-            viewModel.isFullscreen.value = false
-            binding.playerMotionLayout.transitionToEnd()
-            val mainActivity = activity as MainActivity
-            mainActivity.supportFragmentManager.beginTransaction()
-                .remove(this)
-                .commit()
+            PlayingQueue.clear()
             BackgroundHelper.stopBackgroundPlay(requireContext())
+            killPlayerFragment()
         }
         playerBinding.autoPlay.visibility = View.VISIBLE
 
@@ -473,13 +467,19 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
     }
 
     private fun playOnBackground() {
+        BackgroundHelper.stopBackgroundPlay(requireContext())
         BackgroundHelper.playOnBackground(
             requireContext(),
             videoId!!,
             exoPlayer.currentPosition,
             playlistId,
-            channelId
+            channelId,
+            true
         )
+        handler.postDelayed({
+            NavigationHelper.startAudioPlayer(requireContext())
+            killPlayerFragment()
+        }, 500)
     }
 
     private fun setFullscreen() {
@@ -582,8 +582,7 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
 
             saveWatchPosition()
 
-            // clear the playing queue and release the player
-            PlayingQueue.resetToDefaults()
+            // release the player
             nowPlayingNotification.destroySelfAndPlayer()
 
             activity?.requestedOrientation =
@@ -817,7 +816,7 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
 
     private fun prepareExoPlayerView() {
         exoPlayerView.apply {
-            setShowSubtitleButton(true)
+            setShowSubtitleButton(false)
             setShowNextButton(false)
             setShowPreviousButton(false)
             // controllerShowTimeoutMs = 1500
@@ -828,26 +827,12 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
 
         playerBinding.exoProgress.setPlayer(exoPlayer)
 
-        applyCaptionStyle()
-    }
-
-    private fun applyCaptionStyle() {
-        val captionStyle = PlayerHelper.getCaptionStyle(requireContext())
-        exoPlayerView.subtitleView?.apply {
-            setApplyEmbeddedFontSizes(false)
-            setFixedTextSize(TEXT_SIZE_TYPE_ABSOLUTE, PlayerHelper.captionsTextSize)
-            if (!PlayerHelper.useSystemCaptionStyle) return
-            setApplyEmbeddedStyles(captionStyle == CaptionStyleCompat.DEFAULT)
-            setStyle(captionStyle)
-        }
+        PlayerHelper.applyCaptionsStyle(requireContext(), exoPlayerView.subtitleView)
     }
 
     private fun localizedDate(date: String?): String? {
-        return if (SDK_INT >= Build.VERSION_CODES.N) {
-            TextUtils.localizeDate(date, resources.configuration.locales[0])
-        } else {
-            TextUtils.localizeDate(date)
-        }
+        val locale = ConfigurationCompat.getLocales(resources.configuration)[0]!!
+        return TextUtils.localizeDate(date, locale)
     }
 
     private fun handleLiveVideo() {
@@ -1080,9 +1065,21 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
     private fun syncQueueButtons() {
         if (!PlayerHelper.skipButtonsEnabled) return
 
-        // next and previous buttons
-        playerBinding.skipPrev.setInvisible(!PlayingQueue.hasPrev())
-        playerBinding.skipNext.setInvisible(!PlayingQueue.hasNext())
+        // toggle the visibility of next and prev buttons based on queue and whether the player view is locked
+        playerBinding.skipPrev.visibility = if (
+            PlayingQueue.hasPrev() && !binding.player.isPlayerLocked
+        ) {
+            View.VISIBLE
+        } else {
+            View.INVISIBLE
+        }
+        playerBinding.skipNext.visibility = if (
+            PlayingQueue.hasNext() && !binding.player.isPlayerLocked
+        ) {
+            View.VISIBLE
+        } else {
+            View.INVISIBLE
+        }
 
         handler.postDelayed(this::syncQueueButtons, 100)
     }
@@ -1205,15 +1202,14 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
      * Get all available player resolutions
      */
     private fun getAvailableResolutions(): List<VideoResolution> {
-        val resolutions = exoPlayer.currentTracks.groups.map { group ->
+        val resolutions = exoPlayer.currentTracks.groups.asSequence().map { group ->
             (0 until group.length).map {
-                group.getTrackFormat(it).width
+                group.getTrackFormat(it).height
             }
         }.flatten()
             .filter { it > 0 }
             .sortedDescending()
-            .toSet()
-            .toList()
+            .distinct()
 
         return resolutions.map {
             VideoResolution(
@@ -1362,8 +1358,7 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
 
     override fun onCaptionsClicked() {
         if (!this@PlayerFragment::streams.isInitialized ||
-            streams.subtitles == null ||
-            streams.subtitles!!.isEmpty()
+            streams.subtitles.isNullOrEmpty()
         ) {
             Toast.makeText(context, R.string.no_subtitles_available, Toast.LENGTH_SHORT).show()
             return
@@ -1378,7 +1373,7 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
 
         BaseBottomSheet()
             .setSimpleItems(subtitlesNamesList) { index ->
-                val language = if (index > 0) subtitleCodesList[index] else null
+                val language = subtitleCodesList.getOrNull(index)
                 updateCaptionsLanguage(language)
                 this.captionLanguage = language
             }
@@ -1518,6 +1513,17 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
         )
 
         return exoPlayer.isPlaying && !backgroundModeRunning
+    }
+
+    private fun killPlayerFragment() {
+        viewModel.isFullscreen.value = false
+        binding.playerMotionLayout.transitionToEnd()
+        val mainActivity = activity as MainActivity
+        mainActivity.supportFragmentManager.beginTransaction()
+            .remove(this)
+            .commit()
+
+        onDestroy()
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {

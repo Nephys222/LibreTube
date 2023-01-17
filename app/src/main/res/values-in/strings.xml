@@ -269,7 +269,7 @@
     <string name="pure_theme">Tema murni</string>
     <string name="pure_theme_summary">Tema putih/hitam murni</string>
     <string name="data_saver_mode">Mode penghemat data</string>
-    <string name="watch_history_summary">Simpan riwayat video hang ditonton secara lokal</string>
+    <string name="watch_history_summary">Simpan riwayat video yang ditonton secara lokal</string>
     <string name="history_summary">Riwayat tontonan dan penelusuran</string>
     <string name="system_caption_style">Gaya takarir sistem</string>
     <string name="captions">Takarir</string>
@@ -436,4 +436,14 @@
     <string name="pause">Jeda</string>
     <string name="alternative_pip_controls">Kontrol gambar dalam gambar alternatif</string>
     <string name="alternative_pip_controls_summary">Hanya tampilkan audio dan kontrol lewati dalam mode gambar dalam gambar daripada maju dan mundur</string>
+    <string name="audio_player">Pemutar audio</string>
+    <string name="audio_only_mode_summary">Jadikan LibreTube menjadi pemutar musik.</string>
+    <string name="audio_only_mode">Mode hanya audio</string>
+    <string name="no_subtitle">Tidak ada takarir</string>
+    <string name="download_paused">Unduhan dijeda</string>
+    <string name="concurrent_downloads_limit_reached">Batasan unduhan berlangsungan maksimal dicapai.</string>
+    <string name="unknown">Tidak diketahui</string>
+    <string name="resume">Lanjutkan</string>
+    <string name="download_completed">Unduhan selesai</string>
+    <string name="concurrent_downloads">Unduhan berlangsungan maksimal</string>
 </resources>

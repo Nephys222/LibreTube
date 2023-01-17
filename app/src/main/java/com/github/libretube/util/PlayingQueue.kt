@@ -6,6 +6,7 @@ import com.github.libretube.api.RetrofitInstance
 import com.github.libretube.api.obj.StreamItem
 import com.github.libretube.extensions.move
 import com.github.libretube.extensions.toID
+import com.github.libretube.extensions.toStreamItem
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -13,15 +14,27 @@ import kotlinx.coroutines.launch
 object PlayingQueue {
     private val queue = mutableListOf<StreamItem>()
     private var currentStream: StreamItem? = null
+    private val scope = CoroutineScope(Dispatchers.IO)
+
+    /**
+     * Listener that gets called when the user selects an item from the queue
+     */
     private var onQueueTapListener: (StreamItem) -> Unit = {}
+
+    /**
+     * Listener that gets called when the current playing video changes
+     */
+    private val onTrackChangedListeners: MutableList<(StreamItem) -> Unit> = mutableListOf()
     var repeatQueue: Boolean = false
 
+    fun clear() = queue.clear()
+
     fun add(vararg streamItem: StreamItem) {
-        streamItem.forEach {
-            if (currentStream != it) {
-                if (queue.contains(it)) queue.remove(it)
-                queue.add(it)
-            }
+        for (stream in streamItem) {
+            if (currentStream?.url?.toID() == stream.url?.toID()) continue
+            // remove if already present
+            queue.remove(stream)
+            queue.add(stream)
         }
     }
 
@@ -58,7 +71,12 @@ object PlayingQueue {
 
     fun updateCurrent(streamItem: StreamItem) {
         currentStream = streamItem
-        if (!contains(streamItem)) queue.add(streamItem)
+        onTrackChangedListeners.forEach {
+            runCatching {
+                it.invoke(streamItem)
+            }
+        }
+        if (!contains(streamItem)) queue.add(0, streamItem)
     }
 
     fun isNotEmpty() = queue.isNotEmpty()
@@ -77,6 +95,8 @@ object PlayingQueue {
         }
     }
 
+    fun getCurrent(): StreamItem? = currentStream
+
     fun contains(streamItem: StreamItem) = queue.any { it.url?.toID() == streamItem.url?.toID() }
 
     // only returns a copy of the queue, no write access
@@ -93,7 +113,7 @@ object PlayingQueue {
 
     private fun fetchMoreFromPlaylist(playlistId: String, nextPage: String?) {
         var playlistNextPage: String? = nextPage
-        CoroutineScope(Dispatchers.IO).launch {
+        scope.launch {
             while (playlistNextPage != null) {
                 RetrofitInstance.authApi.getPlaylistNextPage(
                     playlistId,
@@ -109,7 +129,7 @@ object PlayingQueue {
     }
 
     fun insertPlaylist(playlistId: String, newCurrentStream: StreamItem) {
-        CoroutineScope(Dispatchers.IO).launch {
+        scope.launch {
             try {
                 val playlist = PlaylistsHelper.getPlaylist(playlistId)
                 add(*playlist.relatedStreams.orEmpty().toTypedArray())
@@ -124,7 +144,7 @@ object PlayingQueue {
 
     private fun fetchMoreFromChannel(channelId: String, nextPage: String?) {
         var channelNextPage: String? = nextPage
-        CoroutineScope(Dispatchers.IO).launch {
+        scope.launch {
             while (channelNextPage != null) {
                 RetrofitInstance.api.getChannelNextPage(channelId, nextPage!!).apply {
                     add(*relatedStreams.orEmpty().toTypedArray())
@@ -135,15 +155,22 @@ object PlayingQueue {
     }
 
     fun insertChannel(channelId: String, newCurrentStream: StreamItem) {
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
+        scope.launch {
+            runCatching {
                 val channel = RetrofitInstance.api.getChannel(channelId)
                 add(*channel.relatedStreams.orEmpty().toTypedArray())
                 updateCurrent(newCurrentStream)
                 if (channel.nextpage == null) return@launch
                 fetchMoreFromChannel(channelId, channel.nextpage)
-            } catch (e: Exception) {
-                e.printStackTrace()
+            }
+        }
+    }
+
+    fun insertByVideoId(videoId: String) {
+        scope.launch {
+            runCatching {
+                val streams = RetrofitInstance.api.getStreams(videoId.toID())
+                add(streams.toStreamItem(videoId))
             }
         }
     }
@@ -162,9 +189,17 @@ object PlayingQueue {
         onQueueTapListener = listener
     }
 
+    fun addOnTrackChangedListener(listener: (StreamItem) -> Unit) {
+        onTrackChangedListeners.add(listener)
+    }
+
+    fun removeOnTrackChangedListener(listener: (StreamItem) -> Unit) {
+        onTrackChangedListeners.remove(listener)
+    }
+
     fun resetToDefaults() {
         repeatQueue = false
         onQueueTapListener = {}
-        queue.clear()
+        onTrackChangedListeners.clear()
     }
 }

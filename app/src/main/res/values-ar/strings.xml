@@ -431,4 +431,19 @@
     <string name="shuffle">خلط</string>
     <string name="remove_bookmark">إزالة الإشارة المرجعية</string>
     <string name="add_to_bookmarks">إضافة إلى الإشارات المرجعية</string>
+    <string name="pause">إيقاف مؤقت</string>
+    <string name="rewind">الترجيع</string>
+    <string name="forward">التقديم</string>
+    <string name="alternative_pip_controls">ضوابط \"صورة داخل صورة\" البديلة</string>
+    <string name="alternative_pip_controls_summary">إظهار الصوت فقط وتخطي ضوابط \"صورة داخل صورة\" بدلاً من التقديم والترجيع</string>
+    <string name="audio_player">مشغل الصوت</string>
+    <string name="audio_only_mode">وضع الصوت فقط</string>
+    <string name="audio_only_mode_summary">حول LibreTube إلى مشغل موسيقى.</string>
+    <string name="no_subtitle">لا توجد ترجمة</string>
+    <string name="download_paused">إيقاف التنزيل مؤقتًا</string>
+    <string name="download_completed">اكتمل التنزيل</string>
+    <string name="concurrent_downloads">أقصى عدد من التنزيلات المتزامنة</string>
+    <string name="concurrent_downloads_limit_reached">تم الوصول إلى الحد الأقصى من التنزيلات المتزامنة.</string>
+    <string name="unknown">غير معروف</string>
+    <string name="resume">استئناف</string>
 </resources>

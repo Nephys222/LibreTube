@@ -93,7 +93,7 @@ object PreferenceKeys {
      * Background mode
      */
     const val BACKGROUND_PLAYBACK_SPEED = "background_playback_speed"
-    const val NOTIFICATION_OPEN_QUEUE = "notification_open_queue"
+    const val AUDIO_ONLY_MODE = "audio_only_mode"
 
     /**
      * Notifications
@@ -127,6 +127,7 @@ object PreferenceKeys {
     const val SHARE_WITH_TIME_CODE = "share_with_time_code"
     const val CONFIRM_UNSUBSCRIBE = "confirm_unsubscribing"
     const val CLEAR_BOOKMARKS = "clear_bookmarks"
+    const val MAX_CONCURRENT_DOWNLOADS = "max_concurrent_downloads"
 
     /**
      * History

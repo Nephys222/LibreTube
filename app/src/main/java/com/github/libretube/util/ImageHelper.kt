@@ -55,15 +55,12 @@ object ImageHelper {
         if (!DataSaverMode.isEnabled(target.context)) target.load(url, imageLoader)
     }
 
-    fun downloadImage(context: Context, url: String, fileName: String) {
+    fun downloadImage(context: Context, url: String, path: String) {
         val request = ImageRequest.Builder(context)
             .data(url)
             .target { result ->
                 val bitmap = (result as BitmapDrawable).bitmap
-                val file = File(
-                    DownloadHelper.getDownloadDir(context, DownloadHelper.THUMBNAIL_DIR),
-                    fileName
-                )
+                val file = File(path)
                 saveImage(context, bitmap, Uri.fromFile(file))
             }
             .build()
@@ -71,11 +68,8 @@ object ImageHelper {
         imageLoader.enqueue(request)
     }
 
-    fun getDownloadedImage(context: Context, fileName: String): Bitmap? {
-        val file = File(
-            DownloadHelper.getDownloadDir(context, DownloadHelper.THUMBNAIL_DIR),
-            fileName
-        )
+    fun getDownloadedImage(context: Context, path: String): Bitmap? {
+        val file = File(path)
         if (!file.exists()) return null
         return getImage(context, Uri.fromFile(file))
     }
@@ -93,5 +87,21 @@ object ImageHelper {
             return BitmapFactory.decodeStream(it)
         }
         return null
+    }
+
+    /**
+     * Get a squared bitmap with the same width and height from a bitmap
+     * @param bitmap The bitmap to resize
+     */
+    fun getSquareBitmap(bitmap: Bitmap?): Bitmap? {
+        bitmap ?: return null
+        val newSize = minOf(bitmap.width, bitmap.height)
+        return Bitmap.createBitmap(
+            bitmap,
+            (bitmap.width - newSize) / 2,
+            (bitmap.height - newSize) / 2,
+            newSize,
+            newSize
+        )
     }
 }
