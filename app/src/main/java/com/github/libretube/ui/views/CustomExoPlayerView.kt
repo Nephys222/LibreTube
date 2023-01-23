@@ -14,6 +14,7 @@ import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.LifecycleOwner
 import com.github.libretube.R
 import com.github.libretube.databinding.DoubleTapOverlayBinding
 import com.github.libretube.databinding.ExoStyledPlayerControlViewBinding
@@ -26,17 +27,20 @@ import com.github.libretube.ui.base.BaseActivity
 import com.github.libretube.ui.interfaces.OnlinePlayerOptions
 import com.github.libretube.ui.interfaces.PlayerGestureOptions
 import com.github.libretube.ui.interfaces.PlayerOptions
+import com.github.libretube.ui.models.PlayerViewModel
 import com.github.libretube.ui.sheets.BaseBottomSheet
-import com.github.libretube.ui.sheets.PlaybackSpeedSheet
+import com.github.libretube.ui.sheets.PlaybackOptionsSheet
 import com.github.libretube.util.AudioHelper
 import com.github.libretube.util.BrightnessHelper
 import com.github.libretube.util.PlayerGestureController
 import com.github.libretube.util.PlayerHelper
 import com.github.libretube.util.PlayingQueue
-import com.google.android.exoplayer2.PlaybackParameters
+import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.Player
+import com.google.android.exoplayer2.text.Cue
 import com.google.android.exoplayer2.trackselection.TrackSelector
 import com.google.android.exoplayer2.ui.AspectRatioFrameLayout
+import com.google.android.exoplayer2.ui.CaptionStyleCompat
 import com.google.android.exoplayer2.ui.StyledPlayerView
 import com.google.android.exoplayer2.ui.SubtitleView
 import com.google.android.exoplayer2.util.RepeatModeUtil
@@ -56,6 +60,7 @@ internal class CustomExoPlayerView(
     private lateinit var brightnessHelper: BrightnessHelper
     private lateinit var audioHelper: AudioHelper
     private var doubleTapOverlayBinding: DoubleTapOverlayBinding? = null
+    private var playerViewModel: PlayerViewModel? = null
 
     /**
      * Objects from the parent fragment
@@ -74,6 +79,9 @@ internal class CustomExoPlayerView(
 
     private var resizeModePref = PlayerHelper.resizeModePref
 
+    private val windowHelper
+        get() = (context as? MainActivity)?.windowHelper
+
     private val supportFragmentManager
         get() = (context as BaseActivity).supportFragmentManager
 
@@ -81,19 +89,23 @@ internal class CustomExoPlayerView(
         if (isControllerFullyVisible) hideController() else showController()
     }
 
-    // saved to only load the playback speed once (for the first video)
-    private var playbackPrefSet = false
+    private val hideControllerRunnable = Runnable {
+        hideController()
+    }
 
     fun initialize(
         playerViewInterface: OnlinePlayerOptions?,
         doubleTapOverlayBinding: DoubleTapOverlayBinding,
         playerGestureControlsViewBinding: PlayerGestureControlsViewBinding,
-        trackSelector: TrackSelector?
+        trackSelector: TrackSelector?,
+        playerViewModel: PlayerViewModel? = null,
+        viewLifecycleOwner: LifecycleOwner? = null
     ) {
         this.playerOptionsInterface = playerViewInterface
         this.doubleTapOverlayBinding = doubleTapOverlayBinding
         this.trackSelector = trackSelector
         this.gestureViewBinding = playerGestureControlsViewBinding
+        this.playerViewModel = playerViewModel
         this.playerGestureController = PlayerGestureController(context as BaseActivity, this)
         this.brightnessHelper = BrightnessHelper(context as Activity)
         this.audioHelper = AudioHelper(context)
@@ -103,16 +115,11 @@ internal class CustomExoPlayerView(
         initializeGestureProgress()
 
         initRewindAndForward()
-
+        applyCaptionsStyle()
         initializeAdvancedOptions(context)
 
-        if (!playbackPrefSet) {
-            player?.playbackParameters = PlaybackParameters(
-                PlayerHelper.playbackSpeed.toFloat(),
-                1.0f
-            )
-            playbackPrefSet = true
-        }
+        // don't let the player view hide its controls automatically
+        controllerShowTimeoutMs = -1
 
         // locking the player
         binding.lockPlayer.setOnClickListener {
@@ -145,16 +152,12 @@ internal class CustomExoPlayerView(
         }
 
         binding.playPauseBTN.setOnClickListener {
-            if (player?.isPlaying == false) {
-                // start or go on playing
-                if (player?.playbackState == Player.STATE_ENDED) {
-                    // restart video if finished
+            when {
+                player?.isPlaying == false && player?.playbackState == Player.STATE_ENDED -> {
                     player?.seekTo(0)
                 }
-                player?.play()
-            } else {
-                // pause the video
-                player?.pause()
+                player?.isPlaying == false -> player?.play()
+                else -> player?.pause()
             }
         }
 
@@ -170,28 +173,62 @@ internal class CustomExoPlayerView(
                     updatePlayPauseButton()
                 }
             }
+
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                // keep the screen on if the video is not ended or paused
+                keepScreenOn = !(
+                    listOf(Player.STATE_IDLE, Player.STATE_ENDED)
+                        .contains(playbackState)
+                    )
+                super.onPlaybackStateChanged(playbackState)
+            }
         })
+
+        playerViewModel?.isFullscreen?.observe(viewLifecycleOwner!!) { isFullscreen ->
+            if (isFullscreen) {
+                windowHelper?.setFullscreen()
+            } else {
+                windowHelper?.unsetFullscreen()
+            }
+        }
     }
 
     private fun updatePlayPauseButton() {
-        if (player?.isPlaying == true) {
-            // video is playing
-            binding.playPauseBTN.setImageResource(R.drawable.ic_pause)
-        } else if (player?.playbackState == Player.STATE_ENDED) {
-            // video has finished
-            binding.playPauseBTN.setImageResource(R.drawable.ic_restart)
-        } else {
-            // player in any other state
-            binding.playPauseBTN.setImageResource(R.drawable.ic_play)
+        binding.playPauseBTN.setImageResource(
+            when {
+                player?.isPlaying == true -> R.drawable.ic_pause
+                player?.playbackState == Player.STATE_ENDED -> R.drawable.ic_restart
+                else -> R.drawable.ic_play
+            }
+        )
+    }
+
+    private fun cancelHideControllerTask() {
+        runCatching {
+            handler.removeCallbacks(hideControllerRunnable)
         }
     }
 
     override fun hideController() {
-        if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            // hide all the navigation bars that potentially could have been reopened manually ba the user
-            (context as? MainActivity)?.windowHelper?.setFullscreen()
-        }
+        // remove the callback to hide the controller
+        cancelHideControllerTask()
         super.hideController()
+
+        // hide system bars if in fullscreen
+        playerViewModel?.let {
+            if (it.isFullscreen.value == true) {
+                windowHelper?.setFullscreen()
+            }
+            updateTopBarMargin()
+        }
+    }
+
+    override fun showController() {
+        // remove the previous callback from the queue to prevent a flashing behavior
+        cancelHideControllerTask()
+        // automatically hide the controller after 2 seconds
+        handler.postDelayed(hideControllerRunnable, AUTO_HIDE_CONTROLLER_DELAY)
+        super.showController()
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
@@ -319,7 +356,7 @@ internal class CustomExoPlayerView(
 
         binding.exoTopBarRight.visibility = visibility
         binding.exoCenterControls.visibility = visibility
-        binding.exoBottomBar.visibility = visibility
+        binding.bottomBar.visibility = visibility
         binding.closeImageButton.visibility = visibility
         binding.exoTitle.visibility = visibility
         binding.playPauseBTN.visibility = visibility
@@ -347,8 +384,8 @@ internal class CustomExoPlayerView(
         doubleTapOverlayBinding?.apply {
             animateSeeking(rewindBTN, rewindIV, rewindTV, true)
 
-            runnableHandler.removeCallbacks(hideRewindButtonRunnable)
             // start callback to hide the button
+            runnableHandler.removeCallbacks(hideRewindButtonRunnable)
             runnableHandler.postDelayed(hideRewindButtonRunnable, 700)
         }
     }
@@ -484,7 +521,9 @@ internal class CustomExoPlayerView(
     }
 
     override fun onPlaybackSpeedClicked() {
-        player?.let { PlaybackSpeedSheet(it).show(supportFragmentManager) }
+        player?.let {
+            PlaybackOptionsSheet(it as ExoPlayer).show(supportFragmentManager)
+        }
     }
 
     override fun onResizeModeClicked() {
@@ -544,20 +583,49 @@ internal class CustomExoPlayerView(
             it.layoutParams = params
         }
 
+        updateTopBarMargin()
+
+        // don't add extra padding if there's no cutout
+        if ((context as? MainActivity)?.windowHelper?.hasCutout() == false) return
+
         // add a margin to the top and the bottom bar in landscape mode for notches
-        val newMargin = if (
-            newConfig?.orientation == Configuration.ORIENTATION_LANDSCAPE
-        ) {
-            LANDSCAPE_MARGIN_HORIZONTAL
-        } else {
-            0
+        val newMargin = when (newConfig?.orientation) {
+            Configuration.ORIENTATION_LANDSCAPE -> LANDSCAPE_MARGIN_HORIZONTAL
+            else -> 0
         }
 
-        listOf(binding.exoTopBar, binding.exoBottomBar).forEach {
-            val params = it.layoutParams as MarginLayoutParams
-            params.marginStart = newMargin
-            params.marginEnd = newMargin
-            it.layoutParams = params
+        listOf(binding.topBar, binding.bottomBar).forEach {
+            it.layoutParams = (it.layoutParams as MarginLayoutParams).apply {
+                marginStart = newMargin
+                marginEnd = newMargin
+            }
+        }
+    }
+
+    /**
+     * Load the captions style according to the users preferences
+     */
+    private fun applyCaptionsStyle() {
+        val captionStyle = PlayerHelper.getCaptionStyle(context)
+        subtitleView?.apply {
+            setApplyEmbeddedFontSizes(false)
+            setFixedTextSize(Cue.TEXT_SIZE_TYPE_ABSOLUTE, PlayerHelper.captionsTextSize)
+            if (!PlayerHelper.useSystemCaptionStyle) return
+            setApplyEmbeddedStyles(captionStyle == CaptionStyleCompat.DEFAULT)
+            setStyle(captionStyle)
+        }
+    }
+
+    /**
+     * Add extra margin to the top bar to not overlap the status bar
+     */
+    private fun updateTopBarMargin() {
+        val isFullscreen = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE ||
+            playerViewModel?.isFullscreen?.value == true
+        binding.topBar.let {
+            it.layoutParams = (it.layoutParams as MarginLayoutParams).apply {
+                topMargin = (if (isFullscreen) 25 else 5).toPixel().toInt()
+            }
         }
     }
 
@@ -635,9 +703,22 @@ internal class CustomExoPlayerView(
         }
     }
 
+    /**
+     * Listen for all child touch events
+     */
+    override fun onInterceptTouchEvent(ev: MotionEvent?): Boolean {
+        // when a control is clicked, restart the countdown to hide the controller
+        if (isControllerFullyVisible) {
+            cancelHideControllerTask()
+            handler.postDelayed(hideControllerRunnable, AUTO_HIDE_CONTROLLER_DELAY)
+        }
+        return super.onInterceptTouchEvent(ev)
+    }
+
     companion object {
         private const val SUBTITLE_BOTTOM_PADDING_FRACTION = 0.158f
         private const val ANIMATION_DURATION = 100L
-        private val LANDSCAPE_MARGIN_HORIZONTAL = (30).toPixel().toInt()
+        private const val AUTO_HIDE_CONTROLLER_DELAY = 2000L
+        private val LANDSCAPE_MARGIN_HORIZONTAL = (20).toPixel().toInt()
     }
 }

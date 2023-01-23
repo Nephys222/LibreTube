@@ -2,6 +2,7 @@ package com.github.libretube.util
 
 import android.os.Build
 import android.view.WindowManager
+import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -45,5 +46,9 @@ class WindowHelper(private val activity: BaseActivity) {
         }
 
         window.clearFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS)
+    }
+
+    fun hasCutout(): Boolean {
+        return ViewCompat.getRootWindowInsets(activity.window.decorView)?.displayCutout != null
     }
 }

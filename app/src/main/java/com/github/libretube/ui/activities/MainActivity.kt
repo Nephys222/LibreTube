@@ -11,7 +11,7 @@ import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ScrollView
-import androidx.activity.OnBackPressedCallback
+import androidx.activity.addCallback
 import androidx.appcompat.widget.SearchView
 import androidx.core.os.bundleOf
 import androidx.core.view.children
@@ -35,7 +35,7 @@ import com.github.libretube.ui.fragments.PlayerFragment
 import com.github.libretube.ui.models.PlayerViewModel
 import com.github.libretube.ui.models.SearchViewModel
 import com.github.libretube.ui.models.SubscriptionsViewModel
-import com.github.libretube.ui.tools.BreakReminder
+import com.github.libretube.ui.tools.SleepTimer
 import com.github.libretube.util.NavBarHelper
 import com.github.libretube.util.NavigationHelper
 import com.github.libretube.util.NetworkHelper
@@ -97,7 +97,7 @@ class MainActivity : BaseActivity() {
 
         // sets the navigation bar color to the previously calculated color
         window.navigationBarColor = if (binding.bottomNav.menu.size() > 0) {
-            SurfaceColors.getColorForElevation(this, 10F)
+            SurfaceColors.getColorForElevation(this, binding.bottomNav.elevation)
         } else {
             ThemeHelper.getThemeColor(this, android.R.attr.colorBackground)
         }
@@ -120,7 +120,7 @@ class MainActivity : BaseActivity() {
                 val navHostFragment =
                     supportFragmentManager.findFragmentById(R.id.fragment) as NavHostFragment?
                 // get the current fragment
-                val fragment = navHostFragment?.childFragmentManager?.fragments?.get(0)
+                val fragment = navHostFragment?.childFragmentManager?.fragments?.getOrNull(0)
                 tryScrollToTop(fragment?.requireView() as? ViewGroup)
             }
         }
@@ -132,53 +132,48 @@ class MainActivity : BaseActivity() {
 
         binding.toolbar.title = ThemeHelper.getStyledAppName(this)
 
-        /**
-         * handle error logs
-         */
-        val log = PreferenceHelper.getErrorLog()
-        if (log != "") ErrorDialog().show(supportFragmentManager, null)
+        // handle error logs
+        PreferenceHelper.getErrorLog().ifBlank { null }?.let {
+            ErrorDialog().show(supportFragmentManager, null)
+        }
 
-        BreakReminder.setupBreakReminder(applicationContext)
+        SleepTimer.setup(this)
 
         setupSubscriptionsBadge()
 
         val playerViewModel = ViewModelProvider(this)[PlayerViewModel::class.java]
 
         // new way of handling back presses
-        onBackPressedDispatcher.addCallback(object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() {
-                if (playerViewModel.isFullscreen.value == true) {
-                    for (fragment in supportFragmentManager.fragments) {
-                        if (fragment is PlayerFragment) {
-                            fragment.unsetFullscreen()
-                            return
-                        }
+        onBackPressedDispatcher.addCallback {
+            if (playerViewModel.isFullscreen.value == true) {
+                supportFragmentManager.fragments.filterIsInstance<PlayerFragment>()
+                    .firstOrNull()
+                    ?.let {
+                        it.unsetFullscreen()
+                        return@addCallback
                     }
-                }
+            }
 
-                if (binding.mainMotionLayout.progress == 0F) {
-                    try {
-                        minimizePlayer()
-                        return
-                    } catch (e: Exception) {
-                        // current fragment isn't the player fragment
-                    }
-                }
-
-                when (navController.currentDestination?.id) {
-                    startFragmentId -> {
-                        moveTaskToBack(true)
-                    }
-                    R.id.searchResultFragment -> {
-                        navController.popBackStack(R.id.searchFragment, true) ||
-                            navController.popBackStack()
-                    }
-                    else -> {
-                        navController.popBackStack()
-                    }
+            if (binding.mainMotionLayout.progress == 0F) {
+                runCatching {
+                    minimizePlayer()
+                    return@addCallback
                 }
             }
-        })
+
+            when (navController.currentDestination?.id) {
+                startFragmentId -> {
+                    moveTaskToBack(true)
+                }
+                R.id.searchResultFragment -> {
+                    navController.popBackStack(R.id.searchFragment, true) ||
+                        navController.popBackStack()
+                }
+                else -> {
+                    navController.popBackStack()
+                }
+            }
+        }
 
         loadIntentData()
     }
@@ -192,16 +187,16 @@ class MainActivity : BaseActivity() {
         if (viewGroup == null || viewGroup.childCount == 0) return
 
         viewGroup.children.forEach {
-            (it as? ScrollView)?.let {
-                it.smoothScrollTo(0, 0)
+            (it as? ScrollView)?.let { scrollView ->
+                scrollView.smoothScrollTo(0, 0)
                 return
             }
-            (it as? NestedScrollView)?.let {
-                it.smoothScrollTo(0, 0)
+            (it as? NestedScrollView)?.let { scrollView ->
+                scrollView.smoothScrollTo(0, 0)
                 return
             }
-            (it as? RecyclerView)?.let {
-                it.smoothScrollToPosition(0)
+            (it as? RecyclerView)?.let { recyclerView ->
+                recyclerView.smoothScrollToPosition(0)
                 return
             }
             tryScrollToTop(it as? ViewGroup)
@@ -272,9 +267,7 @@ class MainActivity : BaseActivity() {
 
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
-                val bundle = Bundle()
-                bundle.putString("query", query)
-                navController.navigate(R.id.searchResultFragment, bundle)
+                navController.navigate(R.id.searchResultFragment, bundleOf("query" to query))
                 searchViewModel.setQuery("")
                 searchView.clearFocus()
                 return true
@@ -302,9 +295,7 @@ class MainActivity : BaseActivity() {
                 }
 
                 if (navController.currentDestination?.id != R.id.searchFragment) {
-                    val bundle = Bundle()
-                    bundle.putString("query", newText)
-                    navController.navigate(R.id.searchFragment, bundle)
+                    navController.navigate(R.id.searchFragment, bundleOf("query" to newText))
                 } else {
                     searchViewModel.setQuery(newText)
                 }
@@ -362,9 +353,9 @@ class MainActivity : BaseActivity() {
                 startActivity(aboutIntent)
                 true
             }
-            R.id.action_community -> {
-                val communityIntent = Intent(this, CommunityActivity::class.java)
-                startActivity(communityIntent)
+            R.id.action_help -> {
+                val helpIntent = Intent(this, HelpActivity::class.java)
+                startActivity(helpIntent)
                 true
             }
             else -> super.onOptionsItemSelected(item)
@@ -376,9 +367,9 @@ class MainActivity : BaseActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N &&
             isInPictureInPictureMode
         ) {
-            moveTaskToBack(true)
-            intent?.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
-            startActivity(intent)
+            val nIntent = Intent(this, MainActivity::class.java)
+            nIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            startActivity(nIntent)
         }
 
         if (intent?.getBooleanExtra(IntentData.openAudioPlayer, false) == true) {

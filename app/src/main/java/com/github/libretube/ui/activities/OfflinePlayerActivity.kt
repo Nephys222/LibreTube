@@ -20,6 +20,7 @@ import com.github.libretube.ui.base.BaseActivity
 import com.github.libretube.ui.extensions.setAspectRatio
 import com.github.libretube.ui.models.PlayerViewModel
 import com.github.libretube.util.PlayerHelper
+import com.github.libretube.util.PlayerHelper.loadPlaybackParams
 import com.github.libretube.util.WindowHelper
 import com.google.android.exoplayer2.C
 import com.google.android.exoplayer2.ExoPlayer
@@ -68,6 +69,8 @@ class OfflinePlayerActivity : BaseActivity() {
         player = ExoPlayer.Builder(this)
             .setHandleAudioBecomingNoisy(true)
             .setTrackSelector(trackSelector)
+            .setLoadControl(PlayerHelper.getLoadControl())
+            .setAudioAttributes(PlayerHelper.getAudioAttributes(), true)
             .build().apply {
                 addListener(object : Player.Listener {
                     override fun onEvents(player: Player, events: Player.Events) {
@@ -79,6 +82,7 @@ class OfflinePlayerActivity : BaseActivity() {
                     }
                 })
             }
+            .loadPlaybackParams()
 
         playerView = binding.player
         playerView.setShowSubtitleButton(true)
@@ -90,8 +94,6 @@ class OfflinePlayerActivity : BaseActivity() {
         playerBinding.closeImageButton.setOnClickListener {
             finish()
         }
-
-        PlayerHelper.applyCaptionsStyle(this, playerView.subtitleView)
 
         binding.player.initialize(
             null,

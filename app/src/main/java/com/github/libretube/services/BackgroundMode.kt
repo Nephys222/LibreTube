@@ -13,8 +13,8 @@ import android.os.Looper
 import android.util.Log
 import android.widget.Toast
 import androidx.core.app.ServiceCompat
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.libretube.R
+import com.github.libretube.api.JsonHelper
 import com.github.libretube.api.RetrofitInstance
 import com.github.libretube.api.obj.Segment
 import com.github.libretube.api.obj.SegmentData
@@ -22,7 +22,6 @@ import com.github.libretube.api.obj.Streams
 import com.github.libretube.constants.BACKGROUND_CHANNEL_ID
 import com.github.libretube.constants.IntentData
 import com.github.libretube.constants.PLAYER_NOTIFICATION_ID
-import com.github.libretube.constants.PreferenceKeys
 import com.github.libretube.db.DatabaseHolder.Companion.Database
 import com.github.libretube.db.obj.WatchPosition
 import com.github.libretube.extensions.TAG
@@ -32,17 +31,16 @@ import com.github.libretube.extensions.toID
 import com.github.libretube.extensions.toStreamItem
 import com.github.libretube.util.NowPlayingNotification
 import com.github.libretube.util.PlayerHelper
+import com.github.libretube.util.PlayerHelper.loadPlaybackParams
 import com.github.libretube.util.PlayingQueue
-import com.github.libretube.util.PreferenceHelper
-import com.google.android.exoplayer2.C
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.MediaItem
 import com.google.android.exoplayer2.PlaybackException
 import com.google.android.exoplayer2.Player
-import com.google.android.exoplayer2.audio.AudioAttributes
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.serialization.encodeToString
 
 /**
  * Loads the selected videos audio in background mode with a notification area.
@@ -67,13 +65,8 @@ class BackgroundMode : Service() {
     /**
      * The [ExoPlayer] player. Followed tutorial [here](https://developer.android.com/codelabs/exoplayer-intro)
      */
-    private var player: ExoPlayer? = null
+    var player: ExoPlayer? = null
     private var playWhenReadyPlayer = true
-
-    /**
-     * The [AudioAttributes] handle the audio focus of the [player]
-     */
-    private lateinit var audioAttributes: AudioAttributes
 
     /**
      * SponsorBlock Segment data
@@ -230,13 +223,6 @@ class BackgroundMode : Service() {
             }
         }
 
-        // set the playback speed
-        val playbackSpeed = PreferenceHelper.getString(
-            PreferenceKeys.BACKGROUND_PLAYBACK_SPEED,
-            "1"
-        ).toFloat()
-        player?.setPlaybackSpeed(playbackSpeed)
-
         fetchSponsorBlockSegments()
     }
 
@@ -246,14 +232,12 @@ class BackgroundMode : Service() {
     private fun initializePlayer() {
         if (player != null) return
 
-        audioAttributes = AudioAttributes.Builder()
-            .setUsage(C.USAGE_MEDIA)
-            .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
-            .build()
         player = ExoPlayer.Builder(this)
             .setHandleAudioBecomingNoisy(true)
-            .setAudioAttributes(audioAttributes, true)
+            .setAudioAttributes(PlayerHelper.getAudioAttributes(), true)
+            .setLoadControl(PlayerHelper.getLoadControl())
             .build()
+            .loadPlaybackParams()
 
         /**
          * Listens for changed playbackStates (e.g. pause, end)
@@ -335,11 +319,10 @@ class BackgroundMode : Service() {
             runCatching {
                 val categories = PlayerHelper.getSponsorBlockCategories()
                 if (categories.isEmpty()) return@runCatching
-                segmentData =
-                    RetrofitInstance.api.getSegments(
-                        videoId,
-                        ObjectMapper().writeValueAsString(categories)
-                    )
+                segmentData = RetrofitInstance.api.getSegments(
+                    videoId,
+                    JsonHelper.json.encodeToString(categories)
+                )
                 checkForSegments()
             }
         }

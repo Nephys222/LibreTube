@@ -16,6 +16,7 @@ import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import androidx.annotation.DrawableRes
 import androidx.core.app.NotificationCompat
+import androidx.core.os.bundleOf
 import coil.request.ImageRequest
 import com.github.libretube.R
 import com.github.libretube.api.obj.Streams
@@ -38,6 +39,7 @@ class NowPlayingNotification(
 ) {
     private var videoId: String? = null
     private var streams: Streams? = null
+    private var bitmap: Bitmap? = null
 
     /**
      * The [MediaSessionCompat] for the [streams].
@@ -70,7 +72,7 @@ class NowPlayingNotification(
          * overrides the action when clicking the notification
          */
         @SuppressLint("UnspecifiedImmutableFlag")
-        override fun createCurrentContentIntent(player: Player): PendingIntent? {
+        override fun createCurrentContentIntent(player: Player): PendingIntent {
             // starts a new MainActivity Intent when the player notification is clicked
             // it doesn't start a completely new MainActivity because the MainActivity's launchMode
             // is set to "singleTop" in the AndroidManifest (important!!!)
@@ -81,11 +83,11 @@ class NowPlayingNotification(
                     addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
                 }
             }
-            return PendingIntent.getActivity(
+            return PendingIntentCompat.getActivity(
                 context,
                 0,
                 intent,
-                PendingIntentCompat.updateCurrentFlags
+                PendingIntent.FLAG_UPDATE_CURRENT
             )
         }
 
@@ -105,24 +107,7 @@ class NowPlayingNotification(
         ): Bitmap? {
             if (DataSaverMode.isEnabled(context)) return null
 
-            var bitmap: Bitmap? = null
-
-            val request = ImageRequest.Builder(context)
-                .data(streams?.thumbnailUrl)
-                .target { result ->
-                    val bm = (result as BitmapDrawable).bitmap
-                    // returns the bitmap on Android 13+, for everything below scaled down to a square
-                    bitmap = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-                        ImageHelper.getSquareBitmap(bm)
-                    } else {
-                        bm
-                    }
-                    callback.onBitmap(bitmap!!)
-                }
-                .build()
-
-            // enqueue the thumbnail loading request
-            ImageHelper.imageLoader.enqueue(request)
+            if (bitmap == null) enqueueThumbnailRequest(callback)
 
             return bitmap
         }
@@ -130,6 +115,25 @@ class NowPlayingNotification(
         override fun getCurrentSubText(player: Player): CharSequence? {
             return streams?.uploader
         }
+    }
+
+    private fun enqueueThumbnailRequest(callback: PlayerNotificationManager.BitmapCallback) {
+        val request = ImageRequest.Builder(context)
+            .data(streams?.thumbnailUrl)
+            .target { result ->
+                val bm = (result as BitmapDrawable).bitmap
+                // returns the bitmap on Android 13+, for everything below scaled down to a square
+                bitmap = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+                    ImageHelper.getSquareBitmap(bm)
+                } else {
+                    bm
+                }
+                callback.onBitmap(bitmap!!)
+            }
+            .build()
+
+        // enqueue the thumbnail loading request
+        ImageHelper.imageLoader.enqueue(request)
     }
 
     private val customActionReceiver = object : CustomActionReceiver {
@@ -155,12 +159,12 @@ class NowPlayingNotification(
     }
 
     private fun createNotificationAction(drawableRes: Int, actionName: String, instanceId: Int): NotificationCompat.Action {
-        val intent: Intent = Intent(actionName).setPackage(context.packageName)
-        val pendingIntent = PendingIntent.getBroadcast(
+        val intent = Intent(actionName).setPackage(context.packageName)
+        val pendingIntent = PendingIntentCompat.getBroadcast(
             context,
             instanceId,
             intent,
-            PendingIntentCompat.cancelCurrentFlags
+            PendingIntent.FLAG_CANCEL_CURRENT
         )
         return NotificationCompat.Action.Builder(drawableRes, actionName, pendingIntent).build()
     }
@@ -193,21 +197,23 @@ class NowPlayingNotification(
                     player: Player,
                     windowIndex: Int
                 ): MediaDescriptionCompat {
-                    return MediaDescriptionCompat.Builder().apply {
-                        setTitle(streams?.title!!)
-                        setSubtitle(streams?.uploader)
-                        val appIcon = BitmapFactory.decodeResource(
-                            context.resources,
-                            R.drawable.ic_launcher_monochrome
-                        )
-                        val extras = Bundle().apply {
-                            putParcelable(MediaMetadataCompat.METADATA_KEY_DISPLAY_ICON, appIcon)
-                            putString(MediaMetadataCompat.METADATA_KEY_TITLE, streams?.title!!)
-                            putString(MediaMetadataCompat.METADATA_KEY_ARTIST, streams?.uploader)
-                        }
-                        setIconBitmap(appIcon)
-                        setExtras(extras)
-                    }.build()
+                    val appIcon = BitmapFactory.decodeResource(
+                        context.resources,
+                        R.drawable.ic_launcher_monochrome
+                    )
+                    val title = streams?.title!!
+                    val uploader = streams?.uploader
+                    val extras = bundleOf(
+                        MediaMetadataCompat.METADATA_KEY_DISPLAY_ICON to appIcon,
+                        MediaMetadataCompat.METADATA_KEY_TITLE to title,
+                        MediaMetadataCompat.METADATA_KEY_ARTIST to uploader
+                    )
+                    return MediaDescriptionCompat.Builder()
+                        .setTitle(title)
+                        .setSubtitle(uploader)
+                        .setIconBitmap(appIcon)
+                        .setExtras(extras)
+                        .build()
                 }
 
                 override fun getSupportedQueueNavigatorActions(player: Player): Long {
@@ -257,6 +263,8 @@ class NowPlayingNotification(
     ) {
         this.videoId = videoId
         this.streams = streams
+        // reset the thumbnail bitmap in order to become reloaded for the new video
+        this.bitmap = null
 
         if (playerNotification == null) {
             createMediaSession()

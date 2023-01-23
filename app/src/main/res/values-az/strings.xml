@@ -434,7 +434,7 @@
     <string name="forward">İrəli</string>
     <string name="pause">Fasilə ver</string>
     <string name="alternative_pip_controls">Alternativ PiP nəzarətləri</string>
-    <string name="alternative_pip_controls_summary">Yalnız səsi göstər və irəli və geri çevirmək əvəzinə PiP-də idarəetmələri ötür</string>
+    <string name="alternative_pip_controls_summary">Yalnız səsi göstər və irəli və geri çevirmək əvəzində PiP-də idarəetmələri ötür</string>
     <string name="rewind">Geri sar</string>
     <string name="audio_player">Səs oynadıcı</string>
     <string name="audio_only_mode">Yalnız səs rejimi</string>
@@ -446,4 +446,8 @@
     <string name="concurrent_downloads_limit_reached">Maksimal paralel endirmə limitinə çatıldı.</string>
     <string name="unknown">Naməlum</string>
     <string name="resume">Davam et</string>
+    <string name="sleep_timer">Yuxu taymeri</string>
+    <string name="skip_silence">Səssizliyi ötür</string>
+    <string name="help">Kömək</string>
+    <string name="faq">T-TSS</string>
 </resources>

@@ -17,26 +17,29 @@ import android.os.Handler
 import android.os.Looper
 import android.os.PowerManager
 import android.text.format.DateUtils
+import android.text.method.LinkMovementMethod
 import android.text.util.Linkify
 import android.util.Base64
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.constraintlayout.motion.widget.MotionLayout
 import androidx.core.net.toUri
 import androidx.core.os.ConfigurationCompat
 import androidx.core.os.bundleOf
+import androidx.core.text.HtmlCompat
 import androidx.core.view.isVisible
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.libretube.R
 import com.github.libretube.api.CronetHelper
+import com.github.libretube.api.JsonHelper
 import com.github.libretube.api.RetrofitInstance
 import com.github.libretube.api.obj.ChapterSegment
 import com.github.libretube.api.obj.PipedStream
@@ -75,7 +78,6 @@ import com.github.libretube.ui.dialogs.AddToPlaylistDialog
 import com.github.libretube.ui.dialogs.DownloadDialog
 import com.github.libretube.ui.dialogs.ShareDialog
 import com.github.libretube.ui.extensions.setAspectRatio
-import com.github.libretube.ui.extensions.setFormattedHtml
 import com.github.libretube.ui.extensions.setupSubscriptionButton
 import com.github.libretube.ui.interfaces.OnlinePlayerOptions
 import com.github.libretube.ui.models.CommentsViewModel
@@ -86,22 +88,23 @@ import com.github.libretube.ui.sheets.PlayingQueueSheet
 import com.github.libretube.util.BackgroundHelper
 import com.github.libretube.util.DashHelper
 import com.github.libretube.util.DataSaverMode
+import com.github.libretube.util.HtmlParser
 import com.github.libretube.util.ImageHelper
+import com.github.libretube.util.LinkHandler
 import com.github.libretube.util.NavigationHelper
 import com.github.libretube.util.NowPlayingNotification
 import com.github.libretube.util.PlayerHelper
+import com.github.libretube.util.PlayerHelper.loadPlaybackParams
 import com.github.libretube.util.PlayingQueue
 import com.github.libretube.util.PreferenceHelper
 import com.github.libretube.util.SeekbarPreviewListener
 import com.github.libretube.util.TextUtils
 import com.google.android.exoplayer2.C
-import com.google.android.exoplayer2.DefaultLoadControl
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.MediaItem
 import com.google.android.exoplayer2.MediaItem.SubtitleConfiguration
 import com.google.android.exoplayer2.PlaybackException
 import com.google.android.exoplayer2.Player
-import com.google.android.exoplayer2.audio.AudioAttributes
 import com.google.android.exoplayer2.ext.cronet.CronetDataSource
 import com.google.android.exoplayer2.source.DefaultMediaSourceFactory
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
@@ -116,6 +119,8 @@ import kotlin.math.abs
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.datetime.LocalDate
+import kotlinx.serialization.encodeToString
 import org.chromium.net.CronetEngine
 import retrofit2.HttpException
 
@@ -271,7 +276,7 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
      */
     private fun showBottomBar() {
         if (this::playerBinding.isInitialized && !binding.player.isPlayerLocked) {
-            playerBinding.exoBottomBar.visibility = View.VISIBLE
+            playerBinding.bottomBar.visibility = View.VISIBLE
         }
         handler.postDelayed(this::showBottomBar, 100)
     }
@@ -682,9 +687,7 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
                     } else {
                         PlayingQueue.updateCurrent(streams.toStreamItem(videoId!!))
                         if (PlayerHelper.autoInsertRelatedVideos) {
-                            PlayingQueue.add(
-                                *streams.relatedStreams.orEmpty().toTypedArray()
-                            )
+                            PlayingQueue.add(*streams.relatedStreams.toTypedArray())
                         }
                     }
                 }
@@ -745,7 +748,7 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
                 segmentData =
                     RetrofitInstance.api.getSegments(
                         videoId!!,
-                        ObjectMapper().writeValueAsString(categories)
+                        JsonHelper.json.encodeToString(categories)
                     )
                 if (segmentData.segments.isEmpty()) return@runCatching
                 playerBinding.exoProgress.setSegments(segmentData.segments)
@@ -773,8 +776,7 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
             playerBinding.liveDiff.text = "-$diffText"
         }
         // call the function again after 100ms
-        handler
-            .postDelayed(this@PlayerFragment::refreshLiveStatus, 100)
+        handler.postDelayed(this@PlayerFragment::refreshLiveStatus, 100)
     }
 
     // seek to saved watch position if available
@@ -794,7 +796,7 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
             return
         }
         // position is almost the end of the video => don't seek, start from beginning
-        if (position != null && position < streams.duration!! * 1000 * 0.9) {
+        if (position != null && position < streams.duration * 1000 * 0.9) {
             exoPlayer.seekTo(position)
         }
     }
@@ -816,21 +818,14 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
 
     private fun prepareExoPlayerView() {
         exoPlayerView.apply {
-            setShowSubtitleButton(false)
-            setShowNextButton(false)
-            setShowPreviousButton(false)
-            // controllerShowTimeoutMs = 1500
-            controllerHideOnTouch = true
             useController = false
             player = exoPlayer
         }
 
         playerBinding.exoProgress.setPlayer(exoPlayer)
-
-        PlayerHelper.applyCaptionsStyle(requireContext(), exoPlayerView.subtitleView)
     }
 
-    private fun localizedDate(date: String?): String? {
+    private fun localizedDate(date: LocalDate): String {
         val locale = ConfigurationCompat.getLocales(resources.configuration)[0]!!
         return TextUtils.localizeDate(date, locale)
     }
@@ -852,7 +847,9 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
             this,
             doubleTapOverlayBinding,
             playerGestureControlsViewBinding,
-            trackSelector
+            trackSelector,
+            viewModel,
+            viewLifecycleOwner
         )
 
         binding.apply {
@@ -872,12 +869,12 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
 
             playerChannelSubCount.text = context?.getString(
                 R.string.subscribers,
-                streams.uploaderSubscriberCount?.formatShort()
+                streams.uploaderSubscriberCount.formatShort()
             )
         }
 
         // duration that's not greater than 0 indicates that the video is live
-        if (streams.duration!! <= 0) {
+        if (streams.duration <= 0) {
             isLive = true
             handleLiveVideo()
         }
@@ -885,10 +882,8 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
         playerBinding.exoTitle.text = streams.title
 
         // init the chapters recyclerview
-        if (streams.chapters != null) {
-            chapters = streams.chapters.orEmpty()
-            initializeChapters()
-        }
+        chapters = streams.chapters
+        initializeChapters()
 
         // Listener for play and pause icon change
         exoPlayer.addListener(object : Player.Listener {
@@ -924,11 +919,6 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
             }
 
             override fun onPlaybackStateChanged(playbackState: Int) {
-                exoPlayerView.keepScreenOn = !(
-                    playbackState == Player.STATE_IDLE ||
-                        playbackState == Player.STATE_ENDED
-                    )
-
                 // save the watch position to the database
                 // only called when the position is unequal to 0, otherwise it would become reset
                 // before the player can seek to the saved position from videos of the queue
@@ -974,7 +964,7 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
         })
 
         binding.relPlayerDownload.setOnClickListener {
-            if (streams.duration!! <= 0) {
+            if (streams.duration <= 0) {
                 Toast.makeText(context, R.string.cannotDownload, Toast.LENGTH_SHORT).show()
             } else if (!DownloadService.IS_DOWNLOAD_RUNNING) {
                 val newFragment = DownloadDialog(videoId!!)
@@ -997,16 +987,9 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
         }
         initializeRelatedVideos(streams.relatedStreams)
         // set video description
-        val description = streams.description!!
+        val description = streams.description
 
-        // detect whether the description is html formatted
-        if (description.contains("<") && description.contains(">")) {
-            binding.playerDescription.setFormattedHtml(description)
-        } else {
-            // Links can be present as plain text
-            binding.playerDescription.autoLinkMask = Linkify.WEB_URLS
-            binding.playerDescription.text = description
-        }
+        setupDescription(binding.playerDescription, description)
 
         binding.playerChannel.setOnClickListener {
             val activity = view?.context as MainActivity
@@ -1018,7 +1001,7 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
 
         // update the subscribed state
         binding.playerSubscribe.setupSubscriptionButton(
-            this.streams.uploaderUrl?.toID(),
+            this.streams.uploaderUrl.toID(),
             this.streams.uploader
         )
 
@@ -1037,6 +1020,55 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
 
         playerBinding.skipNext.setOnClickListener {
             playNextVideo()
+        }
+    }
+
+    /**
+     * Set up the description text with video links and timestamps
+     */
+    private fun setupDescription(
+        descTextView: TextView,
+        description: String
+    ) {
+        // detect whether the description is html formatted
+        if (description.contains("<") && description.contains(">")) {
+            descTextView.movementMethod = LinkMovementMethod.getInstance()
+            descTextView.text = HtmlCompat.fromHtml(
+                description,
+                HtmlCompat.FROM_HTML_MODE_LEGACY,
+                null,
+                HtmlParser(LinkHandler { link -> handleLink(link) })
+            )
+        } else {
+            // Links can be present as plain text
+            descTextView.autoLinkMask = Linkify.WEB_URLS
+            descTextView.text = description
+        }
+    }
+
+    /**
+     * Handle a link clicked in the description
+     */
+    private fun handleLink(link: String) {
+        val uri = Uri.parse(link)
+        // get video id if the link is a valid youtube video link
+        val videoId = TextUtils.getVideoIdFromUri(link)
+        if (videoId.isNullOrEmpty()) {
+            // not a youtube video link, thus handle normally
+            val intent = Intent(Intent.ACTION_VIEW, uri)
+            startActivity(intent)
+            return
+        }
+
+        // check if the video is the current video and has a valid time
+        if (videoId == this.videoId) {
+            // try finding the time stamp of the url and seek to it if found
+            TextUtils.parseTimestamp(uri.getQueryParameter("t") ?: return)?.let {
+                exoPlayer.seekTo(it * 1000)
+            }
+        } else {
+            // youtube video link without time or not the current video, thus load in player
+            playNextVideo(videoId)
         }
     }
 
@@ -1085,16 +1117,13 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
     }
 
     private fun updatePlayPauseButton() {
-        if (exoPlayer.isPlaying) {
-            // video is playing
-            binding.playImageView.setImageResource(R.drawable.ic_pause)
-        } else if (exoPlayer.playbackState == Player.STATE_ENDED) {
-            // video has finished
-            binding.playImageView.setImageResource(R.drawable.ic_restart)
-        } else {
-            // player in any other state
-            binding.playImageView.setImageResource(R.drawable.ic_play)
-        }
+        binding.playImageView.setImageResource(
+            when {
+                exoPlayer.isPlaying -> R.drawable.ic_pause
+                exoPlayer.playbackState == Player.STATE_ENDED -> R.drawable.ic_restart
+                else -> R.drawable.ic_play
+            }
+        )
     }
 
     private fun initializeRelatedVideos(relatedStreams: List<StreamItem>?) {
@@ -1230,9 +1259,9 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
     private fun setResolutionAndSubtitles() {
         // create a list of subtitles
         subtitles = mutableListOf()
-        val subtitlesNamesList = mutableListOf(context?.getString(R.string.none)!!)
+        val subtitlesNamesList = mutableListOf(getString(R.string.none))
         val subtitleCodesList = mutableListOf("")
-        streams.subtitles.orEmpty().forEach {
+        streams.subtitles.forEach {
             subtitles.add(
                 SubtitleConfiguration.Builder(it.url!!.toUri())
                     .setMimeType(it.mimeType!!) // The correct MIME type (required).
@@ -1262,7 +1291,7 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
         if (defaultResolution != "") setPlayerResolution(defaultResolution.toInt())
 
         if (!PreferenceHelper.getBoolean(PreferenceKeys.USE_HLS_OVER_DASH, false) &&
-            streams.videoStreams.orEmpty().isNotEmpty()
+            streams.videoStreams.isNotEmpty()
         ) {
             val uri = let {
                 streams.dash?.toUri()
@@ -1293,24 +1322,6 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
             cronetDataSourceFactory
         )
 
-        // handles the audio focus
-        val audioAttributes = AudioAttributes.Builder()
-            .setUsage(C.USAGE_MEDIA)
-            .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
-            .build()
-
-        // handles the duration of media to retain in the buffer prior to the current playback position (for fast backward seeking)
-        val loadControl = DefaultLoadControl.Builder()
-            // cache the last three minutes
-            .setBackBuffer(1000 * 60 * 3, true)
-            .setBufferDurationsMs(
-                1000 * 10, // exo default is 50s
-                PlayerHelper.bufferingGoal,
-                DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_MS,
-                DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS
-            )
-            .build()
-
         // control for the track sources like subtitles and audio source
         trackSelector = DefaultTrackSelector(requireContext())
 
@@ -1322,12 +1333,12 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
 
         exoPlayer = ExoPlayer.Builder(requireContext())
             .setMediaSourceFactory(DefaultMediaSourceFactory(dataSourceFactory))
-            .setLoadControl(loadControl)
+            .setLoadControl(PlayerHelper.getLoadControl())
             .setTrackSelector(trackSelector)
             .setHandleAudioBecomingNoisy(true)
+            .setAudioAttributes(PlayerHelper.getAudioAttributes(), true)
             .build()
-
-        exoPlayer.setAudioAttributes(audioAttributes, true)
+            .loadPlaybackParams()
     }
 
     /**
@@ -1357,16 +1368,14 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
     }
 
     override fun onCaptionsClicked() {
-        if (!this@PlayerFragment::streams.isInitialized ||
-            streams.subtitles.isNullOrEmpty()
-        ) {
+        if (!this@PlayerFragment::streams.isInitialized || streams.subtitles.isEmpty()) {
             Toast.makeText(context, R.string.no_subtitles_available, Toast.LENGTH_SHORT).show()
             return
         }
 
-        val subtitlesNamesList = mutableListOf(context?.getString(R.string.none)!!)
+        val subtitlesNamesList = mutableListOf(getString(R.string.none))
         val subtitleCodesList = mutableListOf("")
-        streams.subtitles!!.forEach {
+        streams.subtitles.forEach {
             subtitlesNamesList += it.name!!
             subtitleCodesList += it.code!!
         }
@@ -1482,7 +1491,7 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
     fun getPipParams(): PictureInPictureParams = PictureInPictureParams.Builder()
         .setActions(PlayerHelper.getPiPModeActions(requireActivity(), exoPlayer.isPlaying))
         .apply {
-            if (SDK_INT >= Build.VERSION_CODES.S) {
+            if (SDK_INT >= Build.VERSION_CODES.S && PlayerHelper.pipEnabled) {
                 setAutoEnterEnabled(true)
             }
             if (exoPlayer.isPlaying) {
@@ -1495,9 +1504,9 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
         playerBinding.seekbarPreview.visibility = View.GONE
         playerBinding.exoProgress.addListener(
             SeekbarPreviewListener(
-                streams.previewFrames.orEmpty(),
+                streams.previewFrames,
                 playerBinding.seekbarPreview,
-                streams.duration!! * 1000
+                streams.duration * 1000
             )
         )
     }

@@ -16,9 +16,13 @@ import com.github.libretube.api.obj.PipedStream
 import com.github.libretube.constants.PreferenceKeys
 import com.github.libretube.enums.AudioQuality
 import com.github.libretube.enums.PlayerEvent
-import com.google.android.exoplayer2.text.Cue
+import com.google.android.exoplayer2.C
+import com.google.android.exoplayer2.DefaultLoadControl
+import com.google.android.exoplayer2.ExoPlayer
+import com.google.android.exoplayer2.LoadControl
+import com.google.android.exoplayer2.PlaybackParameters
+import com.google.android.exoplayer2.audio.AudioAttributes
 import com.google.android.exoplayer2.ui.CaptionStyleCompat
-import com.google.android.exoplayer2.ui.SubtitleView
 import com.google.android.exoplayer2.video.VideoSize
 import kotlin.math.roundToInt
 
@@ -215,7 +219,7 @@ object PlayerHelper {
             "webm"
         )
 
-    val bufferingGoal: Int
+    private val bufferingGoal: Int
         get() = PreferenceHelper.getString(
             PreferenceKeys.BUFFERING_GOAL,
             "50"
@@ -334,9 +338,15 @@ object PlayerHelper {
             false
         )
 
-    val alternativePiPControls: Boolean
+    private val alternativePiPControls: Boolean
         get() = PreferenceHelper.getBoolean(
             PreferenceKeys.ALTERNATIVE_PIP_CONTROLS,
+            false
+        )
+
+    private val skipSilence: Boolean
+        get() = PreferenceHelper.getBoolean(
+            PreferenceKeys.SKIP_SILENCE,
             false
         )
 
@@ -358,22 +368,14 @@ object PlayerHelper {
         return context.packageName + "." + ACTION_MEDIA_CONTROL
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun getPendingIntent(activity: Activity, code: Int): PendingIntent {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            PendingIntent.getBroadcast(
-                activity,
-                code,
-                Intent(getIntentActon(activity)).putExtra(CONTROL_TYPE, code),
-                PendingIntent.FLAG_IMMUTABLE
-            )
-        } else {
-            PendingIntent.getBroadcast(
-                activity,
-                code,
-                Intent(getIntentActon(activity)).putExtra(CONTROL_TYPE, code),
-                0
-            )
-        }
+        return PendingIntent.getBroadcast(
+            activity,
+            code,
+            Intent(getIntentActon(activity)).putExtra(CONTROL_TYPE, code),
+            PendingIntent.FLAG_IMMUTABLE
+        )
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -441,16 +443,40 @@ object PlayerHelper {
     }
 
     /**
-     * Load the captions style according to the users preferences
+     * Get the audio attributes to use for the player
      */
-    fun applyCaptionsStyle(context: Context, subtitleView: SubtitleView?) {
-        val captionStyle = getCaptionStyle(context)
-        subtitleView?.apply {
-            setApplyEmbeddedFontSizes(false)
-            setFixedTextSize(Cue.TEXT_SIZE_TYPE_ABSOLUTE, captionsTextSize)
-            if (!useSystemCaptionStyle) return
-            setApplyEmbeddedStyles(captionStyle == CaptionStyleCompat.DEFAULT)
-            setStyle(captionStyle)
-        }
+    fun getAudioAttributes(): AudioAttributes {
+        return AudioAttributes.Builder()
+            .setUsage(C.USAGE_MEDIA)
+            .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
+            .build()
+    }
+
+    /**
+     * Get the load controls for the player (buffering, etc)
+     */
+    fun getLoadControl(): LoadControl {
+        return DefaultLoadControl.Builder()
+            // cache the last three minutes
+            .setBackBuffer(1000 * 60 * 3, true)
+            .setBufferDurationsMs(
+                1000 * 10, // exo default is 50s
+                bufferingGoal,
+                DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_MS,
+                DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS
+            )
+            .build()
+    }
+
+    /**
+     * Load playback parameters such as speed and skip silence
+     */
+    fun ExoPlayer.loadPlaybackParams(): ExoPlayer {
+        skipSilenceEnabled = skipSilence
+        playbackParameters = PlaybackParameters(
+            playbackSpeed.toFloat(),
+            1.0f
+        )
+        return this
     }
 }
