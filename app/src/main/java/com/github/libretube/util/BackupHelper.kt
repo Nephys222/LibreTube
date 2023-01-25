@@ -9,9 +9,10 @@ import com.github.libretube.api.JsonHelper
 import com.github.libretube.constants.PreferenceKeys
 import com.github.libretube.db.DatabaseHolder.Companion.Database
 import com.github.libretube.extensions.TAG
-import com.github.libretube.extensions.query
 import com.github.libretube.obj.BackupFile
 import com.github.libretube.obj.PreferenceItem
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.decodeFromStream
 import kotlinx.serialization.json.encodeToStream
@@ -48,27 +49,25 @@ class BackupHelper(private val context: Context) {
             }
         } ?: return
 
-        query {
+        runBlocking(Dispatchers.IO) {
             Database.watchHistoryDao().insertAll(
-                *backupFile.watchHistory.toTypedArray()
+                *backupFile.watchHistory.orEmpty().toTypedArray()
             )
             Database.searchHistoryDao().insertAll(
-                *backupFile.searchHistory.toTypedArray()
+                *backupFile.searchHistory.orEmpty().toTypedArray()
             )
             Database.watchPositionDao().insertAll(
-                *backupFile.watchPositions.toTypedArray()
+                *backupFile.watchPositions.orEmpty().toTypedArray()
             )
-            Database.localSubscriptionDao().insertAll(
-                *backupFile.localSubscriptions.toTypedArray()
-            )
+            Database.localSubscriptionDao().insertAll(backupFile.localSubscriptions.orEmpty())
             Database.customInstanceDao().insertAll(
-                *backupFile.customInstances.toTypedArray()
+                *backupFile.customInstances.orEmpty().toTypedArray()
             )
             Database.playlistBookmarkDao().insertAll(
-                *backupFile.playlistBookmarks.toTypedArray()
+                *backupFile.playlistBookmarks.orEmpty().toTypedArray()
             )
 
-            backupFile.localPlaylists.forEach {
+            backupFile.localPlaylists.orEmpty().forEach {
                 Database.localPlaylistsDao().createPlaylist(it.playlist)
                 val playlistId = Database.localPlaylistsDao().getAll().last().playlist.id
                 it.videos.forEach {
