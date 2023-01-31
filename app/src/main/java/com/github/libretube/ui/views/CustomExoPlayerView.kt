@@ -14,6 +14,8 @@ import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.core.content.ContextCompat
+import androidx.core.os.postDelayed
+import androidx.core.view.updateLayoutParams
 import androidx.lifecycle.LifecycleOwner
 import com.github.libretube.R
 import com.github.libretube.databinding.DoubleTapOverlayBinding
@@ -87,10 +89,6 @@ internal class CustomExoPlayerView(
 
     private fun toggleController() {
         if (isControllerFullyVisible) hideController() else showController()
-    }
-
-    private val hideControllerRunnable = Runnable {
-        hideController()
     }
 
     fun initialize(
@@ -171,16 +169,10 @@ internal class CustomExoPlayerView(
                     )
                 ) {
                     updatePlayPauseButton()
-                }
-            }
 
-            override fun onPlaybackStateChanged(playbackState: Int) {
-                // keep the screen on if the video is not ended or paused
-                keepScreenOn = !(
-                    listOf(Player.STATE_IDLE, Player.STATE_ENDED)
-                        .contains(playbackState)
-                    )
-                super.onPlaybackStateChanged(playbackState)
+                    // keep screen on if the video is playing
+                    keepScreenOn = player.isPlaying == true
+                }
             }
         })
 
@@ -204,9 +196,7 @@ internal class CustomExoPlayerView(
     }
 
     private fun cancelHideControllerTask() {
-        runCatching {
-            handler.removeCallbacks(hideControllerRunnable)
-        }
+        handler.removeCallbacksAndMessages(HIDE_CONTROLLER_TOKEN)
     }
 
     override fun hideController() {
@@ -227,7 +217,9 @@ internal class CustomExoPlayerView(
         // remove the previous callback from the queue to prevent a flashing behavior
         cancelHideControllerTask()
         // automatically hide the controller after 2 seconds
-        handler.postDelayed(hideControllerRunnable, AUTO_HIDE_CONTROLLER_DELAY)
+        handler.postDelayed(AUTO_HIDE_CONTROLLER_DELAY, HIDE_CONTROLLER_TOKEN) {
+            hideController()
+        }
         super.showController()
     }
 
@@ -385,8 +377,10 @@ internal class CustomExoPlayerView(
             animateSeeking(rewindBTN, rewindIV, rewindTV, true)
 
             // start callback to hide the button
-            runnableHandler.removeCallbacks(hideRewindButtonRunnable)
-            runnableHandler.postDelayed(hideRewindButtonRunnable, 700)
+            runnableHandler.removeCallbacksAndMessages(HIDE_REWIND_BUTTON_TOKEN)
+            runnableHandler.postDelayed(700, HIDE_REWIND_BUTTON_TOKEN) {
+                rewindBTN.visibility = View.GONE
+            }
         }
     }
 
@@ -398,8 +392,10 @@ internal class CustomExoPlayerView(
             animateSeeking(forwardBTN, forwardIV, forwardTV, false)
 
             // start callback to hide the button
-            runnableHandler.removeCallbacks(hideForwardButtonRunnable)
-            runnableHandler.postDelayed(hideForwardButtonRunnable, 700)
+            runnableHandler.removeCallbacksAndMessages(HIDE_FORWARD_BUTTON_TOKEN)
+            runnableHandler.postDelayed(700, HIDE_FORWARD_BUTTON_TOKEN) {
+                forwardBTN.visibility = View.GONE
+            }
         }
     }
 
@@ -443,24 +439,13 @@ internal class CustomExoPlayerView(
             .setDuration((ANIMATION_DURATION * 1.5).toLong())
             .withEndAction {
                 // move the text back into the button
-                handler.postDelayed({
+                handler.postDelayed(100) {
                     textView.animate()
                         .setDuration(ANIMATION_DURATION / 2)
                         .translationX(0f)
                         .start()
-                }, 100)
+                }
             }
-    }
-
-    private val hideForwardButtonRunnable = Runnable {
-        doubleTapOverlayBinding?.forwardBTN?.apply {
-            this.visibility = View.GONE
-        }
-    }
-    private val hideRewindButtonRunnable = Runnable {
-        doubleTapOverlayBinding?.rewindBTN?.apply {
-            this.visibility = View.GONE
-        }
     }
 
     private fun initializeGestureProgress() {
@@ -577,10 +562,8 @@ internal class CustomExoPlayerView(
             else -> 10.dpToPx()
         }
 
-        binding.progressBar.let {
-            val params = it.layoutParams as MarginLayoutParams
-            params.bottomMargin = offset.toInt()
-            it.layoutParams = params
+        binding.progressBar.updateLayoutParams<MarginLayoutParams> {
+            bottomMargin = offset.toInt()
         }
 
         updateTopBarMargin()
@@ -595,7 +578,7 @@ internal class CustomExoPlayerView(
         }
 
         listOf(binding.topBar, binding.bottomBar).forEach {
-            it.layoutParams = (it.layoutParams as MarginLayoutParams).apply {
+            it.updateLayoutParams<MarginLayoutParams> {
                 marginStart = newMargin
                 marginEnd = newMargin
             }
@@ -622,10 +605,8 @@ internal class CustomExoPlayerView(
     private fun updateTopBarMargin() {
         val isFullscreen = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE ||
             playerViewModel?.isFullscreen?.value == true
-        binding.topBar.let {
-            it.layoutParams = (it.layoutParams as MarginLayoutParams).apply {
-                topMargin = (if (isFullscreen) 10 else 0).dpToPx().toInt()
-            }
+        binding.topBar.updateLayoutParams<MarginLayoutParams> {
+            topMargin = (if (isFullscreen) 10 else 0).dpToPx().toInt()
         }
     }
 
@@ -710,12 +691,18 @@ internal class CustomExoPlayerView(
         // when a control is clicked, restart the countdown to hide the controller
         if (isControllerFullyVisible) {
             cancelHideControllerTask()
-            handler.postDelayed(hideControllerRunnable, AUTO_HIDE_CONTROLLER_DELAY)
+            handler.postDelayed(AUTO_HIDE_CONTROLLER_DELAY, HIDE_CONTROLLER_TOKEN) {
+                hideController()
+            }
         }
         return super.onInterceptTouchEvent(ev)
     }
 
     companion object {
+        private const val HIDE_CONTROLLER_TOKEN = "hideController"
+        private const val HIDE_FORWARD_BUTTON_TOKEN = "hideForwardButton"
+        private const val HIDE_REWIND_BUTTON_TOKEN = "hideRewindButton"
+
         private const val SUBTITLE_BOTTOM_PADDING_FRACTION = 0.158f
         private const val ANIMATION_DURATION = 100L
         private const val AUTO_HIDE_CONTROLLER_DELAY = 2000L

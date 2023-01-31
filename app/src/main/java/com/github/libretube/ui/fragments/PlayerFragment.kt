@@ -31,7 +31,8 @@ import androidx.constraintlayout.motion.widget.MotionLayout
 import androidx.core.net.toUri
 import androidx.core.os.ConfigurationCompat
 import androidx.core.os.bundleOf
-import androidx.core.text.HtmlCompat
+import androidx.core.os.postDelayed
+import androidx.core.text.parseAsHtml
 import androidx.core.view.isVisible
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
@@ -144,7 +145,6 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
     /**
      * Video information fetched at runtime
      */
-    private var isLive = false
     private lateinit var streams: Streams
 
     /**
@@ -211,9 +211,9 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
                 PlayerEvent.Background -> {
                     playOnBackground()
                     // wait some time in order for the service to get started properly
-                    handler.postDelayed({
+                    handler.postDelayed(500) {
                         activity?.finish()
-                    }, 500)
+                    }
                 }
                 else -> {
                 }
@@ -477,10 +477,10 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
             channelId,
             true
         )
-        handler.postDelayed({
+        handler.postDelayed(500) {
             NavigationHelper.startAudioPlayer(requireContext())
             killPlayerFragment()
-        }, 500)
+        }
     }
 
     private fun setFullscreen() {
@@ -525,7 +525,13 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
     }
 
     private fun toggleDescription() {
-        var viewInfo = if (!isLive) TextUtils.SEPARATOR + localizedDate(streams.uploadDate) else ""
+        var viewInfo = if (!streams.livestream) {
+            TextUtils.SEPARATOR + localizedDate(
+                streams.uploadDate
+            )
+        } else {
+            ""
+        }
         if (binding.descLinLayout.isVisible) {
             // hide the description and chapters
             binding.playerDescriptionArrow.animate().rotation(0F).setDuration(250).start()
@@ -708,7 +714,8 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
                 prepareExoPlayerView()
                 initializePlayerView()
                 setupSeekbarPreview()
-                if (!isLive) seekToWatchPosition()
+
+                if (!streams.livestream) seekToWatchPosition()
                 exoPlayer.prepare()
                 if (!DataSaverMode.isEnabled(requireContext())) exoPlayer.play()
 
@@ -813,6 +820,9 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
 
             // play the next video
             playVideo()
+
+            // close comment bottom-sheet for next video
+            commentsViewModel.commentsSheetDismiss?.invoke()
         }
     }
 
@@ -855,7 +865,7 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
         binding.apply {
             playerViewsInfo.text =
                 context?.getString(R.string.views, streams.views.formatShort()) +
-                if (!isLive) TextUtils.SEPARATOR + localizedDate(streams.uploadDate) else ""
+                if (!streams.livestream) TextUtils.SEPARATOR + localizedDate(streams.uploadDate) else ""
 
             textLike.text = streams.likes.formatShort()
             textDislike.text = streams.dislikes.formatShort()
@@ -874,10 +884,7 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
         }
 
         // duration that's not greater than 0 indicates that the video is live
-        if (streams.duration <= 0) {
-            isLive = true
-            handleLiveVideo()
-        }
+        if (streams.livestream) handleLiveVideo()
 
         playerBinding.exoTitle.text = streams.title
 
@@ -925,7 +932,6 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
                 if (exoPlayer.currentPosition != 0L) saveWatchPosition()
 
                 // check if video has ended, next video is available and autoplay is enabled.
-                @Suppress("DEPRECATION")
                 if (
                     playbackState == Player.STATE_ENDED &&
                     !transitioning &&
@@ -1033,12 +1039,8 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
         // detect whether the description is html formatted
         if (description.contains("<") && description.contains(">")) {
             descTextView.movementMethod = LinkMovementMethod.getInstance()
-            descTextView.text = HtmlCompat.fromHtml(
-                description,
-                HtmlCompat.FROM_HTML_MODE_LEGACY,
-                null,
-                HtmlParser(LinkHandler { link -> handleLink(link) })
-            )
+            descTextView.text = description
+                .parseAsHtml(tagHandler = HtmlParser(LinkHandler(this::handleLink)))
         } else {
             // Links can be present as plain text
             descTextView.autoLinkMask = Linkify.WEB_URLS
@@ -1077,7 +1079,7 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
      */
     @SuppressLint("SetTextI18n")
     private fun updateDisplayedDuration() {
-        if (exoPlayer.duration < 0 || isLive) return
+        if (exoPlayer.duration < 0 || streams.livestream) return
 
         playerBinding.duration.text = DateUtils.formatElapsedTime(
             exoPlayer.duration.div(1000)
@@ -1279,9 +1281,7 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
         if (!PreferenceHelper.getBoolean(PreferenceKeys.USE_HLS_OVER_DASH, false) &&
             streams.videoStreams.isNotEmpty()
         ) {
-            val uri = let {
-                streams.dash?.toUri()
-
+            val uri = streams.dash?.toUri() ?: let {
                 val manifest = DashHelper.createManifest(streams)
 
                 // encode to base64
@@ -1437,13 +1437,11 @@ class PlayerFragment : BaseFragment(), OnlinePlayerOptions {
             viewModel.isFullscreen.value = false
 
             updateCaptionsLanguage(null)
-        } else if (lifecycle.currentState == Lifecycle.State.CREATED) {
-            // close button got clicked in PiP mode
-            // destroying the fragment, player and notification
-            onDestroy()
-            // finish the activity
-            activity?.finishAndRemoveTask()
         } else {
+            // close button got clicked in PiP mode
+            // pause the video and keep the app alive
+            if (lifecycle.currentState == Lifecycle.State.CREATED) exoPlayer.pause()
+
             // enable exoPlayer controls again
             exoPlayerView.useController = true
 
