@@ -11,11 +11,12 @@ import com.github.libretube.extensions.awaitQuery
 import com.github.libretube.extensions.query
 import com.github.libretube.extensions.toID
 import com.github.libretube.extensions.toPlaylistBookmark
+import com.github.libretube.extensions.toastFromMainThread
+import com.github.libretube.helpers.BackgroundHelper
 import com.github.libretube.obj.ShareData
 import com.github.libretube.ui.dialogs.DeletePlaylistDialog
 import com.github.libretube.ui.dialogs.RenamePlaylistDialog
 import com.github.libretube.ui.dialogs.ShareDialog
-import com.github.libretube.util.BackgroundHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -56,22 +57,26 @@ class PlaylistOptionsBottomSheet(
                 // play the playlist in the background
                 getString(R.string.playOnBackground) -> {
                     runBlocking {
-                        val playlist =
-                            if (playlistType == PlaylistType.PRIVATE) {
-                                RetrofitInstance.authApi.getPlaylist(playlistId)
-                            } else {
-                                RetrofitInstance.api.getPlaylist(playlistId)
-                            }
+                        val playlist = PlaylistsHelper.getPlaylist(playlistId)
                         BackgroundHelper.playOnBackground(
                             context = requireContext(),
-                            videoId = playlist.relatedStreams!![0].url!!.toID(),
+                            videoId = playlist.relatedStreams[0].url!!.toID(),
                             playlistId = playlistId
                         )
                     }
                 }
                 // Clone the playlist to the users Piped account
                 getString(R.string.clonePlaylist) -> {
-                    PlaylistsHelper.clonePlaylist(requireContext(), playlistId)
+                    val appContext = context?.applicationContext
+                    CoroutineScope(Dispatchers.IO).launch {
+                        val playlistId = PlaylistsHelper.clonePlaylist(
+                            requireContext().applicationContext,
+                            playlistId
+                        )
+                        appContext?.toastFromMainThread(
+                            if (playlistId != null) R.string.playlistCloned else R.string.server_error
+                        )
+                    }
                 }
                 // share the playlist
                 getString(R.string.share) -> {
