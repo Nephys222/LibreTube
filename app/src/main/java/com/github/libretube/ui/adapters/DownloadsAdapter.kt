@@ -13,12 +13,13 @@ import com.github.libretube.databinding.DownloadedMediaRowBinding
 import com.github.libretube.db.DatabaseHolder
 import com.github.libretube.db.obj.DownloadWithItems
 import com.github.libretube.extensions.formatAsFileSize
-import com.github.libretube.extensions.query
 import com.github.libretube.helpers.ImageHelper
 import com.github.libretube.ui.activities.OfflinePlayerActivity
 import com.github.libretube.ui.viewholders.DownloadsViewHolder
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import java.io.File
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 
 class DownloadsAdapter(
     private val context: Context,
@@ -91,29 +92,26 @@ class DownloadsAdapter(
 
             root.setOnLongClickListener {
                 MaterialAlertDialogBuilder(root.context)
-                    .setItems(
-                        arrayOf(
-                            root.context.getString(R.string.delete)
-                        )
-                    ) { _, index ->
-                        when (index) {
-                            0 -> {
-                                items.map { File(it.path) }.forEach { file ->
-                                    if (file.exists()) {
-                                        try {
-                                            file.delete()
-                                        } catch (_: Exception) { }
-                                    }
-                                }
-
-                                query {
-                                    DatabaseHolder.Database.downloadDao().deleteDownload(download)
-                                }
-                                downloads.removeAt(position)
-                                notifyItemRemoved(position)
-                                notifyItemRangeChanged(position, itemCount)
+                    .setTitle(R.string.delete)
+                    .setMessage(R.string.irreversible)
+                    .setPositiveButton(R.string.okay) { _, _ ->
+                        items.map { File(it.path) }.forEach { file ->
+                            runCatching {
+                                if (file.exists()) file.delete()
                             }
                         }
+                        runCatching {
+                            download.thumbnailPath?.let {
+                                File(it).delete()
+                            }
+                        }
+
+                        runBlocking(Dispatchers.IO) {
+                            DatabaseHolder.Database.downloadDao().deleteDownload(download)
+                        }
+                        downloads.removeAt(position)
+                        notifyItemRemoved(position)
+                        notifyItemRangeChanged(position, itemCount)
                     }
                     .setNegativeButton(R.string.cancel, null)
                     .show()

@@ -9,15 +9,13 @@ import android.os.IBinder
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.core.view.size
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.github.libretube.R
 import com.github.libretube.databinding.FragmentDownloadsBinding
-import com.github.libretube.db.DatabaseHolder.Companion.Database
+import com.github.libretube.db.DatabaseHolder.Database
 import com.github.libretube.db.obj.DownloadWithItems
-import com.github.libretube.extensions.awaitQuery
 import com.github.libretube.extensions.formatAsFileSize
 import com.github.libretube.helpers.DownloadHelper
 import com.github.libretube.obj.DownloadStatus
@@ -27,9 +25,11 @@ import com.github.libretube.ui.adapters.DownloadsAdapter
 import com.github.libretube.ui.base.BaseFragment
 import com.github.libretube.ui.viewholders.DownloadsViewHolder
 import java.io.File
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 class DownloadsFragment : BaseFragment() {
     private lateinit var binding: FragmentDownloadsBinding
@@ -70,9 +70,10 @@ class DownloadsFragment : BaseFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        awaitQuery {
-            downloads.addAll(Database.downloadDao().getAll())
+        val dbDownloads = runBlocking(Dispatchers.IO) {
+            Database.downloadDao().getAll()
         }
+        downloads.addAll(dbDownloads)
         if (downloads.isEmpty()) return
 
         binding.downloadsEmpty.visibility = View.GONE
@@ -109,11 +110,11 @@ class DownloadsFragment : BaseFragment() {
         binding.downloads.adapter?.registerAdapterDataObserver(
             object : RecyclerView.AdapterDataObserver() {
                 override fun onItemRangeRemoved(positionStart: Int, itemCount: Int) {
-                    if (binding.downloads.size == 0) {
+                    super.onItemRangeRemoved(positionStart, itemCount)
+                    if (binding.downloads.adapter?.itemCount == 0) {
                         binding.downloads.visibility = View.GONE
                         binding.downloadsEmpty.visibility = View.VISIBLE
                     }
-                    super.onItemRangeRemoved(positionStart, itemCount)
                 }
             }
         )

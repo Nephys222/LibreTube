@@ -2,12 +2,12 @@ package com.github.libretube.ui.fragments
 
 import android.os.Bundle
 import android.util.Log
-import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
 import androidx.core.view.isVisible
+import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
+import by.kirich1409.viewbindingdelegate.viewBinding
 import com.github.libretube.R
 import com.github.libretube.api.RetrofitInstance
 import com.github.libretube.constants.PreferenceKeys
@@ -18,14 +18,13 @@ import com.github.libretube.extensions.TAG
 import com.github.libretube.extensions.hideKeyboard
 import com.github.libretube.helpers.PreferenceHelper
 import com.github.libretube.ui.adapters.SearchAdapter
-import com.github.libretube.ui.base.BaseFragment
+import java.io.IOException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.io.IOException
 import retrofit2.HttpException
 
-class SearchResultFragment : BaseFragment() {
-    private lateinit var binding: FragmentSearchResultBinding
+class SearchResultFragment : Fragment(R.layout.fragment_search_result) {
+    private val binding by viewBinding(FragmentSearchResultBinding::bind)
 
     private var nextPage: String? = null
     private var query: String = ""
@@ -36,15 +35,6 @@ class SearchResultFragment : BaseFragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         query = arguments?.getString("query").toString()
-    }
-
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-        binding = FragmentSearchResultBinding.inflate(layoutInflater, container, false)
-        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -75,12 +65,13 @@ class SearchResultFragment : BaseFragment() {
 
         fetchSearch()
 
-        binding.searchRecycler.viewTreeObserver
-            .addOnScrollChangedListener {
-                if (!binding.searchRecycler.canScrollVertically(1)) {
-                    if (nextPage != null) fetchNextSearchItems()
-                }
+        binding.searchRecycler.viewTreeObserver.addOnScrollChangedListener {
+            if (isAdded && !binding.searchRecycler.canScrollVertically(1) &&
+                nextPage != null
+            ) {
+                fetchNextSearchItems()
             }
+        }
     }
 
     private fun fetchSearch() {
