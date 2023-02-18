@@ -245,7 +245,6 @@
     <string name="system_caption_style">ਸਿਸਟਮ ਕੈਪਸ਼ਨ ਸ਼ੈਲੀ</string>
     <string name="captions">ਕੈਪਸ਼ਨਾਂ</string>
     <string name="none">ਕੋਈ ਨਹੀਂ</string>
-    <string name="update_now">ਹੁਣੇ ਨਵਾਂ ਲੀਬਰਟਿਊਬ ਸੰਸਕਰਣ ਸਥਾਪਿਤ ਕਰਨਾ ਹੈ\?</string>
     <string name="seekbar_preview">ਵੀਡੀਓ ਪ੍ਰੀਵਿਊ</string>
     <string name="general">ਜਨਰਲ</string>
     <string name="general_summary">ਭਾਸ਼ਾ ਅਤੇ ਖੇਤਰ</string>
@@ -445,4 +444,7 @@
     <string name="faq">ਆਮ ਸਵਾਲ</string>
     <string name="sleep_timer">ਸਲੀਪ ਟਾਈਮਰ</string>
     <string name="replies">ਜਵਾਬ</string>
+    <string name="unsupported_file_format">ਅਸਮਰਥਿਤ ਫ਼ਾਈਲ ਫਾਰਮੈਟ: %1$s</string>
+    <string name="mark_as_watched">ਵੇਖੇ ਗਏ ਵਜੋਂ ਮਾਰਕ ਕਰੋ</string>
+    <string name="codecs">ਕੋਡੈਕਸ</string>
 </resources>

@@ -48,6 +48,7 @@ object PreferenceKeys {
     const val CUSTOM_INSTANCE = "customInstance"
     const val CLEAR_CUSTOM_INSTANCES = "clearCustomInstances"
     const val LOGIN_REGISTER = "login_register"
+    const val LOGOUT = "logout"
     const val DELETE_ACCOUNT = "delete_account"
 
     /**
@@ -56,7 +57,9 @@ object PreferenceKeys {
     const val AUTO_FULLSCREEN = "auto_fullscreen"
     const val AUTO_PLAY = "autoplay"
     const val RELATED_STREAMS = "related_streams_toggle"
+    const val CUSTOM_PLAYBACK_SPEED = "custom_playback_speed"
     const val PLAYBACK_SPEED = "playback_speed"
+    const val BACKGROUND_PLAYBACK_SPEED = "background_playback_speed"
     const val FULLSCREEN_ORIENTATION = "fullscreen_orientation"
     const val PAUSE_ON_SCREEN_OFF = "pause_screen_off"
     const val WATCH_POSITIONS = "watch_positions"

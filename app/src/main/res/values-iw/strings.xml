@@ -16,7 +16,7 @@
     <string name="subscribeIsEmpty">עליך להירשם לכמה ערוצים תחילה.</string>
     <string name="import_from_yt_summary">מ־YouTube או NewPipe</string>
     <string name="app_theme">ערכת עיצוב</string>
-    <string name="server_error">יש תקלה עם השרת. לנסות עותק אחר\?</string>
+    <string name="server_error">נראה שיש תקלה עם השרת הנבחר. נא לנסות אחד אחר.</string>
     <string name="error">משהו השתבש.</string>
     <string name="empty">עליך למלא שם משתמש וסיסמה.</string>
     <string name="notgmail">זה לחשבון Piped.</string>
@@ -59,7 +59,7 @@
     <string name="app_icon">סמל</string>
     <string name="enabled">פעיל</string>
     <string name="playOnBackground">ניגון ברקע</string>
-    <string name="update_available_text">לעבור ל־releases (מהדורות) ב־GitHub כדי להוריד אותה\?</string>
+    <string name="update_available_text">עדכון חדש זמין. יש לפתוח את עמוד הגרסאות ב־GitHub.</string>
     <string name="appearance">מראה</string>
     <string name="app_behavior">התנהגות</string>
     <string name="video_format">תצורת סרטונים</string>
@@ -242,7 +242,6 @@
     <string name="none">ללא</string>
     <string name="seekbar_preview">תצוגה מקדימה של הסרטון</string>
     <string name="seekbar_preview_summary">להציג תמונה מהסרטון בעת גרירת מחוון הנגינה.</string>
-    <string name="update_now">להתקין את הגרסה החדשה של LibreTube כעת\?</string>
     <string name="data_saver_mode_summary">לדלג על תמונות ממוזערות ותמונות אחרות.</string>
     <string name="general">כללי</string>
     <string name="general_summary">שפה ואזור</string>
@@ -448,4 +447,5 @@
     <string name="codecs">מפענחים</string>
     <string name="mark_as_watched">סימון כנצפה</string>
     <string name="unsupported_file_format">סוג הקובץ לא נתמך: %1$s</string>
+    <string name="custom_playback_speed">מהירות מותאמת אישית</string>
 </resources>

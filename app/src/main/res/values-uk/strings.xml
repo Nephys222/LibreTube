@@ -4,7 +4,7 @@
     <string name="piped">Piped</string>
     <string name="youtube">YouTube</string>
     <string name="playOnBackground">Грати у фоновому режимі</string>
-    <string name="server_error">Проблема з сервером. Спробувати інший\?</string>
+    <string name="server_error">Здається, виникла проблема з вибраним сервером. Спробуйте інший.</string>
     <string name="share">Поділитися</string>
     <string name="register">Реєстрація</string>
     <string name="downloadfailed">Невдале завантаження.</string>
@@ -126,7 +126,7 @@
     <string name="music_directory">Музична тека</string>
     <string name="shareTo">Поділитися посиланням з</string>
     <string name="update_available">Версія %1$s доступна</string>
-    <string name="update_available_text">Перейти до релізів на GitHub, щоб завантажити\?</string>
+    <string name="update_available_text">Доступне нове оновлення. Натисніть, щоб відкрити сторінку випусків на GitHub.</string>
     <string name="downloads">Завантаження</string>
     <string name="video_format">Формат відео</string>
     <string name="contributing">Внесок</string>
@@ -328,7 +328,6 @@
     <string name="system_caption_style">Системний стиль субтитрів</string>
     <string name="captions">Субтитри</string>
     <string name="none">Немає</string>
-    <string name="update_now">Установити нову версію LibreTube зараз\?</string>
     <string name="general">Загальні</string>
     <string name="instance_frontend_url">URL-адреса сервера</string>
     <string name="audio_video_summary">Якість і формат</string>
@@ -448,4 +447,6 @@
     <string name="codecs">Кодеки</string>
     <string name="mark_as_watched">Позначити переглянутим</string>
     <string name="unsupported_file_format">Непідтримуваний формат файлу: %1$s</string>
+    <string name="custom_playback_speed">Користувацька швидкість</string>
+    <string name="custom_playback_speed_summary">Використовувати іншу швидкість відтворення, ніж для звичайного програвача.</string>
 </resources>

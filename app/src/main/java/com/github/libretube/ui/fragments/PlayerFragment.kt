@@ -44,10 +44,12 @@ import com.github.libretube.api.CronetHelper
 import com.github.libretube.api.JsonHelper
 import com.github.libretube.api.RetrofitInstance
 import com.github.libretube.api.obj.ChapterSegment
+import com.github.libretube.api.obj.Message
 import com.github.libretube.api.obj.PipedStream
 import com.github.libretube.api.obj.Segment
 import com.github.libretube.api.obj.StreamItem
 import com.github.libretube.api.obj.Streams
+import com.github.libretube.api.obj.Token
 import com.github.libretube.constants.IntentData
 import com.github.libretube.constants.PreferenceKeys
 import com.github.libretube.databinding.FragmentPlayerBinding
@@ -62,7 +64,6 @@ import com.github.libretube.extensions.formatShort
 import com.github.libretube.extensions.hideKeyboard
 import com.github.libretube.extensions.query
 import com.github.libretube.extensions.toID
-import com.github.libretube.extensions.toStreamItem
 import com.github.libretube.extensions.updateParameters
 import com.github.libretube.helpers.BackgroundHelper
 import com.github.libretube.helpers.DashHelper
@@ -118,6 +119,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.LocalDate
+import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import retrofit2.HttpException
 
@@ -262,8 +264,8 @@ class PlayerFragment : Fragment(R.layout.fragment_player), OnlinePlayerOptions {
      * somehow the bottom bar is invisible on low screen resolutions, this fixes it
      */
     private fun showBottomBar() {
-        if (isAdded && binding.player.isPlayerLocked) {
-            binding.player.binding.bottomBar.isVisible = true
+        if (isAdded && !binding.player.isPlayerLocked) {
+            playerBinding.bottomBar.isVisible = true
         }
         handler.postDelayed(this::showBottomBar, 100)
     }
@@ -653,13 +655,13 @@ class PlayerFragment : Fragment(R.layout.fragment_player), OnlinePlayerOptions {
             streams = try {
                 RetrofitInstance.api.getStreams(videoId!!)
             } catch (e: IOException) {
-                println(e)
-                Log.e(TAG(), "IOException, you might not have internet connection")
-                Toast.makeText(context, R.string.unknown_error, Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, R.string.unknown_error, Toast.LENGTH_LONG).show()
                 return@launchWhenCreated
             } catch (e: HttpException) {
-                Log.e(TAG(), "HttpException, unexpected response")
-                Toast.makeText(context, R.string.server_error, Toast.LENGTH_SHORT).show()
+                val errorMessage = e.response()?.errorBody()?.string()?.let {
+                    JsonHelper.json.decodeFromString<Message>(it).message
+                } ?: context?.getString(R.string.server_error) ?: ""
+                Toast.makeText(context, errorMessage, Toast.LENGTH_LONG).show()
                 return@launchWhenCreated
             }
 
@@ -1390,9 +1392,6 @@ class PlayerFragment : Fragment(R.layout.fragment_player), OnlinePlayerOptions {
             binding.player.hideController()
             binding.player.useController = false
 
-            // set portrait mode
-            unsetFullscreen()
-
             if (viewModel.isMiniPlayerVisible.value == true) {
                 binding.playerMotionLayout.transitionToStart()
                 viewModel.isMiniPlayerVisible.value = false
@@ -1404,8 +1403,6 @@ class PlayerFragment : Fragment(R.layout.fragment_player), OnlinePlayerOptions {
             }
             binding.linLayout.visibility = View.GONE
 
-            viewModel.isFullscreen.value = false
-
             updateCaptionsLanguage(null)
         } else {
             // close button got clicked in PiP mode
@@ -1415,11 +1412,14 @@ class PlayerFragment : Fragment(R.layout.fragment_player), OnlinePlayerOptions {
             // enable exoPlayer controls again
             binding.player.useController = true
 
-            with(binding.playerMotionLayout) {
-                getConstraintSet(R.id.start).constrainHeight(R.id.player, 0)
-                enableTransition(R.id.yt_transition, true)
+            // set back to portrait mode
+            if (viewModel.isFullscreen.value != true) {
+                with(binding.playerMotionLayout) {
+                    getConstraintSet(R.id.start).constrainHeight(R.id.player, 0)
+                    enableTransition(R.id.yt_transition, true)
+                }
+                binding.linLayout.visibility = View.VISIBLE
             }
-            binding.linLayout.visibility = View.VISIBLE
 
             updateCaptionsLanguage(captionLanguage)
 

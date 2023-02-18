@@ -25,7 +25,7 @@
     <string name="vlcerror">Não se pôde abrir no VLC. Pode não estar instalado.</string>
     <string name="import_from_yt">Importar inscrições</string>
     <string name="app_theme">Tema</string>
-    <string name="server_error">Há um problema com o servidor. Tentar outra instância\?</string>
+    <string name="server_error">Parece haver um problema com o servidor selecionado. Tente outra instância.</string>
     <string name="unknown_error">Erro de rede.</string>
     <string name="error">Algo deu errado.</string>
     <string name="empty">Você deve pôr um nome de usuário e senha.</string>
@@ -121,7 +121,7 @@
     <string name="sdcard">Cartão SD</string>
     <string name="defaultIcon">Padrão</string>
     <string name="views">%1$s visualizações</string>
-    <string name="update_available_text">Ir aos lançamentos no GitHub para a baixar\?</string>
+    <string name="update_available_text">Nova atualização disponível. Clique para abrir a página de lançamentos do GitHub.</string>
     <string name="download_directory_summary">Onde a mídia baixada é armazenada.</string>
     <string name="app_uptodate">Executando a versão mais recente.</string>
     <string name="no_update_available">Você está executando a versão mais recente.</string>
@@ -253,7 +253,6 @@
     <string name="system_caption_style">Estilo de legenda do sistema</string>
     <string name="captions">Legendas</string>
     <string name="none">Nenhum</string>
-    <string name="update_now">Instalar nova versão agora\?</string>
     <string name="general">Geral</string>
     <string name="general_summary">Idioma e região</string>
     <string name="seekbar_preview">Pré-visualização de video</string>
@@ -448,4 +447,6 @@
     <string name="codecs">Codecs</string>
     <string name="unsupported_file_format">Formato de arquivo não suportado: %1$s</string>
     <string name="mark_as_watched">Marcar como visto</string>
+    <string name="custom_playback_speed">Velocidade personalizada</string>
+    <string name="custom_playback_speed_summary">Use uma velocidade de reprodução diferente da do reprodutor normal.</string>
 </resources>
