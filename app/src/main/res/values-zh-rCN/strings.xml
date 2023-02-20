@@ -117,7 +117,7 @@
     <string name="youtube">YouTube</string>
     <string name="playOnBackground">后台播放</string>
     <string name="update_available">版本 %1$s 可用</string>
-    <string name="update_available_text">有更新可用。单击打开 Github 发布页面。</string>
+    <string name="update_available_text">有更新可用。点击打开 GitHub 发布页面。</string>
     <string name="download_directory_summary">选择下载视频（音频）的存储位置。</string>
     <string name="video_format_summary">如果同时下载了音频与视频，则转换成视频文件。</string>
     <string name="download_directory">下载到</string>
@@ -447,4 +447,6 @@
     <string name="codecs">编解码器</string>
     <string name="mark_as_watched">标记为已观看</string>
     <string name="unsupported_file_format">不支持的文件格式：%1$s</string>
+    <string name="custom_playback_speed">自定义速度</string>
+    <string name="custom_playback_speed_summary">使用不同于常规播放器的播放速度。</string>
 </resources>
