@@ -33,8 +33,7 @@ import com.github.libretube.util.TextUtils
 class VideosAdapter(
     private val streamItems: MutableList<StreamItem>,
     private val showAllAtOnce: Boolean = true,
-    private val forceMode: ForceMode = ForceMode.NONE,
-    private val hideWatched: Boolean = false
+    private val forceMode: ForceMode = ForceMode.NONE
 ) : RecyclerView.Adapter<VideosViewHolder>() {
 
     private var visibleCount = minOf(10, streamItems.size)
@@ -116,13 +115,8 @@ class VideosAdapter(
         }
 
         videoId?.let {
-            val shouldHide =
-                (holder.trendingRowBinding?.watchProgress ?: holder.videoRowBinding!!.watchProgress)
-                    .setWatchProgressLength(it, video.duration ?: 0L)
-            if (hideWatched && shouldHide) {
-                hideItemView(holder)
-                return
-            }
+            (holder.trendingRowBinding?.watchProgress ?: holder.videoRowBinding!!.watchProgress)
+                .setWatchProgressLength(it, video.duration ?: 0L)
         }
 
         // Trending layout
@@ -137,13 +131,12 @@ class VideosAdapter(
             }
 
             textViewTitle.text = video.title
-            textViewChannel.text =
-                video.uploaderName + TextUtils.SEPARATOR +
-                video.views.formatShort() + " " +
-                root.context.getString(R.string.views_placeholder) +
-                TextUtils.SEPARATOR + video.uploaded?.let {
-                    DateUtils.getRelativeTimeSpanString(it)
-                }
+            textViewChannel.text = root.context.getString(
+                R.string.trending_views,
+                video.uploaderName,
+                video.views.formatShort(),
+                video.uploaded?.let { TextUtils.formatRelativeDate(it) }
+            )
             video.duration?.let { thumbnailDuration.setFormattedDuration(it, video.isShort) }
             channelImage.setOnClickListener {
                 NavigationHelper.navigateChannel(root.context, video.uploaderUrl)
@@ -170,15 +163,13 @@ class VideosAdapter(
         holder.videoRowBinding?.apply {
             videoTitle.text = video.title
 
-            videoInfo.text =
-                video.views.formatShort() + " " +
-                root.context.getString(R.string.views_placeholder) +
-                TextUtils.SEPARATOR + video.uploaded?.let {
-                    DateUtils.getRelativeTimeSpanString(it)
-                }
+            videoInfo.text = root.context.getString(
+                R.string.normal_views,
+                video.views.formatShort(),
+                video.uploaded?.let { TextUtils.SEPARATOR + TextUtils.formatRelativeDate(it) }
+            )
 
-            thumbnailDuration.text =
-                video.duration?.let { DateUtils.formatElapsedTime(it) }
+            thumbnailDuration.text = video.duration?.let { DateUtils.formatElapsedTime(it) }
 
             ImageHelper.loadImage(video.thumbnail, thumbnail)
 

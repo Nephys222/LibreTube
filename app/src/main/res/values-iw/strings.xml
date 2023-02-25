@@ -147,7 +147,6 @@
     <string name="download_folder">שם</string>
     <string name="sdcard">כרטיס SD</string>
     <string name="shareTo">שיתוף כתובת אל</string>
-    <string name="views">%1$s צפיות</string>
     <string name="defaultIcon">ברירת מחדל</string>
     <string name="legacyIcon">מורשת שאבדה</string>
     <string name="gradientIcon">מדרג של Glib</string>
@@ -155,7 +154,7 @@
     <string name="flameIcon">להבה מעופפת</string>
     <string name="birdIcon">ציפור מוגברת</string>
     <string name="torchIcon">לפיד בוער</string>
-    <string name="instance_summary">Piped, כניסה ומינויים</string>
+    <string name="instance_summary">Piped, כניסה וחשבון</string>
     <string name="customInstance_summary">הוספה…</string>
     <string name="instance_name">שם העותק</string>
     <string name="empty_instance">יש למלא את השם ואת כתובת ה־API.</string>
@@ -335,7 +334,6 @@
     <string name="playback_pitch">גובה צליל</string>
     <string name="default_load_interval">ברירת מחדל</string>
     <string name="limit_hls">הגבלת שידור חי ל־1080p</string>
-    <string name="views_placeholder">צפיות</string>
     <string name="progressive_load_interval_summary">ערך נמוך יותר עשוי להאיץ את טעינת הסרטון הראשונית.</string>
     <string name="progressive_load_interval">גודל מרווח טעינה במקטעים</string>
     <string name="change_region">כנראה שהמובילים לא זמינים לאזור הנוכחי. נא לבחור באזור אחר בהגדרות.</string>
@@ -449,4 +447,12 @@
     <string name="unsupported_file_format">סוג הקובץ לא נתמך: %1$s</string>
     <string name="custom_playback_speed">מהירות מותאמת אישית</string>
     <string name="custom_playback_speed_summary">להשתמש במהירות נגינה שונה מהנגן הרגיל.</string>
+    <string name="category">קטגוריה</string>
+    <string name="trending_views">%1$s • %2$s צפיות • %3$s</string>
+    <string name="normal_views">%1$s צפיות%2$s</string>
+    <string name="video_id">מזהה סרטון</string>
+    <string name="stats_for_nerds">סטטיסטיקה לחנונים</string>
+    <string name="playing_next">לנגן את הבא בעוד %1$s</string>
+    <string name="autoplay_countdown">ספירה לאחור עד לנגינה אוטומטית</string>
+    <string name="autoplay_countdown_summary">להציג ספירה לאחור של 5 שניות בטרם ניגון הסרטון הבא אוטומטית.</string>
 </resources>

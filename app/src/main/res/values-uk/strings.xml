@@ -140,7 +140,6 @@
     <string name="live">Пряма трансляція</string>
     <string name="advanced">Розширене</string>
     <string name="sdcard">SD-карта</string>
-    <string name="views">%1$s переглядів</string>
     <string name="defaultIcon">Типова</string>
     <string name="download_directory_summary">Тека, в яку зберігатимуться всі завантажені медіа.</string>
     <string name="video_format_summary">Перетворення файлів, якщо аудіо і відео завантажені.</string>
@@ -162,7 +161,7 @@
     <string name="app_behavior">Поведінка</string>
     <string name="download_directory">Завантажити до</string>
     <string name="donate">Підтримати</string>
-    <string name="instance_summary">Piped, обліковий запис і підписки</string>
+    <string name="instance_summary">Piped, паролі й обліковий запис</string>
     <string name="quality">Якість</string>
     <string name="behavior">Поведінка</string>
     <string name="version">Версія %1$s</string>
@@ -214,7 +213,7 @@
     <string name="aspect_ratio">Співвідношення сторін відео</string>
     <string name="auto_rotation">Автоповорот</string>
     <string name="chapters">Епізоди</string>
-    <string name="no_audio">Немає звуку</string>
+    <string name="no_audio">Немає аудіо</string>
     <string name="audio">Аудіо</string>
     <string name="autoRotatePlayer_summary">Поноекранний режим при обертанні пристрою.</string>
     <string name="watch_positions_summary">Продовжувати з останньої позиції відео</string>
@@ -338,7 +337,6 @@
     <string name="trending_layout">Альтернативний вигляд трендів</string>
     <string name="renamePlaylist">Перейменувати добірку</string>
     <string name="mobile_data">Мобільні дані</string>
-    <string name="views_placeholder">переглядів</string>
     <string name="filename">Назва файлу</string>
     <string name="invalid_filename">Неприпустима назва файлу!</string>
     <string name="recentlyUpdated">Нещодавно оновлені</string>
@@ -449,4 +447,12 @@
     <string name="unsupported_file_format">Непідтримуваний формат файлу: %1$s</string>
     <string name="custom_playback_speed">Користувацька швидкість</string>
     <string name="custom_playback_speed_summary">Використовувати іншу швидкість відтворення, ніж для звичайного програвача.</string>
+    <string name="category">Категорія</string>
+    <string name="normal_views">%1$s переглядів%2$s</string>
+    <string name="trending_views">%1$s • %2$s переглядів • %3$s</string>
+    <string name="playing_next">Наступне відтворення за %1$s</string>
+    <string name="autoplay_countdown">Таймер автовідтворення</string>
+    <string name="autoplay_countdown_summary">Показувати зворотний відлік 5 с до автовідтворення наступного відео.</string>
+    <string name="stats_for_nerds">Статистика для допитливих</string>
+    <string name="video_id">ID відео</string>
 </resources>

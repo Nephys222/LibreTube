@@ -56,9 +56,9 @@
     <string name="videos">Видео</string>
     <string name="changeLanguage">Язык</string>
     <string name="systemLanguage">Системный</string>
-    <string name="systemDefault">Системная</string>
+    <string name="systemDefault">Системный</string>
     <string name="lightTheme">Светлая</string>
-    <string name="darkTheme">Тёмная</string>
+    <string name="darkTheme">Темная</string>
     <string name="subscribers">%1$s подписчиков</string>
     <string name="startpage">Главная</string>
     <string name="import_from_yt_summary">Из YouTube или NewPipe</string>
@@ -124,7 +124,6 @@
     <string name="movies_directory">Папка фильмов</string>
     <string name="internal_storage">Внутреннее хранилище</string>
     <string name="downloads_directory">Папка загрузок</string>
-    <string name="views">%1$s просмотров</string>
     <string name="defaultIcon">По умолчанию</string>
     <string name="shapedIcon">Формальная форма</string>
     <string name="shareTo">Поделиться URL с</string>
@@ -137,7 +136,7 @@
     <string name="fireIcon">Огненный огонь</string>
     <string name="torchIcon">Модный факел</string>
     <string name="flameIcon">Порхающее пламя</string>
-    <string name="instance_summary">Аккаунт Piped и подписки</string>
+    <string name="instance_summary">Piped, вход и аккаунт</string>
     <string name="version">Версия %1$s</string>
     <string name="about_summary">Познакомьтесь с командой LibreTube и узнайте, как все это происходит.</string>
     <string name="category_filler">Филлер/шутки</string>
@@ -338,7 +337,6 @@
     <string name="progressive_load_interval_summary">Меньшие значения могут увеличить начальную скорость загрузки видео.</string>
     <string name="default_load_interval">По умолчанию</string>
     <string name="playback_pitch">Скорость</string>
-    <string name="views_placeholder">просмотров</string>
     <string name="filename">Имя файла</string>
     <string name="invalid_filename">Неверное имя файла!</string>
     <string name="playlists_order">Порядок плейлистов</string>
@@ -449,4 +447,12 @@
     <string name="unsupported_file_format">Неподдерживаемый формат файла: %1$s</string>
     <string name="custom_playback_speed">Пользовательская скорость</string>
     <string name="custom_playback_speed_summary">Используйте скорость воспроизведения, отличную от скорости обычного плеера.</string>
+    <string name="category">Категория</string>
+    <string name="normal_views">%1$s просмотров%2$s</string>
+    <string name="trending_views">%1$s • %2$s просмотров • %3$s</string>
+    <string name="autoplay_countdown_summary">Показывать 5-секундный обратный отсчет перед автовоспроизведением следующего видео.</string>
+    <string name="autoplay_countdown">Таймер автовоспроизведения</string>
+    <string name="playing_next">Следующее воспроизведение за %1$s</string>
+    <string name="stats_for_nerds">Статистика для любознательных</string>
+    <string name="video_id">ID видео</string>
 </resources>

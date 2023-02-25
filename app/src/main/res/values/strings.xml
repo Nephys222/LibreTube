@@ -154,8 +154,8 @@
     <string name="music_directory">Music folder</string>
     <string name="movies_directory">Movie folder</string>
     <string name="shareTo">Share URL to</string>
-    <string name="views_placeholder">views</string>
-    <string name="views">%1$s views</string>
+    <string name="trending_views">%1$s • %2$s views • %3$s</string>
+    <string name="normal_views">%1$s views%2$s</string>
     <string name="defaultIcon">Default</string>
     <string name="legacyIcon">Lost legacy</string>
     <string name="gradientIcon">Glib gradient</string>
@@ -164,7 +164,7 @@
     <string name="shapedIcon">Silly shaped</string>
     <string name="flameIcon">Flying flame</string>
     <string name="birdIcon">Boosted bird</string>
-    <string name="instance_summary">Piped, login, and subscriptions</string>
+    <string name="instance_summary">Piped, login, and account</string>
     <string name="customInstance_summary">Add…</string>
     <string name="instance_name">Instance name</string>
     <string name="instance_api_url">URL to instance API</string>
@@ -443,6 +443,12 @@
     <string name="mark_as_watched">Mark as watched</string>
     <string name="custom_playback_speed">Custom speed</string>
     <string name="custom_playback_speed_summary">Use a different playback speed than for the normal player.</string>
+    <string name="category">Category</string>
+    <string name="stats_for_nerds">Stats for nerds</string>
+    <string name="video_id">Video ID</string>
+    <string name="autoplay_countdown">Autoplay countdown</string>
+    <string name="autoplay_countdown_summary">Show a 5s countdown before auto-playing the next video.</string>
+    <string name="playing_next">Playing next in %1$s</string>
     <!-- Notification channel strings -->
     <string name="download_channel_name">Download Service</string>
     <string name="download_channel_description">Shows a notification when downloading media.</string>

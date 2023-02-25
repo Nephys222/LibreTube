@@ -122,7 +122,6 @@
     <string name="downloads_directory">مجلد التنزيل</string>
     <string name="sdcard">بطاقة الذاكرة</string>
     <string name="music_directory">مجلد الموسيقى</string>
-    <string name="views">%1$s مشاهدة</string>
     <string name="defaultIcon">الإفتراضي</string>
     <string name="update">ابحث عن الإصدار الجديد</string>
     <string name="update_summary">التحقق من وجود تحديث</string>
@@ -160,7 +159,7 @@
     <string name="donate">تبرّع</string>
     <string name="legacyIcon">الإرث الضائع</string>
     <string name="gradientIcon">التدرج اللوني</string>
-    <string name="instance_summary">الأنابيب وتسجيل الدخول والاشتراكات</string>
+    <string name="instance_summary">الأنابيب وتسجيل الدخول والحساب</string>
     <string name="instance_name">اسم المثيل</string>
     <string name="clear_customInstances">مسح المضاف</string>
     <string name="live">مباشر</string>
@@ -334,7 +333,6 @@
     <string name="select_at_least_one">يرجى اختيار عنصر واحد على الأقل</string>
     <string name="change_region">المتصدرة يبدو أنها غير متاحة في المنطقة الحالية . الرجاء اختيار آخر في الإعداد .</string>
     <string name="limit_hls">الحد من HLS إلى 1080p</string>
-    <string name="views_placeholder">المشاهدات</string>
     <string name="progressive_load_interval">حجم الفاصل الزمني للتحميل التدريجي</string>
     <string name="default_load_interval">الإفتراضي</string>
     <string name="playback_pitch">الحدة</string>
@@ -449,4 +447,12 @@
     <string name="mark_as_watched">علّمه كفيديو تمت مشاهدته</string>
     <string name="custom_playback_speed">سرعة مخصصة</string>
     <string name="custom_playback_speed_summary">استخدم سرعة تشغيل مختلفة عن سرعة المشغل العادي.</string>
+    <string name="category">الفئة</string>
+    <string name="trending_views">%1$s • %2$s مشاهدات • %3$s</string>
+    <string name="normal_views">%1$s مشاهدات %2$s</string>
+    <string name="stats_for_nerds">احصائيات لتقنيين</string>
+    <string name="video_id">معرف الفيديو</string>
+    <string name="autoplay_countdown">العد التنازلي للتشغيل التلقائي</string>
+    <string name="playing_next">يتم التشغيل بعد ذلك في %1$s</string>
+    <string name="autoplay_countdown_summary">أظهر العد التنازلي 5 ثوانٍ قبل التشغيل التلقائي للفيديو التالي.</string>
 </resources>

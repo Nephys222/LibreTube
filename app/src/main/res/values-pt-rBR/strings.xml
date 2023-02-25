@@ -120,7 +120,6 @@
     <string name="internal_storage">Armazenamento interno</string>
     <string name="sdcard">Cartão SD</string>
     <string name="defaultIcon">Padrão</string>
-    <string name="views">%1$s visualizações</string>
     <string name="update_available_text">Nova atualização disponível. Clique para abrir a página de lançamentos do GitHub.</string>
     <string name="download_directory_summary">Onde a mídia baixada é armazenada.</string>
     <string name="app_uptodate">Executando a versão mais recente.</string>
@@ -156,7 +155,7 @@
     <string name="shareTo">Compartilhar URL para</string>
     <string name="legacyIcon">Legado perdido</string>
     <string name="flameIcon">Chama voadora</string>
-    <string name="instance_summary">Piped, sessão e inscrições</string>
+    <string name="instance_summary">Piped, sessão e conta</string>
     <string name="instance_name">Nome da instância</string>
     <string name="instance_api_url">URL para API de instância</string>
     <string name="addInstance">Adicionar instância</string>
@@ -316,7 +315,6 @@
     <string name="navigation_bar">Barra de navegação</string>
     <string name="select_at_least_one">Por favor, selecione pelo menos um item</string>
     <string name="download_channel_description">Exibe uma notificação ao baixar mídia.</string>
-    <string name="views_placeholder">visualizações</string>
     <string name="export_subscriptions">Exportar inscrições</string>
     <string name="history_size">Tamanho máximo do histórico</string>
     <string name="resize_mode_zoom">Ampliar</string>
@@ -449,4 +447,12 @@
     <string name="mark_as_watched">Marcar como visto</string>
     <string name="custom_playback_speed">Velocidade personalizada</string>
     <string name="custom_playback_speed_summary">Use uma velocidade de reprodução diferente da do reprodutor normal.</string>
+    <string name="category">Categoria</string>
+    <string name="normal_views">%1$s visualizações%2$s</string>
+    <string name="trending_views">%1$s • %2$s visualizações • %3$s</string>
+    <string name="playing_next">Reproduzindo próximo em %1$s</string>
+    <string name="stats_for_nerds">Estatísticas para nerds</string>
+    <string name="video_id">ID do vídeo</string>
+    <string name="autoplay_countdown">Contagem regressiva de reprodução automática</string>
+    <string name="autoplay_countdown_summary">Mostre uma contagem regressiva de 5 segundos antes de reproduzir automaticamente o próximo vídeo.</string>
 </resources>

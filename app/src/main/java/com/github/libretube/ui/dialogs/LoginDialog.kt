@@ -3,6 +3,7 @@ package com.github.libretube.ui.dialogs
 import android.app.Dialog
 import android.os.Bundle
 import android.util.Log
+import android.util.Patterns
 import android.widget.Toast
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.lifecycleScope
@@ -14,7 +15,6 @@ import com.github.libretube.api.obj.Token
 import com.github.libretube.databinding.DialogLoginBinding
 import com.github.libretube.extensions.TAG
 import com.github.libretube.helpers.PreferenceHelper
-import com.github.libretube.util.TextUtils
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.serialization.decodeFromString
 import retrofit2.HttpException
@@ -28,35 +28,30 @@ class LoginDialog(
         binding = DialogLoginBinding.inflate(layoutInflater)
 
         binding.login.setOnClickListener {
-            if (isInsertionValid()) {
-                signIn(
-                    binding.username.text.toString(),
-                    binding.password.text.toString()
-                )
+            val email = binding.username.text?.toString()
+            val password = binding.password.text?.toString()
+
+            if (!email.isNullOrEmpty() && !password.isNullOrEmpty()) {
+                signIn(email, password)
             } else {
                 Toast.makeText(context, R.string.empty, Toast.LENGTH_SHORT).show()
             }
         }
         binding.register.setOnClickListener {
-            if (isEmail(binding.username.text.toString())) {
+            val email = binding.username.text?.toString().orEmpty()
+            val password = binding.password.text?.toString().orEmpty()
+
+            if (isEmail(email)) {
                 MaterialAlertDialogBuilder(requireContext())
                     .setTitle(R.string.privacy_alert)
                     .setMessage(R.string.username_email)
                     .setNegativeButton(R.string.proceed) { _, _ ->
-                        signIn(
-                            binding.username.text.toString(),
-                            binding.password.text.toString(),
-                            true
-                        )
+                        signIn(email, password, true)
                     }
                     .setPositiveButton(R.string.cancel, null)
                     .show()
-            } else if (isInsertionValid()) {
-                signIn(
-                    binding.username.text.toString(),
-                    binding.password.text.toString(),
-                    true
-                )
+            } else if (email.isNotEmpty() && password.isNotEmpty()) {
+                signIn(email, password, true)
             } else {
                 Toast.makeText(context, R.string.empty, Toast.LENGTH_SHORT).show()
             }
@@ -65,10 +60,6 @@ class LoginDialog(
         return MaterialAlertDialogBuilder(requireContext())
             .setView(binding.root)
             .show()
-    }
-
-    private fun isInsertionValid(): Boolean {
-        return binding.username.text.toString() != "" && binding.password.text.toString() != ""
     }
 
     private fun signIn(username: String, password: String, createNewAccount: Boolean = false) {
@@ -113,6 +104,6 @@ class LoginDialog(
     }
 
     private fun isEmail(text: String): Boolean {
-        return TextUtils.EMAIL_REGEX.toRegex().matches(text)
+        return Patterns.EMAIL_ADDRESS.toRegex().matches(text)
     }
 }

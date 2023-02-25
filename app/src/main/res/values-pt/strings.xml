@@ -23,7 +23,7 @@
     <string name="dlcomplete">Descarga terminada.</string>
     <string name="downloadfailed">Falha ao descarregar.</string>
     <string name="app_theme">Tema</string>
-    <string name="server_error">Parece que existe um problema com o servidor selecionado. Deseja tentar com outra instância\?</string>
+    <string name="server_error">Parece que existe um problema com o servidor selecionado. Tente com outra instância.</string>
     <string name="unknown_error">Erro de rede.</string>
     <string name="error">Ocorreu um erro.</string>
     <string name="notgmail">Apenas com uma conta Piped.</string>
@@ -98,7 +98,6 @@
     <string name="category_intro">Intromissão/Animação inicial</string>
     <string name="sdcard">Cartão SD</string>
     <string name="internal_storage">Armazenamento interno</string>
-    <string name="views">%1$s visualizações</string>
     <string name="defaultIcon">Padrão</string>
     <string name="sponsorblock_state">Ligado</string>
     <string name="category_selfpromo_description">Similar a \"Patrocínio\", com exceção de autopromoção ou promoção gratuita. Inclui secções de marketing, donativos e/ou informações acerca dos diversos participantes.</string>
@@ -142,7 +141,7 @@
     <string name="download_folder_summary">O nome da pasta em que os ficheiros estão guardados.</string>
     <string name="downloads_directory">Pasta de descargas</string>
     <string name="shapedIcon">Forma</string>
-    <string name="instance_summary">Piped, sessão e subscrições</string>
+    <string name="instance_summary">Piped, sessão e conta</string>
     <string name="customInstance_summary">Adicionar…</string>
     <string name="instance_name">Nome da instância</string>
     <string name="update_available">A versão %1$s está disponível</string>
@@ -333,7 +332,6 @@
     <string name="category_outro_description">Informação após o final. Não para conclusões com informações.</string>
     <string name="playing_queue">Fila de reprodução</string>
     <string name="queue">Fila de espera</string>
-    <string name="views_placeholder">visualizações</string>
     <string name="progressive_load_interval_summary">Um valor mais baixo pode acelerar o carregamento inicial do vídeo.</string>
     <string name="default_load_interval">Padrão</string>
     <string name="playback_pitch">Passo</string>
@@ -449,4 +447,12 @@
     <string name="unsupported_file_format">Formato não suportado: %1$s</string>
     <string name="custom_playback_speed">Personalizada</string>
     <string name="custom_playback_speed_summary">Utilizar velocidade de reprodução personalizada.</string>
+    <string name="normal_views">%1$s visualizações %2$s</string>
+    <string name="trending_views">%1$s • %2$s visualizações • %3$s</string>
+    <string name="category">Categoria</string>
+    <string name="playing_next">Reproduzindo próximo em %1$s</string>
+    <string name="stats_for_nerds">Estatísticas para nerds</string>
+    <string name="video_id">ID do vídeo</string>
+    <string name="autoplay_countdown">Contagem decrescente do Autoplay</string>
+    <string name="autoplay_countdown_summary">Mostrar uma contagem decrescente de 5s antes de reproduzir automaticamente o próximo vídeo.</string>
 </resources>

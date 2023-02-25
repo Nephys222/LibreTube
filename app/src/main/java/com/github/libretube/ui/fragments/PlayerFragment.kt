@@ -20,7 +20,6 @@ import android.text.format.DateUtils
 import android.text.method.LinkMovementMethod
 import android.text.util.Linkify
 import android.util.Base64
-import android.util.Log
 import android.view.View
 import android.widget.TextView
 import android.widget.Toast
@@ -49,7 +48,6 @@ import com.github.libretube.api.obj.PipedStream
 import com.github.libretube.api.obj.Segment
 import com.github.libretube.api.obj.StreamItem
 import com.github.libretube.api.obj.Streams
-import com.github.libretube.api.obj.Token
 import com.github.libretube.constants.IntentData
 import com.github.libretube.constants.PreferenceKeys
 import com.github.libretube.databinding.FragmentPlayerBinding
@@ -58,11 +56,8 @@ import com.github.libretube.db.DatabaseHolder.Database
 import com.github.libretube.db.obj.WatchPosition
 import com.github.libretube.enums.PlayerEvent
 import com.github.libretube.enums.ShareObjectType
-import com.github.libretube.extensions.TAG
-import com.github.libretube.extensions.awaitQuery
 import com.github.libretube.extensions.formatShort
 import com.github.libretube.extensions.hideKeyboard
-import com.github.libretube.extensions.query
 import com.github.libretube.extensions.toID
 import com.github.libretube.extensions.updateParameters
 import com.github.libretube.helpers.BackgroundHelper
@@ -83,6 +78,7 @@ import com.github.libretube.ui.adapters.VideosAdapter
 import com.github.libretube.ui.dialogs.AddToPlaylistDialog
 import com.github.libretube.ui.dialogs.DownloadDialog
 import com.github.libretube.ui.dialogs.ShareDialog
+import com.github.libretube.ui.dialogs.StatsDialog
 import com.github.libretube.ui.extensions.setAspectRatio
 import com.github.libretube.ui.extensions.setupSubscriptionButton
 import com.github.libretube.ui.interfaces.OnlinePlayerOptions
@@ -117,8 +113,8 @@ import kotlin.math.abs
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import kotlinx.datetime.LocalDate
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import retrofit2.HttpException
@@ -520,13 +516,14 @@ class PlayerFragment : Fragment(R.layout.fragment_player), OnlinePlayerOptions {
     }
 
     private fun toggleDescription() {
-        var viewInfo = if (!streams.livestream) {
-            TextUtils.SEPARATOR + localizedDate(
-                streams.uploadDate
-            )
+        val views = if (binding.descLinLayout.isVisible) {
+            // show formatted short view count
+            streams.views.formatShort()
         } else {
-            ""
+            // show exact view count
+            String.format("%,d", streams.views)
         }
+        val viewInfo = getString(R.string.normal_views, views, localizeDate(streams))
         if (binding.descLinLayout.isVisible) {
             // hide the description and chapters
             binding.playerDescriptionArrow.animate().rotation(0F).setDuration(250).start()
@@ -534,9 +531,6 @@ class PlayerFragment : Fragment(R.layout.fragment_player), OnlinePlayerOptions {
 
             // limit the title height to two lines
             binding.playerTitle.maxLines = 2
-
-            // show formatted short view count
-            viewInfo = getString(R.string.views, streams.views.formatShort()) + viewInfo
         } else {
             // show the description and chapters
             binding.playerDescriptionArrow.animate().rotation(180F).setDuration(250).start()
@@ -544,9 +538,6 @@ class PlayerFragment : Fragment(R.layout.fragment_player), OnlinePlayerOptions {
 
             // show the whole title
             binding.playerTitle.maxLines = Int.MAX_VALUE
-
-            // show exact view count
-            viewInfo = getString(R.string.views, String.format("%,d", streams.views)) + viewInfo
         }
         binding.playerViewsInfo.text = viewInfo
 
@@ -618,8 +609,8 @@ class PlayerFragment : Fragment(R.layout.fragment_player), OnlinePlayerOptions {
     private fun saveWatchPosition() {
         if (!PlayerHelper.watchPositionsVideo) return
         val watchPosition = WatchPosition(videoId!!, exoPlayer.currentPosition)
-        query {
-            Database.watchPositionDao().insertAll(watchPosition)
+        CoroutineScope(Dispatchers.IO).launch {
+            Database.watchPositionDao().insertAll(listOf(watchPosition))
         }
     }
 
@@ -666,7 +657,7 @@ class PlayerFragment : Fragment(R.layout.fragment_player), OnlinePlayerOptions {
             }
 
             if (PlayingQueue.isEmpty()) {
-                CoroutineScope(Dispatchers.IO).launch {
+                lifecycleScope.launch(Dispatchers.IO) {
                     if (playlistId != null) {
                         PlayingQueue.insertPlaylist(playlistId!!, streams.toStreamItem(videoId!!))
                     } else if (channelId != null) {
@@ -731,7 +722,7 @@ class PlayerFragment : Fragment(R.layout.fragment_player), OnlinePlayerOptions {
      * fetch the segments for SponsorBlock
      */
     private fun fetchSponsorBlockSegments() {
-        CoroutineScope(Dispatchers.IO).launch {
+        lifecycleScope.launch(Dispatchers.IO) {
             runCatching {
                 val categories = PlayerHelper.getSponsorBlockCategories()
                 if (categories.isEmpty()) return@runCatching
@@ -774,7 +765,7 @@ class PlayerFragment : Fragment(R.layout.fragment_player), OnlinePlayerOptions {
     private fun seekToWatchPosition() {
         // browse the watch positions
         val position = try {
-            awaitQuery {
+            runBlocking {
                 Database.watchPositionDao().findById(videoId!!)?.position
             }
         } catch (e: Exception) {
@@ -825,9 +816,13 @@ class PlayerFragment : Fragment(R.layout.fragment_player), OnlinePlayerOptions {
         playerBinding.exoProgress.setPlayer(exoPlayer)
     }
 
-    private fun localizedDate(date: LocalDate): String {
-        val locale = ConfigurationCompat.getLocales(resources.configuration)[0]!!
-        return TextUtils.localizeDate(date, locale)
+    private fun localizeDate(streams: Streams): String {
+        return if (!streams.livestream) {
+            val locale = ConfigurationCompat.getLocales(resources.configuration)[0]!!
+            TextUtils.SEPARATOR + TextUtils.localizeDate(streams.uploadDate, locale)
+        } else {
+            ""
+        }
     }
 
     private fun handleLiveVideo() {
@@ -853,9 +848,8 @@ class PlayerFragment : Fragment(R.layout.fragment_player), OnlinePlayerOptions {
         )
 
         binding.apply {
-            playerViewsInfo.text =
-                context?.getString(R.string.views, streams.views.formatShort()) +
-                if (!streams.livestream) TextUtils.SEPARATOR + localizedDate(streams.uploadDate) else ""
+            val views = streams.views.formatShort()
+            playerViewsInfo.text = getString(R.string.normal_views, views, localizeDate(streams))
 
             textLike.text = streams.likes.formatShort()
             textDislike.text = streams.dislikes.formatShort()
@@ -919,7 +913,8 @@ class PlayerFragment : Fragment(R.layout.fragment_player), OnlinePlayerOptions {
                 // save the watch position to the database
                 // only called when the position is unequal to 0, otherwise it would become reset
                 // before the player can seek to the saved position from videos of the queue
-                if (exoPlayer.currentPosition != 0L) saveWatchPosition()
+                // not called when the video has ended, since it then might save it to the next autoplay video
+                if (exoPlayer.currentPosition != 0L && playbackState != Player.STATE_ENDED) saveWatchPosition()
 
                 // check if video has ended, next video is available and autoplay is enabled.
                 if (
@@ -928,7 +923,11 @@ class PlayerFragment : Fragment(R.layout.fragment_player), OnlinePlayerOptions {
                     binding.player.autoplayEnabled
                 ) {
                     transitioning = true
-                    playNextVideo()
+                    if (PlayerHelper.autoPlayCountdown) {
+                        showAutoPlayCountdown()
+                    } else {
+                        playNextVideo()
+                    }
                 }
 
                 if (playbackState == Player.STATE_READY) {
@@ -986,6 +985,7 @@ class PlayerFragment : Fragment(R.layout.fragment_player), OnlinePlayerOptions {
         val description = streams.description
 
         setupDescription(binding.playerDescription, description)
+        binding.videoCategory.text = "${context?.getString(R.string.category)}: ${streams.category}"
 
         binding.playerChannel.setOnClickListener {
             val activity = view?.context as MainActivity
@@ -1016,6 +1016,23 @@ class PlayerFragment : Fragment(R.layout.fragment_player), OnlinePlayerOptions {
 
         playerBinding.skipNext.setOnClickListener {
             playNextVideo()
+        }
+    }
+
+    private fun showAutoPlayCountdown() {
+        binding.player.useController = false
+        binding.player.hideController()
+        binding.autoplayCountdown.setHideSelfListener {
+            // could fail if the video already got closed before
+            runCatching {
+                binding.autoplayCountdown.visibility = View.GONE
+                binding.player.useController = true
+            }
+        }
+        binding.autoplayCountdown.startCountdown {
+            runCatching {
+                playNextVideo()
+            }
         }
     }
 
@@ -1253,12 +1270,15 @@ class PlayerFragment : Fragment(R.layout.fragment_player), OnlinePlayerOptions {
 
     private fun setStreamSource() {
         val defaultResolution = PlayerHelper.getDefaultResolution(requireContext()).replace("p", "")
-        if (defaultResolution != "") setPlayerResolution(defaultResolution.toInt())
+        if (defaultResolution.isNotEmpty()) setPlayerResolution(defaultResolution.toInt())
 
         if (!PreferenceHelper.getBoolean(PreferenceKeys.USE_HLS_OVER_DASH, false) &&
             streams.videoStreams.isNotEmpty()
         ) {
-            val uri = streams.dash?.toUri() ?: let {
+            // only use the dash manifest generated by YT if either it's a livestream or no other source is available
+            val uri = streams.dash?.toUri().takeIf {
+                streams.livestream || streams.videoStreams.isEmpty()
+            } ?: let {
                 val manifest = DashHelper.createManifest(streams)
 
                 // encode to base64
@@ -1292,6 +1312,7 @@ class PlayerFragment : Fragment(R.layout.fragment_player), OnlinePlayerOptions {
         }
 
         exoPlayer = ExoPlayer.Builder(requireContext())
+            .setUsePlatformDiagnostics(false)
             .setMediaSourceFactory(DefaultMediaSourceFactory(dataSourceFactory))
             .setLoadControl(PlayerHelper.getLoadControl())
             .setTrackSelector(trackSelector)
@@ -1383,6 +1404,12 @@ class PlayerFragment : Fragment(R.layout.fragment_player), OnlinePlayerOptions {
                 }
             }
             .show(childFragmentManager)
+    }
+
+    override fun onStatsClicked() {
+        if (!this::streams.isInitialized) return
+        StatsDialog(exoPlayer, videoId ?: return)
+            .show(childFragmentManager, null)
     }
 
     override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean) {

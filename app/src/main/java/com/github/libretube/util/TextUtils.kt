@@ -1,7 +1,14 @@
 package com.github.libretube.util
 
+import android.icu.text.RelativeDateTimeFormatter
+import android.os.Build
+import android.text.format.DateUtils
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
+import java.time.temporal.ChronoUnit
 import java.util.*
 import kotlin.time.Duration
 import kotlinx.datetime.LocalDate
@@ -13,11 +20,6 @@ object TextUtils {
      * Separator used for descriptions
      */
     const val SEPARATOR = " • "
-
-    /**
-     * Regex to check for e-mails
-     */
-    const val EMAIL_REGEX = "^[A-Za-z](.*)([@]{1})(.{1,})(\\.)(.{1,})"
 
     /**
      * Reserved characters by unix which can not be used for file name.
@@ -55,5 +57,29 @@ object TextUtils {
                 else -> null
             }
         }
+    }
+
+    fun formatRelativeDate(unixTime: Long): CharSequence {
+        val date = LocalDateTime.ofInstant(Instant.ofEpochMilli(unixTime), ZoneId.systemDefault())
+        val now = LocalDateTime.now()
+        val weeks = date.until(now, ChronoUnit.WEEKS)
+
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && weeks >= 1) {
+            val months = date.until(now, ChronoUnit.MONTHS)
+            val (timeFormat, time) = when {
+                months / 12 > 0 -> RelativeDateTimeFormatter.RelativeUnit.YEARS to months / 12
+                months > 0 -> RelativeDateTimeFormatter.RelativeUnit.MONTHS to months
+                else -> RelativeDateTimeFormatter.RelativeUnit.WEEKS to weeks
+            }
+            RelativeDateTimeFormatter.getInstance()
+                .format(time.toDouble(), RelativeDateTimeFormatter.Direction.LAST, timeFormat)
+        } else {
+            DateUtils.getRelativeTimeSpanString(unixTime)
+        }
+    }
+
+    fun formatBitrate(bitrate: Int?): String {
+        bitrate ?: return ""
+        return "${bitrate / 1024}kbps"
     }
 }
