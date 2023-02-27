@@ -31,7 +31,9 @@ class ShareDialog(
             getString(R.string.youtube)
         )
         val instanceUrl = getCustomInstanceFrontendUrl()
-        val shareableTitle = getShareableTitle(shareData)
+        val shareableTitle = shareData.currentChannel
+            ?: shareData.currentVideo
+            ?: shareData.currentPlaylist.orEmpty()
         // add instanceUrl option if custom instance frontend url available
         if (instanceUrl.isNotEmpty()) {
             shareOptions += getString(R.string.instance)
@@ -43,9 +45,7 @@ class ShareDialog(
 
         return MaterialAlertDialogBuilder(requireContext())
             .setTitle(context?.getString(R.string.share))
-            .setItems(
-                shareOptions
-            ) { _, which ->
+            .setItems(shareOptions) { _, which ->
                 val host = when (which) {
                     0 -> PIPED_FRONTEND_URL
                     1 -> YOUTUBE_FRONTEND_URL
@@ -63,16 +63,12 @@ class ShareDialog(
                     url += "&t=${binding!!.timeStamp.text}"
                 }
 
-                val intent = Intent()
-                intent.apply {
-                    action = Intent.ACTION_SEND
-                    putExtra(Intent.EXTRA_TEXT, url)
-                    putExtra(Intent.EXTRA_SUBJECT, shareableTitle)
-                    type = "text/plain"
-                }
-                context?.startActivity(
-                    Intent.createChooser(intent, context?.getString(R.string.shareTo))
-                )
+                val intent = Intent(Intent.ACTION_SEND)
+                    .putExtra(Intent.EXTRA_TEXT, url)
+                    .putExtra(Intent.EXTRA_SUBJECT, shareableTitle)
+                    .setType("text/plain")
+                val shareIntent = Intent.createChooser(intent, getString(R.string.shareTo))
+                requireContext().startActivity(shareIntent)
             }
             .setView(binding?.root)
             .show()
@@ -106,20 +102,5 @@ class ShareDialog(
 
         // return the custom instance frontend url if available
         return customInstances.firstOrNull { it.apiUrl == instancePref }?.frontendUrl.orEmpty()
-    }
-
-    private fun getShareableTitle(shareData: ShareData): String {
-        shareData.apply {
-            currentChannel?.let {
-                return it
-            }
-            currentVideo?.let {
-                return it
-            }
-            currentPlaylist?.let {
-                return it
-            }
-        }
-        return ""
     }
 }
