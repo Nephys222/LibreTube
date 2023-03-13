@@ -29,7 +29,7 @@
     <string name="empty">Il nome utente e la password non possono essere vuoti.</string>
     <string name="notgmail">Questo è per un account Piped.</string>
     <string name="defres">Risoluzione video</string>
-    <string name="dlisinprogress">Un altro scaricamento è in corso, si prega di attendere che termini.</string>
+    <string name="dlisinprogress">Attendere il completamento di tutti i download correnti.</string>
     <string name="unknown_error">Errore di connessione.</string>
     <string name="server_error">Sembra esserci un problema con il server selezionato. Prova un\'altra istanza.</string>
     <string name="customInstance">Personalizzata</string>
@@ -64,7 +64,7 @@
     <string name="lightTheme">Chiaro</string>
     <string name="darkTheme">Scuro</string>
     <string name="comments">Commenti</string>
-    <string name="videoCount">%1$s video</string>
+    <string name="videoCount">%1$d video</string>
     <string name="noInternet">Prima connettiti ad internet.</string>
     <string name="retry">Riprova</string>
     <string name="instance">Istanza</string>
@@ -174,7 +174,7 @@
     <string name="category_filler_description">Per le scene marginali aggiunte solo come riempitivo o umorismo, non necessarie per comprendere il contenuto principale del video.</string>
     <string name="category_music_offtopic_description">Solo per l\'uso in video musicali. Dovrebbe coprire parti del video non parte di mix ufficiali. Alla fine, il video dovrebbe assomigliare il più vicino possibile alla versione di Spotify o a qualsiasi altra versione mixata, o riducendo la conversazione o altre distrazioni.</string>
     <string name="category_preview">Anteprima/Riepilogo</string>
-    <string name="category_preview_description">Per i segmenti che mostrano in dettaglio i prossimi contenuti in questo o futuri video della serie, ma non forniscono ulteriori informazioni. Se include clip che appaiono solo qui, questa probabilmente è la categoria sbagliata.</string>
+    <string name="category_preview_description">Per i segmenti che descrivono in dettaglio i contenuti futuri senza informazioni aggiuntive. Se include clip che appaiono solo qui, è molto probabile che questa sia la categoria sbagliata.</string>
     <string name="buffering_goal">Precaricamento</string>
     <string name="buffering_goal_summary">La quantità massima di secondi che viene bufferizzata nei video.</string>
     <string name="playerVideoFormat">Formato video del lettore</string>
@@ -393,7 +393,7 @@
     <string name="clear_bookmarks">Cancella segnalibri</string>
     <string name="bookmarks_empty">Ancora nessun segnalibro!</string>
     <string name="pop_up">Pop-up</string>
-    <string name="no_comments_available">Questo video non ha commenti disponibili.</string>
+    <string name="no_comments_available">Questo video non ha commenti.</string>
     <string name="comments_disabled">I commenti sono disattivati dall\'autore del video.</string>
     <string name="captions_size">Dimensione sottotitoli</string>
     <string name="double_tap_seek">Doppio tocco per cercare</string>
@@ -450,4 +450,28 @@
     <string name="custom_playback_speed">Velocità personalizzata</string>
     <string name="custom_playback_speed_summary">Usa una velocità di riproduzione diversa da quella del lettore normale.</string>
     <string name="category">Categoria</string>
+    <string name="playing_next">Prossimo gioco in %1$s</string>
+    <string name="video_id">ID video</string>
+    <string name="autoplay_countdown">Conto alla rovescia per riproduzione automatica</string>
+    <string name="autoplay_countdown_summary">Mostra un conto alla rovescia di 5 secondi prima di riprodurre automaticamente il video successivo.</string>
+    <string name="stats_for_nerds">Statistiche per nerd</string>
+    <plurals name="months_ago">
+        <item quantity="one">%d mese fa</item>
+        <item quantity="many">%d mesi fa</item>
+        <item quantity="other">%d mesi fa</item>
+    </plurals>
+    <plurals name="weeks_ago">
+        <item quantity="one">%d settimana fa</item>
+        <item quantity="many">%d settimane fa</item>
+        <item quantity="other">%d settimane fa</item>
+    </plurals>
+    <plurals name="years_ago">
+        <item quantity="one">%d anno fa</item>
+        <item quantity="many">%d anni fa</item>
+        <item quantity="other">%d anni fa</item>
+    </plurals>
+    <string name="lbry_hls_summary">Usa LBRY HLS per lo streaming se disponibile.</string>
+    <string name="lbry_hls">LBRY HLS</string>
+    <string name="uploaderAndVideoCount">%1$s • %2$d video</string>
+    <string name="subscriberAndVideoCounts">%1$s iscritti • %2$d video</string>
 </resources>

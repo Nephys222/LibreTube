@@ -21,7 +21,7 @@
     <string name="cancel">取消</string>
     <string name="region">地区</string>
     <string name="dlcomplete">下载已完成。</string>
-    <string name="dlisinprogress">另一个下载正在进行中，请等待其下载完成。</string>
+    <string name="dlisinprogress">请等待所有当前下载任务完成。</string>
     <string name="downloadfailed">下载失败。</string>
     <string name="vlc">在 VLC 中打开</string>
     <string name="vlcerror">无法在 VLC 中打开。也许没有安装它。</string>
@@ -31,7 +31,7 @@
     <string name="server_error">所选的服务器似乎有问题。请试试其他实例。</string>
     <string name="unknown_error">网络错误。</string>
     <string name="error">出了点问题。</string>
-    <string name="videoCount">%1$s 个视频</string>
+    <string name="videoCount">%1$d 个视频</string>
     <string name="noInternet">请先连接到互联网。</string>
     <string name="retry">重试</string>
     <string name="comments">评论</string>
@@ -193,7 +193,7 @@
     <string name="autoplay_summary">当前的视频播完后，自动播放下一个视频。</string>
     <string name="clonePlaylist">复制播放列表</string>
     <string name="category_music_offtopic_description">仅用于音乐视频。它应该涵盖视频的一部分，而不是官方混音的一部分。最后，视频应尽可能类似于 Spotify 或任何其他混合版本，或减少谈话或其他干扰。</string>
-    <string name="category_preview_description">对于详细说明此系列视频或未来视频中即将出现的内容的片段，但不提供其他信息。如果它包含仅出现在此处的剪辑，则这很可能是错误的类别。</string>
+    <string name="category_preview_description">用于详细说明未来内容的片段，但没有其他信息。如果它包含只出现在这里的剪辑，则很可能是错误的类别。</string>
     <string name="reset">恢复默认值</string>
     <string name="reset_message">重置所有设置并退出账户吗？</string>
     <string name="deleteAccount_summary">删除你的 Piped 账户</string>
@@ -416,7 +416,7 @@
     <string name="color_violet">Versatile Violet</string>
     <string name="failed_fetching_instances">无法获取可用实例。</string>
     <string name="hide_watched_from_feed_summary">不要在订阅选项卡中显示观看比例超过 90% 的视频。</string>
-    <string name="hide_watched_from_feed">在 feed 中隐藏看过的视频</string>
+    <string name="hide_watched_from_feed">隐藏订阅源中看过的视频</string>
     <string name="playlistUrl">播放列表 URL</string>
     <string name="pause_on_quit">退出时暂停</string>
     <string name="shuffle">随机播放</string>
@@ -448,5 +448,24 @@
     <string name="custom_playback_speed">自定义速度</string>
     <string name="custom_playback_speed_summary">使用不同于常规播放器的播放速度。</string>
     <string name="category">类别</string>
-    <string name="trending_views">%1$s • %2$s 视图 • %3$s</string>
+    <string name="trending_views">%1$s • %2$s 次观看 • %3$s</string>
+    <string name="autoplay_countdown">自动播放倒计时</string>
+    <string name="autoplay_countdown_summary">在自动播放下一个视频之前显示 5 秒倒计时。</string>
+    <string name="stats_for_nerds">详细统计信息</string>
+    <string name="video_id">视频识别码</string>
+    <string name="playing_next">%1$s后播放下一个</string>
+    <string name="normal_views">%1$s 次观看%2$s</string>
+    <plurals name="years_ago">
+        <item quantity="other">%d 年前</item>
+    </plurals>
+    <plurals name="months_ago">
+        <item quantity="other">%d 个月前</item>
+    </plurals>
+    <plurals name="weeks_ago">
+        <item quantity="other">%d 周前</item>
+    </plurals>
+    <string name="lbry_hls_summary">若可用则使用 LBRY HLS 进行流式传输。</string>
+    <string name="lbry_hls">LBRY HLS</string>
+    <string name="uploaderAndVideoCount">%1$s • %2$d 个视频</string>
+    <string name="subscriberAndVideoCounts">%1$s 订阅者 • %2$d 个视频</string>
 </resources>

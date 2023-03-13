@@ -28,7 +28,7 @@
     <string name="password">Пароль</string>
     <string name="login">Вхід</string>
     <string name="logout">Вихід</string>
-    <string name="cancel">Відміна</string>
+    <string name="cancel">Скасувати</string>
     <string name="loggedIn">Увійшли.</string>
     <string name="loggedout">Вийшли.</string>
     <string name="registered">Зареєстровано. Тепер ви можете підписуватися на канали.</string>
@@ -43,7 +43,7 @@
     <string name="importsuccess">Підписаний</string>
     <string name="cannotDownload">Неможливо завантажити цей стрім.</string>
     <string name="dlcomplete">Завантаження завершене.</string>
-    <string name="dlisinprogress">Наразі триває завантаження, зачекайте, доки воно завершиться.</string>
+    <string name="dlisinprogress">Будь ласка, дочекайтеся завершення всіх поточних завантажень.</string>
     <string name="vlc">Відкрити у VLC</string>
     <string name="vlcerror">Не вдалося відкрити у VLC. Можливо, його не встановлено.</string>
     <string name="import_from_yt">Імпорт підписок</string>
@@ -76,7 +76,7 @@
     <string name="instance">Сервер</string>
     <string name="customization">Коригування</string>
     <string name="website">Вебсайт</string>
-    <string name="videoCount">%1$s відео</string>
+    <string name="videoCount">%1$d відео</string>
     <string name="noInternet">Спочатку під\'єднайтеся до інтернету.</string>
     <string name="retry">Повторити</string>
     <string name="comments">Коментарі</string>
@@ -93,7 +93,7 @@
     <string name="music_playlists">Добірки з YT Music</string>
     <string name="defaultTab">Типова вкладка</string>
     <string name="sponsorblock">SponsorBlock</string>
-    <string name="sponsorblock_summary">Використовує АРІ з https://sponsor.ajay.app/</string>
+    <string name="sponsorblock_summary">Використовує АРІ https://sponsor.ajay.app</string>
     <string name="segment_skipped">Пропущений сегмент</string>
     <string name="sponsorblock_state">Увімкнено</string>
     <string name="category_segments">Сегменти</string>
@@ -156,7 +156,7 @@
     <string name="torchIcon">Популярний факел</string>
     <string name="shapedIcon">Безглузда форма</string>
     <string name="category_music_offtopic_description">Тільки для використання в музичних кліпах. Він повинен охоплювати частини відео, а не частину офіційних міксів. Зрештою, відео має максимально нагадувати Spotify або будь-яку іншу змішану версію, або зменшувати розмови чи інші відволікання.</string>
-    <string name="category_preview_description">Для сегментів, які докладно описують майбутній контент у цьому або майбутніх відео в його серії, але не надають додаткових подробиць. Якщо він включає кліпи, які з\'являються тільки тут, це, швидше за все, неправильна категорія.</string>
+    <string name="category_preview_description">Для сегментів із детальним описом майбутнього вмісту без додаткової інформації. Якщо вона включає кліпи, які з’являються лише тут, це, швидше за все, неправильна категорія.</string>
     <string name="appearance">Вигляд</string>
     <string name="app_behavior">Поведінка</string>
     <string name="download_directory">Завантажити до</string>
@@ -395,7 +395,7 @@
     <string name="pop_up">Спливне вікно</string>
     <string name="double_tap_seek">Двічі торкніться, щоб шукати</string>
     <string name="double_tap_seek_summary">Двічі торкніться ліворуч або праворуч, щоб перемотати назад або вперед.</string>
-    <string name="no_comments_available">Це відео не має коментарів.</string>
+    <string name="no_comments_available">До цього відео немає коментарів.</string>
     <string name="comments_disabled">Коментарі вимкнені завантажувачем.</string>
     <string name="captions_size">Розмір підписів</string>
     <string name="all_caught_up">Ви все переглянули</string>
@@ -455,4 +455,26 @@
     <string name="autoplay_countdown_summary">Показувати зворотний відлік 5 с до автовідтворення наступного відео.</string>
     <string name="stats_for_nerds">Статистика для допитливих</string>
     <string name="video_id">ID відео</string>
+    <plurals name="years_ago">
+        <item quantity="one">%d рік тому</item>
+        <item quantity="few">%d роки тому</item>
+        <item quantity="many">%d років тому</item>
+        <item quantity="other">%d років тому</item>
+    </plurals>
+    <plurals name="months_ago">
+        <item quantity="one">%d місяць тому</item>
+        <item quantity="few">%d місяці тому</item>
+        <item quantity="many">%d місяців тому</item>
+        <item quantity="other">%d місяців тому</item>
+    </plurals>
+    <plurals name="weeks_ago">
+        <item quantity="one">%d тиждень тому</item>
+        <item quantity="few">%d тижні тому</item>
+        <item quantity="many">%d тижнів тому</item>
+        <item quantity="other">%d тижнів тому</item>
+    </plurals>
+    <string name="lbry_hls_summary">Використовувати LBRY HLS для стримінгу, якщо це можливо.</string>
+    <string name="lbry_hls">LBRY HLS</string>
+    <string name="uploaderAndVideoCount">%1$s • %2$d відео</string>
+    <string name="subscriberAndVideoCounts">%1$s підписників • %2$d відео</string>
 </resources>

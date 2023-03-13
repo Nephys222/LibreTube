@@ -44,7 +44,7 @@
     <string name="playlistName">Nombre de la lista de reproducción</string>
     <string name="success">Hecho.</string>
     <string name="fail">Error :(</string>
-    <string name="dlisinprogress">Otra descarga ya está en curso, por favor espere hasta que termine.</string>
+    <string name="dlisinprogress">Espere a que finalicen todas las descargas actuales.</string>
     <string name="server_error">Parece que hay un problema con el servidor seleccionado. Pruebe con otra instancia.</string>
     <string name="unknown_error">Error de red.</string>
     <string name="deletePlaylist">Eliminar lista de reproducción</string>
@@ -64,7 +64,7 @@
     <string name="subscribers">%1$s suscriptores</string>
     <string name="systemDefault">Sistema</string>
     <string name="comments">Comentarios</string>
-    <string name="videoCount">%1$s vídeos</string>
+    <string name="videoCount">%1$d vídeos</string>
     <string name="noInternet">Conéctese primero a Internet.</string>
     <string name="retry">Reintentar</string>
     <string name="customization">Personalización</string>
@@ -174,7 +174,7 @@
     <string name="category_filler">Tangente/chistes de relleno</string>
     <string name="category_music_offtopic">Música: Sección no musical</string>
     <string name="category_preview">Vista previa/Resumen</string>
-    <string name="category_preview_description">Para los segmentos que detallan los próximos contenidos de este o futuros vídeos de su serie, pero que no proporcionan información adicional. Si incluye clips que sólo aparecen aquí, es muy probable que esta sea la categoría equivocada.</string>
+    <string name="category_preview_description">Para segmentos que detallan contenido futuro sin información adicional. Si incluye clips que solo aparecen aquí, es muy probable que se trate de una categoría incorrecta.</string>
     <string name="category_filler_description">Para las escenas tangenciales que se añaden sólo para el relleno o el humor que no es necesario para entender el contenido principal del vídeo.</string>
     <string name="playerVideoFormat">Formato de vídeo para el reproductor</string>
     <string name="category_music_offtopic_description">Sólo para su uso en vídeos musicales. Debe abarcar partes del vídeo que no formen parte de las mezclas oficiales. Al final, el vídeo debe parecerse lo más posible a la versión de Spotify o a cualquier otra versión mezclada, o reducir las conversaciones u otras distracciones.</string>
@@ -393,7 +393,7 @@
     <string name="swipe_controls_summary">Usa el gesto de deslizar para ajustar el brillo y el volumen.</string>
     <string name="defaults">Por defecto</string>
     <string name="pop_up">Emergente</string>
-    <string name="no_comments_available">Este vídeo no tiene comentarios disponibles.</string>
+    <string name="no_comments_available">Este vídeo no tiene comentarios.</string>
     <string name="comments_disabled">Los comentarios están desactivados por el creador del contenido.</string>
     <string name="captions_size">Tamaño de los subtítulos</string>
     <string name="all_caught_up">Estás al día</string>
@@ -455,4 +455,23 @@
     <string name="autoplay_countdown">Cuenta atrás para reproducción automática</string>
     <string name="autoplay_countdown_summary">Muestra una cuenta atrás de 5 segundos antes de reproducir automáticamente el siguiente vídeo.</string>
     <string name="playing_next">Próxima reprodución en %1$s</string>
+    <plurals name="years_ago">
+        <item quantity="one">Hace %d año</item>
+        <item quantity="many">Hace %d años</item>
+        <item quantity="other">Hace %d años</item>
+    </plurals>
+    <plurals name="months_ago">
+        <item quantity="one">Hace %d mes</item>
+        <item quantity="many">Hace %d meses</item>
+        <item quantity="other">Hace %d meses</item>
+    </plurals>
+    <plurals name="weeks_ago">
+        <item quantity="one">Hace %d semana</item>
+        <item quantity="many">Hace %d semanas</item>
+        <item quantity="other">Hace %d semanas</item>
+    </plurals>
+    <string name="lbry_hls_summary">Utilice LBRY HLS para el streaming si está disponible.</string>
+    <string name="lbry_hls">LBRY HLS</string>
+    <string name="subscriberAndVideoCounts">%1$s suscriptores • %2$d vídeos</string>
+    <string name="uploaderAndVideoCount">%1$s • %2$d vídeos</string>
 </resources>

@@ -1,15 +1,16 @@
 package com.github.libretube.util
 
+import android.content.Context
 import android.icu.text.RelativeDateTimeFormatter
 import android.os.Build
 import android.text.format.DateUtils
+import com.github.libretube.R
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.time.temporal.ChronoUnit
-import java.util.*
 import kotlin.time.Duration
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.toJavaLocalDate
@@ -27,14 +28,17 @@ object TextUtils {
     const val RESERVED_CHARS = "?:\"*|/\\<>\u0000"
 
     /**
-     * Localize the date from a time string
-     * @param date The date to parse
-     * @param locale The locale to use, otherwise uses system default
-     * return Localized date string
+     * Date time formatter which uses the [FormatStyle.MEDIUM] format style.
      */
-    fun localizeDate(date: LocalDate, locale: Locale): String {
-        val formatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale)
-        return date.toJavaLocalDate().format(formatter)
+    private val MEDIUM_DATE_FORMATTER = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
+
+    /**
+     * Localize the date from a date string, using the medium format.
+     * @param date The date to parse
+     * @return localized date string
+     */
+    fun localizeDate(date: LocalDate): String {
+        return date.toJavaLocalDate().format(MEDIUM_DATE_FORMATTER)
     }
 
     /**
@@ -59,20 +63,31 @@ object TextUtils {
         }
     }
 
-    fun formatRelativeDate(unixTime: Long): CharSequence {
+    fun formatRelativeDate(context: Context, unixTime: Long): CharSequence {
         val date = LocalDateTime.ofInstant(Instant.ofEpochMilli(unixTime), ZoneId.systemDefault())
         val now = LocalDateTime.now()
         val weeks = date.until(now, ChronoUnit.WEEKS)
 
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && weeks >= 1) {
+        return if (weeks > 0) {
             val months = date.until(now, ChronoUnit.MONTHS)
-            val (timeFormat, time) = when {
-                months / 12 > 0 -> RelativeDateTimeFormatter.RelativeUnit.YEARS to months / 12
-                months > 0 -> RelativeDateTimeFormatter.RelativeUnit.MONTHS to months
-                else -> RelativeDateTimeFormatter.RelativeUnit.WEEKS to weeks
+            val years = months / 12
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                val (timeFormat, time) = when {
+                    years > 0 -> RelativeDateTimeFormatter.RelativeUnit.YEARS to years
+                    months > 0 -> RelativeDateTimeFormatter.RelativeUnit.MONTHS to months
+                    else -> RelativeDateTimeFormatter.RelativeUnit.WEEKS to weeks
+                }
+                RelativeDateTimeFormatter.getInstance()
+                    .format(time.toDouble(), RelativeDateTimeFormatter.Direction.LAST, timeFormat)
+            } else {
+                val (timeAgoRes, time) = when {
+                    years > 0 -> R.plurals.years_ago to years
+                    months > 0 -> R.plurals.months_ago to months
+                    else -> R.plurals.weeks_ago to weeks
+                }
+                context.resources.getQuantityString(timeAgoRes, time.toInt(), time)
             }
-            RelativeDateTimeFormatter.getInstance()
-                .format(time.toDouble(), RelativeDateTimeFormatter.Direction.LAST, timeFormat)
         } else {
             DateUtils.getRelativeTimeSpanString(unixTime)
         }

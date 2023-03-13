@@ -27,12 +27,10 @@ import retrofit2.HttpException
 class DownloadDialog(
     private val videoId: String
 ) : DialogFragment() {
-    private lateinit var binding: DialogDownloadBinding
-
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        binding = DialogDownloadBinding.inflate(layoutInflater)
+        val binding = DialogDownloadBinding.inflate(layoutInflater)
 
-        fetchAvailableSources()
+        fetchAvailableSources(binding)
 
         binding.fileName.filters += InputFilter { source, start, end, _, _, _ ->
             if (source.isNullOrBlank()) {
@@ -58,7 +56,7 @@ class DownloadDialog(
             .show()
     }
 
-    private fun fetchAvailableSources() {
+    private fun fetchAvailableSources(binding: DialogDownloadBinding) {
         lifecycleScope.launchWhenCreated {
             val response = try {
                 RetrofitInstance.api.getStreams(videoId)
@@ -72,16 +70,16 @@ class DownloadDialog(
                 Toast.makeText(context, R.string.server_error, Toast.LENGTH_SHORT).show()
                 return@launchWhenCreated
             }
-            initDownloadOptions(response)
+            initDownloadOptions(binding, response)
         }
     }
 
-    private fun initDownloadOptions(streams: Streams) {
+    private fun initDownloadOptions(binding: DialogDownloadBinding, streams: Streams) {
         binding.fileName.setText(streams.title)
 
         val videoStreams = streams.videoStreams.filter {
             !it.url.isNullOrEmpty()
-        }.sortedByDescending {
+        }.filter { !it.format.orEmpty().contains("HLS") }.sortedByDescending {
             it.quality.getWhileDigit()
         }
 
@@ -91,14 +89,16 @@ class DownloadDialog(
             it.quality.getWhileDigit()
         }
 
-        val subtitles = streams.subtitles.filter { !it.url.isNullOrEmpty() }.sortedBy { it.name }
+        val subtitles = streams.subtitles
+            .filter { !it.url.isNullOrEmpty() && !it.name.isNullOrEmpty() }
+            .sortedBy { it.name }
 
         if (subtitles.isEmpty()) binding.subtitleSpinner.visibility = View.GONE
 
         // initialize the video sources
         val videoArrayAdapter = ArrayAdapter(
             requireContext(),
-            android.R.layout.simple_spinner_item,
+            R.layout.dropdown_item,
             videoStreams.map { "${it.quality} ${it.format}" }.toMutableList().also {
                 it.add(0, getString(R.string.no_video))
             }
@@ -106,7 +106,7 @@ class DownloadDialog(
 
         val audioArrayAdapter = ArrayAdapter(
             requireContext(),
-            android.R.layout.simple_spinner_item,
+            R.layout.dropdown_item,
             audioStreams.map { "${it.quality} ${it.format}" }.toMutableList().also {
                 it.add(0, getString(R.string.no_audio))
             }
@@ -114,20 +114,17 @@ class DownloadDialog(
 
         val subtitleArrayAdapter = ArrayAdapter(
             requireContext(),
-            android.R.layout.simple_spinner_item,
-            subtitles.map { it.name }.toMutableList().also {
+            R.layout.dropdown_item,
+            subtitles.map { it.name.orEmpty() }.toMutableList().also {
                 it.add(0, getString(R.string.no_subtitle))
             }
         )
 
-        listOf(videoArrayAdapter, audioArrayAdapter, subtitleArrayAdapter).forEach {
-            it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        }
         binding.videoSpinner.adapter = videoArrayAdapter
         binding.audioSpinner.adapter = audioArrayAdapter
         binding.subtitleSpinner.adapter = subtitleArrayAdapter
 
-        restorePreviousSelections(videoStreams, audioStreams, subtitles)
+        restorePreviousSelections(binding, videoStreams, audioStreams, subtitles)
 
         binding.download.setOnClickListener {
             if (binding.fileName.text.toString().isEmpty()) {
@@ -186,6 +183,7 @@ class DownloadDialog(
      * Restore the download selections from a previous session
      */
     private fun restorePreviousSelections(
+        binding: DialogDownloadBinding,
         videoStreams: List<PipedStream>,
         audioStreams: List<PipedStream>,
         subtitles: List<Subtitle>

@@ -39,7 +39,7 @@
     <string name="importsuccess">ਸਬਸਕ੍ਰਾਈਬ ਕੀਤਾ</string>
     <string name="subscribeIsEmpty">ਪਹਿਲਾਂ ਕੁਝ ਚੈਨਲਾਂ ਨੂੰ ਸਬਸਕ੍ਰਾਈਬ ਕਰੋ।</string>
     <string name="dlcomplete">ਡਾਊਨਲੋਡ ਪੂਰਾ ਹੋਇਆ।</string>
-    <string name="dlisinprogress">ਇੱਕ ਹੋਰ ਡਾਊਨਲੋਡ ਪਹਿਲਾਂ ਹੀ ਪ੍ਰਗਤੀ ਵਿੱਚ ਹੈ, ਕਿਰਪਾ ਕਰਕੇ ਇਸ ਦੇ ਪੂਰਾ ਹੋਣ ਤੱਕ ਉਡੀਕ ਕਰੋ।</string>
+    <string name="dlisinprogress">ਕਿਰਪਾ ਕਰਕੇ ਸਾਰੇ ਮੌਜੂਦਾ ਡਾਊਨਲੋਡਾਂ ਦੇ ਮੁਕੰਮਲ ਹੋਣ ਤੱਕ ਉਡੀਕ ਕਰੋ।</string>
     <string name="downloadfailed">ਡਾਊਨਲੋਡ ਅਸਫਲ ਰਿਹਾ।</string>
     <string name="vlc">VLC ਵਿੱਚ ਖੋਲ੍ਹੋ</string>
     <string name="vlcerror">VLC ਵਿੱਚ ਖੋਲ੍ਹਿਆ ਨਹੀਂ ਜਾ ਸਕਿਆ। ਹੋ ਸਕਦਾ VLC ਇੰਸਟਾਲ ਨਾਂ ਹੋਵੇ।</string>
@@ -73,7 +73,7 @@
     <string name="instance">ਇੰਸਟੈਂਸ</string>
     <string name="website">ਵੈੱਬਸਾਈਟ</string>
     <string name="customization">ਤਬਦੀਲੀਆਂ</string>
-    <string name="videoCount">%1$s ਵੀਡੀਓ</string>
+    <string name="videoCount">%1$d ਵੀਡੀਓ</string>
     <string name="noInternet">ਪਹਿਲਾਂ ਇੰਟਰਨੈੱਟ ਨਾਲ ਜੁੜੋ।</string>
     <string name="retry">ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ</string>
     <string name="comments">ਟਿੱਪਣੀਆਂ</string>
@@ -106,7 +106,7 @@
     <string name="category_filler">ਫਿਲਰ ਟੈਂਜੈਂਟ/ਚੁਟਕਲੇ</string>
     <string name="category_music_offtopic">ਸੰਗੀਤ: ਗੈਰ-ਸੰਗੀਤ ਸੈਕਸ਼ਨ</string>
     <string name="category_preview">ਪ੍ਰੀਵਿਊ/ਰੀਕੈਪ</string>
-    <string name="category_preview_description">ਇਸ ਜਾਂ ਇਸਦੀ ਲੜੀ ਵਿੱਚ ਆਉਣ ਵਾਲੇ ਵੀਡੀਓ ਵਿੱਚ ਆਉਣ ਵਾਲੀ ਸਮਗਰੀ ਦਾ ਵੇਰਵਾ ਦੇਣ ਵਾਲੇ ਹਿੱਸਿਆਂ ਲਈ, ਪਰ ਵਾਧੂ ਜਾਣਕਾਰੀ ਪ੍ਰਦਾਨ ਨਾ ਕਰੋ। ਜੇਕਰ ਇਸ ਵਿੱਚ ਕਲਿੱਪ ਸ਼ਾਮਲ ਹਨ ਜੋ ਸਿਰਫ਼ ਇੱਥੇ ਦਿਖਾਈ ਦਿੰਦੀਆਂ ਹਨ, ਤਾਂ ਇਹ ਗਲਤ ਸ਼੍ਰੇਣੀ ਹੈ।</string>
+    <string name="category_preview_description">ਬਿਨਾਂ ਵਾਧੂ ਜਾਣਕਾਰੀ ਦੇ ਭਵਿੱਖ ਦੀ ਸਮੱਗਰੀ ਦਾ ਵੇਰਵਾ ਦੇਣ ਵਾਲੇ ਹਿੱਸਿਆਂ ਲਈ। ਜੇਕਰ ਇਸ ਵਿੱਚ ਕਲਿੱਪ ਸ਼ਾਮਲ ਹਨ ਜੋ ਸਿਰਫ਼ ਇੱਥੇ ਦਿਖਾਈ ਦਿੰਦੀਆਂ ਹਨ, ਤਾਂ ਇਹ ਗਲਤ ਸ਼੍ਰੇਣੀ ਹੈ।</string>
     <string name="license">ਲਾਈਸੈਂਸ</string>
     <string name="color_accent">ਲਹਿਜ਼ੇ</string>
     <string name="color_red">ਆਰਾਮਦਾਇਕ ਲਾਲ</string>
@@ -407,7 +407,7 @@
     <string name="featured">ਫ਼ੀਚਰਡ</string>
     <string name="bookmarks">ਬੁੱਕਮਾਰਕਸ</string>
     <string name="bookmark">ਬੁੱਕਮਾਰਕ</string>
-    <string name="no_comments_available">ਇਸ ਵੀਡੀਓ \'ਤੇ ਕੋਈ ਟਿੱਪਣੀ ਉਪਲਬਧ ਨਹੀਂ ਹੈ।</string>
+    <string name="no_comments_available">ਇਸ ਵੀਡੀਓ \'ਤੇ ਕੋਈ ਟਿੱਪਣੀ ਨਹੀਂ ਹੈ।</string>
     <string name="swipe_controls_summary">ਚਮਕ ਅਤੇ ਆਵਾਜ਼ ਨੂੰ ਅਨੁਕੂਲ ਕਰਨ ਲਈ ਸਵਾਈਪ ਸੰਕੇਤ ਦੀ ਵਰਤੋਂ ਕਰੋ।</string>
     <string name="comments_disabled">ਟਿੱਪਣੀਆਂ ਅੱਪਲੋਡਰ ਦੁਆਰਾ ਅਸਮਰੱਥ ਹਨ।</string>
     <string name="all_caught_up">ਤੁਸੀਂ ਸਭ ਸਮਝ ਲਿਆ ਹੈ</string>
@@ -455,4 +455,20 @@
     <string name="stats_for_nerds">ਨਰਡਾਂ ਲਈ ਅੰਕੜੇ</string>
     <string name="video_id">ਵੀਡੀਓ ਆਈ ਡੀ</string>
     <string name="category">ਸ਼੍ਰੇਣੀ</string>
+    <plurals name="years_ago">
+        <item quantity="one">%d ਸਾਲ ਪਹਿਲਾਂ</item>
+        <item quantity="other">%d ਸਾਲ ਪਹਿਲਾਂ</item>
+    </plurals>
+    <plurals name="months_ago">
+        <item quantity="one">%d ਮਹੀਨਾ ਪਹਿਲਾਂ</item>
+        <item quantity="other">%d ਮਹੀਨੇ ਪਹਿਲਾਂ</item>
+    </plurals>
+    <plurals name="weeks_ago">
+        <item quantity="one">%d ਹਫ਼ਤਾ ਪਹਿਲਾਂ</item>
+        <item quantity="other">%d ਹਫ਼ਤੇ ਪਹਿਲਾਂ</item>
+    </plurals>
+    <string name="lbry_hls">ਲਿਬਰੀ HLS</string>
+    <string name="lbry_hls_summary">ਉਪਲਬਧ ਹੋਵੇ ਤਾਂ ਸਟ੍ਰੀਮਿੰਗ ਲਈ ਲੀਬਰ HLS ਵਰਤੋ।</string>
+    <string name="subscriberAndVideoCounts">%1$s ਸਬਸਕ੍ਰਾਈਬਰ• %2$d ਵੀਡੀਓ</string>
+    <string name="uploaderAndVideoCount">%1$s • %2$d ਵੀਡੀਓ</string>
 </resources>

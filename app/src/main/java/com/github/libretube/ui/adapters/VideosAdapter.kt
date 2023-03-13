@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.text.format.DateUtils
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.updateLayoutParams
 import androidx.recyclerview.widget.GridLayoutManager
@@ -96,23 +95,12 @@ class VideosAdapter(
         }
     }
 
-    private fun hideItemView(holder: VideosViewHolder) {
-        holder.itemView.visibility = View.GONE
-        holder.itemView.layoutParams = RecyclerView.LayoutParams(0, 0)
-    }
-
     @SuppressLint("SetTextI18n")
     override fun onBindViewHolder(holder: VideosViewHolder, position: Int) {
         val video = streamItems[position]
 
         val videoId = video.url?.toID()
         val videoName = video.title
-
-        // hide the item if there was an extractor error
-        if (video.title == null && video.type != "caught") {
-            hideItemView(holder)
-            return
-        }
 
         videoId?.let {
             (holder.trendingRowBinding?.watchProgress ?: holder.videoRowBinding!!.watchProgress)
@@ -135,7 +123,7 @@ class VideosAdapter(
                 R.string.trending_views,
                 video.uploaderName,
                 video.views.formatShort(),
-                video.uploaded?.let { TextUtils.formatRelativeDate(it) }
+                video.uploaded?.let { TextUtils.formatRelativeDate(root.context, it) }
             )
             video.duration?.let { thumbnailDuration.setFormattedDuration(it, video.isShort) }
             channelImage.setOnClickListener {
@@ -166,7 +154,9 @@ class VideosAdapter(
             videoInfo.text = root.context.getString(
                 R.string.normal_views,
                 video.views.formatShort(),
-                video.uploaded?.let { TextUtils.SEPARATOR + TextUtils.formatRelativeDate(it) }
+                video.uploaded?.let {
+                    TextUtils.SEPARATOR + TextUtils.formatRelativeDate(root.context, it)
+                }
             )
 
             thumbnailDuration.text = video.duration?.let { DateUtils.formatElapsedTime(it) }

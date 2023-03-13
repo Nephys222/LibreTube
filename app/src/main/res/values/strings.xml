@@ -32,7 +32,7 @@
     <string name="subscribeIsEmpty">Subscribe to some channels first.</string>
     <string name="cannotDownload">Can\'t download this stream.</string>
     <string name="dlcomplete">Download completed.</string>
-    <string name="dlisinprogress">Another download is already in progress, please wait until it\'s finished.</string>
+    <string name="dlisinprogress">Please wait for all current downloads to finish.</string>
     <string name="downloadfailed">Download failed.</string>
     <string name="vlc">Open in VLC</string>
     <string name="vlcerror">Could not open in VLC. It might not be installed.</string>
@@ -68,7 +68,9 @@
     <string name="instance">Instance</string>
     <string name="customization">Adjustments</string>
     <string name="website">Website</string>
-    <string name="videoCount">%1$s videos</string>
+    <string name="uploaderAndVideoCount">%1$s • %2$d videos</string>
+    <string name="subscriberAndVideoCounts">%1$s subscribers • %2$d videos</string>
+    <string name="videoCount">%1$d videos</string>
     <string name="noInternet">Connect to the Internet first.</string>
     <string name="retry">Retry</string>
     <string name="comments">Comments</string>
@@ -106,7 +108,7 @@
     <string name="category_music_offtopic">Music: Non-Music Section</string>
     <string name="category_music_offtopic_description">Only for use in music videos. It should cover parts of the video not part of official mixes. In the end, the video should resemble the Spotify or any other mixed version as closely as possible, or reduce talking or other distractions.</string>
     <string name="category_preview">Preview/Recap</string>
-    <string name="category_preview_description">For segments detailing upcoming content in this or future videos in its series, but do not provide additional info. If it includes clips that only appear here, this is very likely the wrong category.</string>
+    <string name="category_preview_description">For segments detailing future content without additional info. If it includes clips that only appear here, this is very likely the wrong category.</string>
     <string name="license">License</string>
     <string name="color_accent">Accents</string>
     <string name="color_red">Resting red</string>
@@ -402,7 +404,7 @@
     <string name="defaults">Defaults</string>
     <string name="pop_up">Pop-Up</string>
     <string name="comments_disabled">Comments are disabled by the uploader.</string>
-    <string name="no_comments_available">This video has no comments available.</string>
+    <string name="no_comments_available">This video has no comments.</string>
     <string name="theme_monochrome">Minimalistic Monochrome</string>
     <string name="captions_size">Captions size</string>
     <string name="double_tap_seek">Double tap to seek</string>
@@ -449,6 +451,9 @@
     <string name="autoplay_countdown">Autoplay countdown</string>
     <string name="autoplay_countdown_summary">Show a 5s countdown before auto-playing the next video.</string>
     <string name="playing_next">Playing next in %1$s</string>
+    <string name="lbry_hls">LBRY HLS</string>
+    <string name="lbry_hls_summary">Use LBRY HLS for streaming if available.</string>
+
     <!-- Notification channel strings -->
     <string name="download_channel_name">Download Service</string>
     <string name="download_channel_description">Shows a notification when downloading media.</string>
@@ -456,4 +461,17 @@
     <string name="background_channel_description">Shows a notification with buttons to control the audio player.</string>
     <string name="push_channel_name">Notification Worker</string>
     <string name="push_channel_description">Shows a notification when new streams are available.</string>
+    <!-- Relative time formatting strings (remove when setting the minSdk to 24) -->
+    <plurals name="years_ago">
+        <item quantity="one">%d year ago</item>
+        <item quantity="other">%d years ago</item>
+    </plurals>
+    <plurals name="months_ago">
+        <item quantity="one">%d month ago</item>
+        <item quantity="other">%d months ago</item>
+    </plurals>
+    <plurals name="weeks_ago">
+        <item quantity="one">%d week ago</item>
+        <item quantity="other">%d weeks ago</item>
+    </plurals>
 </resources>

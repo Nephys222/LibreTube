@@ -22,10 +22,8 @@ import retrofit2.HttpException
 class LoginDialog(
     private val onLogin: () -> Unit
 ) : DialogFragment() {
-    private lateinit var binding: DialogLoginBinding
-
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        binding = DialogLoginBinding.inflate(layoutInflater)
+        val binding = DialogLoginBinding.inflate(layoutInflater)
 
         binding.login.setOnClickListener {
             val email = binding.username.text?.toString()
@@ -72,9 +70,9 @@ class LoginDialog(
                     RetrofitInstance.authApi.login(login)
                 }
             } catch (e: HttpException) {
-                val errorMessage = e.response()?.errorBody()?.string()?.let {
-                    JsonHelper.json.decodeFromString<Token>(it).error
-                } ?: context?.getString(R.string.server_error) ?: ""
+                val errorMessage = e.response()?.errorBody()?.string()?.runCatching {
+                    JsonHelper.json.decodeFromString<Token>(this).error
+                }?.getOrNull() ?: context?.getString(R.string.server_error) ?: ""
                 Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
                 return@launchWhenCreated
             } catch (e: Exception) {

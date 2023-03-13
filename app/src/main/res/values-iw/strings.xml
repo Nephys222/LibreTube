@@ -95,7 +95,7 @@
     <string name="login_first">נא להיכנס ולנסות שוב.</string>
     <string name="save">שמירה</string>
     <string name="region">אזור</string>
-    <string name="dlisinprogress">כבר מתבצעת הורדה, נא להמתין לסיומה.</string>
+    <string name="dlisinprogress">המתן עד שכל ההורדות הנוכחיות יסתיימו.</string>
     <string name="downloadfailed">ההורדה נכשלה.</string>
     <string name="import_from_yt">ייבוא מינויים</string>
     <string name="systemDefault">מערכת</string>
@@ -110,7 +110,7 @@
     <string name="changeLanguage">שפה</string>
     <string name="darkTheme">כהה</string>
     <string name="instance">עותק</string>
-    <string name="videoCount">%1$s סרטונים</string>
+    <string name="videoCount">%1$d סרטונים</string>
     <string name="category_interaction_description">כשיש תזכורת קצרה לעשות לייק, להירשם למינוי או לעקוב באמצע התוכן. אם זה ארוך או על משהו מסוים, זה אמור להיות קידום עצמי במקום.</string>
     <string name="website">אתר</string>
     <string name="noInternet">קודם צריך להתחבר לאינטרנט.</string>
@@ -174,7 +174,7 @@
     <string name="category_music_offtopic">מוזיקה: קטע לא מוזיקלי</string>
     <string name="category_preview">תצוגה מקדימה/סיכום</string>
     <string name="category_music_offtopic_description">מיועד רק לסרטונים מוזיקליים. הוא אמור לכסות חלקים מהסרטון שאינם חלק מהערבולים הרשמיים. בסוף, הסרטון אמור לחקות את Spotify או כל גרסה מעורבלת אחרת בצורה כמה שיותר נאמנה או לצמצם דיבור או כל הפרעה אחרת.</string>
-    <string name="category_preview_description">למקטעים שמפרטים על תוכן עתידי בסרטון הזה או בסרטונים העוקבים, אך לא מספק מידע נוסף. אם הוא כולל מקטעים שמופיעים רק כאן, סביר להניח שזאת לא הקטגוריה הנכונה.</string>
+    <string name="category_preview_description">לקטעים המפרטים תוכן עתידי ללא מידע נוסף. אם הוא כולל קליפים שמופיעים רק כאן, סביר להניח שזו הקטגוריה הלא נכונה.</string>
     <string name="buffering_goal">טעינה טרומית</string>
     <string name="buffering_goal_summary">כמות השניות המרבית של וידאו שייאגר לזיכרון.</string>
     <string name="playerVideoFormat">תצורת הסרטונים לנגן</string>
@@ -393,7 +393,7 @@
     <string name="defaults">ברירות מחדל</string>
     <string name="pop_up">צף</string>
     <string name="swipe_controls_summary">להשתמש במחוות החלקה כדי לכוון את הבהירות ואת עצמת השמע.</string>
-    <string name="no_comments_available">התגובות לא זמינות לסרטון הזה.</string>
+    <string name="no_comments_available">לסרטון זה אין תגובות.</string>
     <string name="comments_disabled">הערות הושבתו על ידי מעלה הסרטון.</string>
     <string name="double_tap_seek">נגיעה כפולה לדילוג</string>
     <string name="all_caught_up">אין יותר הצעות</string>
@@ -455,4 +455,26 @@
     <string name="playing_next">לנגן את הבא בעוד %1$s</string>
     <string name="autoplay_countdown">ספירה לאחור עד לנגינה אוטומטית</string>
     <string name="autoplay_countdown_summary">להציג ספירה לאחור של 5 שניות בטרם ניגון הסרטון הבא אוטומטית.</string>
+    <plurals name="months_ago">
+        <item quantity="one">לפני חודש</item>
+        <item quantity="two">לפני חודשיים</item>
+        <item quantity="many">לפני %d חודשים</item>
+        <item quantity="other"/>
+    </plurals>
+    <plurals name="weeks_ago">
+        <item quantity="one">לפני שבוע</item>
+        <item quantity="two">לפני שבועיים</item>
+        <item quantity="many">לפני %d שבועות</item>
+        <item quantity="other"/>
+    </plurals>
+    <plurals name="years_ago">
+        <item quantity="one">לפני שנה</item>
+        <item quantity="two">לפני שנתיים</item>
+        <item quantity="many">לפני %d שנים</item>
+        <item quantity="other"/>
+    </plurals>
+    <string name="lbry_hls">LBRY HLS‎</string>
+    <string name="lbry_hls_summary">להשתמש ב־LBRY HLS להזרמה אם זמין.</string>
+    <string name="subscriberAndVideoCounts">%1$s מנויים • %2$d סרטונים</string>
+    <string name="uploaderAndVideoCount">%1$s • ‏%2$d סרטונים</string>
 </resources>
