@@ -20,7 +20,9 @@ import android.text.format.DateUtils
 import android.text.method.LinkMovementMethod
 import android.text.util.Linkify
 import android.util.Base64
+import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
 import androidx.annotation.RequiresApi
@@ -36,7 +38,6 @@ import androidx.fragment.app.commit
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
-import by.kirich1409.viewbindingdelegate.viewBinding
 import com.github.libretube.R
 import com.github.libretube.api.CronetHelper
 import com.github.libretube.api.JsonHelper
@@ -67,6 +68,7 @@ import com.github.libretube.helpers.PlayerHelper
 import com.github.libretube.helpers.PlayerHelper.checkForSegments
 import com.github.libretube.helpers.PlayerHelper.loadPlaybackParams
 import com.github.libretube.helpers.PreferenceHelper
+import com.github.libretube.helpers.ProxyHelper
 import com.github.libretube.obj.ShareData
 import com.github.libretube.obj.VideoResolution
 import com.github.libretube.services.BackgroundMode
@@ -118,15 +120,13 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import retrofit2.HttpException
 
-class PlayerFragment : Fragment(R.layout.fragment_player), OnlinePlayerOptions {
-    val binding by viewBinding(FragmentPlayerBinding::bind)
-    private val playerBinding by viewBinding { it.binding.player.binding }
-    private val doubleTapOverlayBinding by viewBinding {
-        it.binding.doubleTapOverlay.binding
-    }
-    private val playerGestureControlsViewBinding by viewBinding {
-        it.binding.playerGestureControlsView.binding
-    }
+class PlayerFragment : Fragment(), OnlinePlayerOptions {
+    private var _binding: FragmentPlayerBinding? = null
+    val binding get() = _binding!!
+
+    private val playerBinding get() = binding.player.binding
+    private val doubleTapOverlayBinding get() = binding.doubleTapOverlay.binding
+    private val playerGestureControlsViewBinding get() = binding.playerGestureControlsView.binding
 
     private val viewModel: PlayerViewModel by activityViewModels()
     private val commentsViewModel: CommentsViewModel by activityViewModels()
@@ -233,6 +233,15 @@ class PlayerFragment : Fragment(R.layout.fragment_player), OnlinePlayerOptions {
             broadcastReceiver,
             IntentFilter(PlayerHelper.getIntentActon(requireContext()))
         )
+    }
+
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+        _binding = FragmentPlayerBinding.inflate(layoutInflater)
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -424,7 +433,7 @@ class PlayerFragment : Fragment(R.layout.fragment_player), OnlinePlayerOptions {
             streams.hls ?: return@setOnLongClickListener true
 
             // start an intent with video as mimetype using the hls stream
-            val uri: Uri = Uri.parse(streams.hls)
+            val uri = Uri.parse(ProxyHelper.unwrapIfEnabled(streams.hls!!))
             val intent = Intent(Intent.ACTION_VIEW).apply {
                 setDataAndType(uri, "video/*")
                 putExtra(Intent.EXTRA_TITLE, streams.title)
@@ -469,10 +478,8 @@ class PlayerFragment : Fragment(R.layout.fragment_player), OnlinePlayerOptions {
             keepQueue = true,
             keepVideoPlayerAlive = true
         )
-        handler.postDelayed(500) {
-            NavigationHelper.startAudioPlayer(requireContext())
-            killPlayerFragment()
-        }
+        killPlayerFragment()
+        NavigationHelper.startAudioPlayer(requireContext())
     }
 
     private fun setFullscreen() {
@@ -487,8 +494,11 @@ class PlayerFragment : Fragment(R.layout.fragment_player), OnlinePlayerOptions {
         playerBinding.exoTitle.visibility = View.VISIBLE
 
         if (!PlayerHelper.autoRotationEnabled) {
+            val height = streams.videoStreams.firstOrNull()?.height ?: exoPlayer.videoSize.height
+            val width = streams.videoStreams.firstOrNull()?.width ?: exoPlayer.videoSize.width
+
             // different orientations of the video are only available when auto rotation is disabled
-            val orientation = PlayerHelper.getOrientation(exoPlayer.videoSize)
+            val orientation = PlayerHelper.getOrientation(width, height)
             mainActivity.requestedOrientation = orientation
         }
 
@@ -583,6 +593,8 @@ class PlayerFragment : Fragment(R.layout.fragment_player), OnlinePlayerOptions {
 
             saveWatchPosition()
 
+            PlayingQueue.clear()
+
             // release the player
             nowPlayingNotification.destroySelfAndPlayer()
 
@@ -595,6 +607,8 @@ class PlayerFragment : Fragment(R.layout.fragment_player), OnlinePlayerOptions {
         } catch (e: Exception) {
             e.printStackTrace()
         }
+
+        _binding = null
     }
 
     private fun disableAutoPiP() {
@@ -643,18 +657,18 @@ class PlayerFragment : Fragment(R.layout.fragment_player), OnlinePlayerOptions {
         // reset the comments to become reloaded later
         commentsViewModel.reset()
 
-        lifecycleScope.launchWhenCreated {
+        lifecycleScope.launch(Dispatchers.IO) {
             streams = try {
                 RetrofitInstance.api.getStreams(videoId!!)
             } catch (e: IOException) {
                 Toast.makeText(context, R.string.unknown_error, Toast.LENGTH_LONG).show()
-                return@launchWhenCreated
+                return@launch
             } catch (e: HttpException) {
                 val errorMessage = e.response()?.errorBody()?.string()?.runCatching {
                     JsonHelper.json.decodeFromString<Message>(this).message
                 }?.getOrNull() ?: context?.getString(R.string.server_error) ?: ""
                 Toast.makeText(context, errorMessage, Toast.LENGTH_LONG).show()
-                return@launchWhenCreated
+                return@launch
             }
 
             if (PlayingQueue.isEmpty()) {
@@ -672,6 +686,17 @@ class PlayerFragment : Fragment(R.layout.fragment_player), OnlinePlayerOptions {
                 }
             } else {
                 PlayingQueue.updateCurrent(streams.toStreamItem(videoId!!))
+            }
+
+            if (PreferenceHelper.getBoolean(PreferenceKeys.AUTO_FULLSCREEN_SHORTS, false)) {
+                val videoStream = streams.videoStreams.firstOrNull()
+                if (PlayingQueue.getCurrent()?.isShort == true ||
+                    (videoStream?.height ?: 0) > (videoStream?.width ?: 0)
+                ) {
+                    withContext(Dispatchers.Main) {
+                        setFullscreen()
+                    }
+                }
             }
 
             PlayingQueue.setOnQueueTapListener { streamItem ->
@@ -971,14 +996,12 @@ class PlayerFragment : Fragment(R.layout.fragment_player), OnlinePlayerOptions {
             }
         }
 
-        if (streams.hls != null) {
-            binding.relPlayerPip.setOnClickListener {
-                if (SDK_INT < Build.VERSION_CODES.O) return@setOnClickListener
-                try {
-                    activity?.enterPictureInPictureMode(getPipParams())
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
+        binding.relPlayerPip.setOnClickListener {
+            if (SDK_INT < Build.VERSION_CODES.O) return@setOnClickListener
+            try {
+                activity?.enterPictureInPictureMode(getPipParams())
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
         initializeRelatedVideos(streams.relatedStreams.filter { !it.title.isNullOrBlank() })
@@ -1286,7 +1309,7 @@ class PlayerFragment : Fragment(R.layout.fragment_player), OnlinePlayerOptions {
             // DASH
             !PreferenceHelper.getBoolean(PreferenceKeys.USE_HLS_OVER_DASH, false) && streams.videoStreams.isNotEmpty() -> {
                 // only use the dash manifest generated by YT if either it's a livestream or no other source is available
-                val uri = streams.dash?.toUri().takeIf {
+                val uri = streams.dash?.let { ProxyHelper.unwrapIfEnabled(it) }?.toUri().takeIf {
                     streams.livestream || streams.videoStreams.isEmpty()
                 } ?: let {
                     val manifest = DashHelper.createManifest(streams)
@@ -1301,7 +1324,10 @@ class PlayerFragment : Fragment(R.layout.fragment_player), OnlinePlayerOptions {
             }
             // HLS
             streams.hls != null -> {
-                setMediaSource(streams.hls!!.toUri(), MimeTypes.APPLICATION_M3U8)
+                setMediaSource(
+                    ProxyHelper.unwrapIfEnabled(streams.hls!!).toUri(),
+                    MimeTypes.APPLICATION_M3U8
+                )
             }
             // NO STREAM FOUND
             else -> {
@@ -1504,7 +1530,7 @@ class PlayerFragment : Fragment(R.layout.fragment_player), OnlinePlayerOptions {
         playerBinding.exoProgress.addListener(
             SeekbarPreviewListener(
                 streams.previewFrames,
-                playerBinding.seekbarPreview,
+                playerBinding,
                 streams.duration * 1000
             )
         )

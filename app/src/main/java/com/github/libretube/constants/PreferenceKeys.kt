@@ -94,6 +94,7 @@ object PreferenceKeys {
     const val ENABLED_VIDEO_CODECS = "video_codecs"
     const val AUTOPLAY_COUNTDOWN = "autoplay_countdown"
     const val LBRY_HLS = "lbry_hls"
+    const val AUTO_FULLSCREEN_SHORTS = "auto_fullscreen_shorts"
 
     /**
      * Background mode
@@ -133,6 +134,7 @@ object PreferenceKeys {
     const val CONFIRM_UNSUBSCRIBE = "confirm_unsubscribing"
     const val CLEAR_BOOKMARKS = "clear_bookmarks"
     const val MAX_CONCURRENT_DOWNLOADS = "max_concurrent_downloads"
+    const val DISABLE_VIDEO_IMAGE_PROXY = "disable_video_image_proxy"
 
     /**
      * History

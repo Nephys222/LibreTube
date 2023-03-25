@@ -17,6 +17,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.os.postDelayed
 import androidx.core.view.ViewCompat
+import androidx.core.view.marginStart
 import androidx.core.view.updateLayoutParams
 import androidx.lifecycle.LifecycleOwner
 import com.github.libretube.R
@@ -373,6 +374,11 @@ internal class CustomExoPlayerView(
         binding.exoTitle.visibility = visibility
         binding.playPauseBTN.visibility = visibility
 
+        if (!PlayerHelper.doubleTapToSeek) {
+            binding.rewindBTN.visibility = visibility
+            binding.forwardBTN.visibility = visibility
+        }
+
         // hide the dimming background overlay if locked
         binding.exoControlsBackground.setBackgroundColor(
             if (isLocked) {
@@ -577,8 +583,8 @@ internal class CustomExoPlayerView(
         super.onConfigurationChanged(newConfig)
 
         // add a larger bottom margin to the time bar in landscape mode
-        val offset = when (newConfig?.orientation) {
-            Configuration.ORIENTATION_LANDSCAPE -> 20.dpToPx()
+        val offset = when {
+            playerViewModel?.isFullscreen?.value ?: (newConfig?.orientation == Configuration.ORIENTATION_LANDSCAPE) -> 20.dpToPx()
             else -> 10.dpToPx()
         }
 
@@ -589,7 +595,8 @@ internal class CustomExoPlayerView(
         updateTopBarMargin()
 
         // don't add extra padding if there's no cutout
-        if (ViewCompat.getRootWindowInsets(this)?.displayCutout == null) return
+        val hasCutout = ViewCompat.getRootWindowInsets(this)?.displayCutout != null
+        if (!hasCutout && binding.topBar.marginStart == 0) return
 
         // add a margin to the top and the bottom bar in landscape mode for notches
         val newMargin = when (newConfig?.orientation) {
