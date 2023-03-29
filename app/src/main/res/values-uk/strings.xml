@@ -105,7 +105,7 @@
     <string name="category_intro">Антракт/Вступна Анімація</string>
     <string name="category_intro_description">Певний інтервал без самого контенту. Може бути паузою, статичне зображення, повторювальна анімація. Не слід використовувати для переходів, що містять інформацію.</string>
     <string name="category_outro">Кінцеві картки та титри</string>
-    <string name="category_outro_description">Інформація яка слідує по завершені. Не для висновків з інформацією.</string>
+    <string name="category_outro_description">Інформація після закінчення. Не для висновків з інформацією.</string>
     <string name="license">Ліцензія</string>
     <string name="color_red">Заспокійливий червоний</string>
     <string name="color_blue">Блаженний блакитний</string>
@@ -479,4 +479,5 @@
     <string name="subscriberAndVideoCounts">%1$s підписників • %2$d відео</string>
     <string name="disable_proxy">Вимкнути транспортний проксі</string>
     <string name="disable_proxy_summary">Завантажуйте відео й зображення безпосередньо з серверів YouTube. Увімкніть цю опцію, якщо ви все одно використовуєте VPN! Зауважте, що це може не спрацювати з матеріалами з YT music.</string>
+    <string name="auto_fullscreen_shorts">Автоматичний повноекранний режим для коротких відео</string>
 </resources>

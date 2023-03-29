@@ -1,7 +1,6 @@
 package com.github.libretube.ui.fragments
 
 import android.annotation.SuppressLint
-import android.app.PictureInPictureParams
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -11,7 +10,6 @@ import android.content.res.Configuration
 import android.media.session.PlaybackState
 import android.net.Uri
 import android.os.Build
-import android.os.Build.VERSION.SDK_INT
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -25,12 +23,12 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
-import androidx.annotation.RequiresApi
 import androidx.constraintlayout.motion.widget.MotionLayout
 import androidx.core.net.toUri
 import androidx.core.os.bundleOf
 import androidx.core.os.postDelayed
 import androidx.core.text.parseAsHtml
+import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
@@ -48,6 +46,8 @@ import com.github.libretube.api.obj.PipedStream
 import com.github.libretube.api.obj.Segment
 import com.github.libretube.api.obj.StreamItem
 import com.github.libretube.api.obj.Streams
+import com.github.libretube.compat.PictureInPictureCompat
+import com.github.libretube.compat.PictureInPictureParamsCompat
 import com.github.libretube.constants.IntentData
 import com.github.libretube.constants.PreferenceKeys
 import com.github.libretube.databinding.FragmentPlayerBinding
@@ -59,6 +59,7 @@ import com.github.libretube.enums.ShareObjectType
 import com.github.libretube.extensions.formatShort
 import com.github.libretube.extensions.hideKeyboard
 import com.github.libretube.extensions.toID
+import com.github.libretube.extensions.toastFromMainDispatcher
 import com.github.libretube.extensions.updateParameters
 import com.github.libretube.helpers.BackgroundHelper
 import com.github.libretube.helpers.DashHelper
@@ -80,7 +81,6 @@ import com.github.libretube.ui.dialogs.AddToPlaylistDialog
 import com.github.libretube.ui.dialogs.DownloadDialog
 import com.github.libretube.ui.dialogs.ShareDialog
 import com.github.libretube.ui.dialogs.StatsDialog
-import com.github.libretube.ui.extensions.setAspectRatio
 import com.github.libretube.ui.extensions.setupSubscriptionButton
 import com.github.libretube.ui.interfaces.OnlinePlayerOptions
 import com.github.libretube.ui.listeners.SeekbarPreviewListener
@@ -95,6 +95,7 @@ import com.github.libretube.util.LinkHandler
 import com.github.libretube.util.NowPlayingNotification
 import com.github.libretube.util.PlayingQueue
 import com.github.libretube.util.TextUtils
+import com.github.libretube.util.TextUtils.toTimeInSeconds
 import com.google.android.exoplayer2.C
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.MediaItem
@@ -293,6 +294,8 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
                 endId: Int,
                 progress: Float
             ) {
+                if (_binding == null) return
+
                 mainMotionLayout.progress = abs(progress)
                 binding.player.hideController()
                 binding.player.useController = false
@@ -301,6 +304,8 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
             }
 
             override fun onTransitionCompleted(motionLayout: MotionLayout?, currentId: Int) {
+                if (_binding == null) return
+
                 if (currentId == eId) {
                     viewModel.isMiniPlayerVisible.value = true
                     // disable captions
@@ -329,19 +334,22 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
 
         if (PlayerHelper.swipeGestureEnabled) {
             binding.playerMotionLayout.addSwipeUpListener {
-                binding.player.hideController()
-                setFullscreen()
+                if (this::streams.isInitialized) {
+                    binding.player.hideController()
+                    setFullscreen()
+                }
             }
         }
 
         binding.playerMotionLayout.progress = 1.toFloat()
         binding.playerMotionLayout.transitionToStart()
 
-        if (usePiP()) activity?.setPictureInPictureParams(getPipParams())
-
-        if (SDK_INT < Build.VERSION_CODES.O) {
-            binding.relPlayerPip.visibility = View.GONE
+        val activity = requireActivity()
+        if (PlayerHelper.pipEnabled) {
+            PictureInPictureCompat.setPictureInPictureParams(activity, pipParams)
         }
+        binding.relPlayerPip.isVisible = PictureInPictureCompat
+            .isPictureInPictureAvailable(activity)
     }
 
     // actions that don't depend on video information
@@ -389,8 +397,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
 
         // FullScreen button trigger
         // hide fullscreen button if auto rotation enabled
-        playerBinding.fullscreen.visibility =
-            if (PlayerHelper.autoRotationEnabled) View.INVISIBLE else View.VISIBLE
+        playerBinding.fullscreen.isInvisible = PlayerHelper.autoRotationEnabled
         playerBinding.fullscreen.setOnClickListener {
             // hide player controller
             binding.player.hideController()
@@ -612,11 +619,10 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
     }
 
     private fun disableAutoPiP() {
-        if (SDK_INT < Build.VERSION_CODES.S) {
-            return
-        }
-        activity?.setPictureInPictureParams(
-            PictureInPictureParams.Builder().setAutoEnterEnabled(false).build()
+        // autoEnterEnabled is false by default
+        PictureInPictureCompat.setPictureInPictureParams(
+            requireActivity(),
+            PictureInPictureParamsCompat.Builder().build()
         )
     }
 
@@ -661,13 +667,13 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
             streams = try {
                 RetrofitInstance.api.getStreams(videoId!!)
             } catch (e: IOException) {
-                Toast.makeText(context, R.string.unknown_error, Toast.LENGTH_LONG).show()
+                context?.toastFromMainDispatcher(R.string.unknown_error, Toast.LENGTH_LONG)
                 return@launch
             } catch (e: HttpException) {
                 val errorMessage = e.response()?.errorBody()?.string()?.runCatching {
                     JsonHelper.json.decodeFromString<Message>(this).message
                 }?.getOrNull() ?: context?.getString(R.string.server_error) ?: ""
-                Toast.makeText(context, errorMessage, Toast.LENGTH_LONG).show()
+                context?.toastFromMainDispatcher(errorMessage, Toast.LENGTH_LONG)
                 return@launch
             }
 
@@ -721,7 +727,9 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
 
                 if (binding.playerMotionLayout.progress != 1.0f) {
                     // show controllers when not in picture in picture mode
-                    if (!(usePiP() && activity?.isInPictureInPictureMode!!)) {
+                    val inPipMode = PlayerHelper.pipEnabled &&
+                        PictureInPictureCompat.isInPictureInPictureMode(requireActivity())
+                    if (!inPipMode) {
                         binding.player.useController = true
                     }
                 }
@@ -735,13 +743,6 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
                 }
             }
         }
-    }
-
-    /**
-     * Detect whether PiP is supported and enabled
-     */
-    private fun usePiP(): Boolean {
-        return SDK_INT >= Build.VERSION_CODES.O && PlayerHelper.pipEnabled
     }
 
     /**
@@ -905,7 +906,9 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
         // Listener for play and pause icon change
         exoPlayer.addListener(object : Player.Listener {
             override fun onIsPlayingChanged(isPlaying: Boolean) {
-                if (usePiP()) activity?.setPictureInPictureParams(getPipParams())
+                if (PlayerHelper.pipEnabled) {
+                    PictureInPictureCompat.setPictureInPictureParams(requireActivity(), pipParams)
+                }
 
                 if (isPlaying) {
                     // Stop [BackgroundMode] service if it is running.
@@ -956,17 +959,22 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
                     }
                 }
 
+                val activity = requireActivity()
                 if (playbackState == Player.STATE_READY) {
                     // media actually playing
                     transitioning = false
                     // update the PiP params to use the correct aspect ratio
-                    if (usePiP()) activity?.setPictureInPictureParams(getPipParams())
+                    if (PlayerHelper.pipEnabled) {
+                        PictureInPictureCompat.setPictureInPictureParams(activity, pipParams)
+                    }
                 }
 
                 // listen for the stop button in the notification
-                if (playbackState == PlaybackState.STATE_STOPPED && usePiP()) {
+                if (playbackState == PlaybackState.STATE_STOPPED && PlayerHelper.pipEnabled &&
+                    PictureInPictureCompat.isInPictureInPictureMode(activity)
+                ) {
                     // finish PiP by finishing the activity
-                    if (activity?.isInPictureInPictureMode!!) activity?.finish()
+                    activity.finish()
                 }
                 super.onPlaybackStateChanged(playbackState)
             }
@@ -997,12 +1005,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
         }
 
         binding.relPlayerPip.setOnClickListener {
-            if (SDK_INT < Build.VERSION_CODES.O) return@setOnClickListener
-            try {
-                activity?.enterPictureInPictureMode(getPipParams())
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+            PictureInPictureCompat.enterPictureInPictureMode(requireActivity(), pipParams)
         }
         initializeRelatedVideos(streams.relatedStreams.filter { !it.title.isNullOrBlank() })
         // set video description
@@ -1096,7 +1099,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
         // check if the video is the current video and has a valid time
         if (videoId == this.videoId) {
             // try finding the time stamp of the url and seek to it if found
-            TextUtils.parseTimestamp(uri.getQueryParameter("t") ?: return)?.let {
+            uri.getQueryParameter("t")?.toTimeInSeconds()?.let {
                 exoPlayer.seekTo(it * 1000)
             }
         } else {
@@ -1129,20 +1132,9 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
         if (!PlayerHelper.skipButtonsEnabled) return
 
         // toggle the visibility of next and prev buttons based on queue and whether the player view is locked
-        playerBinding.skipPrev.visibility = if (
-            PlayingQueue.hasPrev() && !binding.player.isPlayerLocked
-        ) {
-            View.VISIBLE
-        } else {
-            View.INVISIBLE
-        }
-        playerBinding.skipNext.visibility = if (
-            PlayingQueue.hasNext() && !binding.player.isPlayerLocked
-        ) {
-            View.VISIBLE
-        } else {
-            View.INVISIBLE
-        }
+        val isPlayerLocked = binding.player.isPlayerLocked
+        playerBinding.skipPrev.isInvisible = !PlayingQueue.hasPrev() || isPlayerLocked
+        playerBinding.skipNext.isInvisible = !PlayingQueue.hasNext() || isPlayerLocked
 
         handler.postDelayed(this::syncQueueButtons, 100)
     }
@@ -1193,13 +1185,13 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
 
         // enable the chapters dialog in the player
         val titles = chapters.map { chapter ->
-            "(${chapter.start?.let { DateUtils.formatElapsedTime(it) }}) ${chapter.title}"
+            "(${DateUtils.formatElapsedTime(chapter.start)}) ${chapter.title}"
         }
         playerBinding.chapterLL.setOnClickListener {
             MaterialAlertDialogBuilder(requireContext())
                 .setTitle(R.string.chapters)
                 .setItems(titles.toTypedArray()) { _, index ->
-                    exoPlayer.seekTo(chapters[index].start!! * 1000)
+                    exoPlayer.seekTo(chapters[index].start * 1000)
                 }
                 .show()
         }
@@ -1210,13 +1202,13 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
     // set the name of the video chapter in the exoPlayerView
     private fun setCurrentChapterName() {
         // return if chapters are empty to avoid crashes
-        if (chapters.isEmpty()) return
+        if (chapters.isEmpty() || _binding == null) return
 
         // call the function again in 100ms
         binding.player.postDelayed(this::setCurrentChapterName, 100)
 
         val chapterIndex = getCurrentChapterIndex() ?: return
-        val chapterName = chapters[chapterIndex].title?.trim()
+        val chapterName = chapters[chapterIndex].title.trim()
 
         // change the chapter name textView text to the chapterName
         if (chapterName != playerBinding.chapterName.text) {
@@ -1232,7 +1224,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
      */
     private fun getCurrentChapterIndex(): Int? {
         val currentPosition = exoPlayer.currentPosition / 1000
-        return chapters.indexOfLast { currentPosition >= it.start!! }.takeIf { it >= 0 }
+        return chapters.indexOfLast { currentPosition >= it.start }.takeIf { it >= 0 }
     }
 
     private fun setMediaSource(uri: Uri, mimeType: String) {
@@ -1505,25 +1497,25 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
     }
 
     fun onUserLeaveHint() {
-        if (usePiP() && shouldStartPiP()) {
-            activity?.enterPictureInPictureMode(getPipParams())
+        if (PlayerHelper.pipEnabled && shouldStartPiP()) {
+            PictureInPictureCompat.enterPictureInPictureMode(requireActivity(), pipParams)
             return
         }
-        if (PlayerHelper.pauseOnQuit) exoPlayer.pause()
+        if (PlayerHelper.pauseOnQuit) {
+            exoPlayer.pause()
+        }
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
-    fun getPipParams(): PictureInPictureParams = PictureInPictureParams.Builder()
-        .setActions(PlayerHelper.getPiPModeActions(requireActivity(), exoPlayer.isPlaying))
-        .apply {
-            if (SDK_INT >= Build.VERSION_CODES.S && PlayerHelper.pipEnabled) {
-                setAutoEnterEnabled(true)
+    private val pipParams
+        get() = PictureInPictureParamsCompat.Builder()
+            .setActions(PlayerHelper.getPiPModeActions(requireActivity(), exoPlayer.isPlaying))
+            .setAutoEnterEnabled(PlayerHelper.pipEnabled)
+            .apply {
+                if (exoPlayer.isPlaying) {
+                    setAspectRatio(exoPlayer.videoSize)
+                }
             }
-            if (exoPlayer.isPlaying) {
-                setAspectRatio(exoPlayer.videoSize.width, exoPlayer.videoSize.height)
-            }
-        }
-        .build()
+            .build()
 
     private fun setupSeekbarPreview() {
         playerBinding.seekbarPreview.visibility = View.GONE
@@ -1537,7 +1529,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
     }
 
     private fun shouldStartPiP(): Boolean {
-        if (!PlayerHelper.pipEnabled || SDK_INT >= Build.VERSION_CODES.S) {
+        if (!PlayerHelper.pipEnabled || Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             return false
         }
 
@@ -1562,16 +1554,18 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
 
-        if (!PlayerHelper.autoRotationEnabled) return
-
-        // If in PiP mode, orientation is given as landscape.
-        if (SDK_INT >= Build.VERSION_CODES.N && activity?.isInPictureInPictureMode == true) return
+        if (!PlayerHelper.autoRotationEnabled ||
+            // If in PiP mode, orientation is given as landscape.
+            PictureInPictureCompat.isInPictureInPictureMode(requireActivity())
+        ) {
+            return
+        }
 
         when (newConfig.orientation) {
             // go to fullscreen mode
             Configuration.ORIENTATION_LANDSCAPE -> setFullscreen()
             // exit fullscreen if not landscape
-            else -> unsetFullscreen()
+            else -> if (_binding != null) unsetFullscreen()
         }
     }
 }
