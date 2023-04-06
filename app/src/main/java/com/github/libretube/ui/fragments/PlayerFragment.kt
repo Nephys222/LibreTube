@@ -24,6 +24,7 @@ import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
 import androidx.constraintlayout.motion.widget.MotionLayout
+import androidx.core.content.getSystemService
 import androidx.core.net.toUri
 import androidx.core.os.bundleOf
 import androidx.core.os.postDelayed
@@ -73,7 +74,6 @@ import com.github.libretube.helpers.PreferenceHelper
 import com.github.libretube.helpers.ProxyHelper
 import com.github.libretube.obj.ShareData
 import com.github.libretube.obj.VideoResolution
-import com.github.libretube.services.BackgroundMode
 import com.github.libretube.services.DownloadService
 import com.github.libretube.ui.activities.MainActivity
 import com.github.libretube.ui.adapters.ChaptersAdapter
@@ -244,7 +244,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _binding = FragmentPlayerBinding.inflate(layoutInflater)
+        _binding = FragmentPlayerBinding.inflate(inflater)
         return binding.root
     }
 
@@ -272,7 +272,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
      * somehow the bottom bar is invisible on low screen resolutions, this fixes it
      */
     private fun showBottomBar() {
-        if (isAdded && !binding.player.isPlayerLocked) {
+        if (_binding?.player?.isPlayerLocked == false) {
             playerBinding.bottomBar.isVisible = true
         }
         handler.postDelayed(this::showBottomBar, 100)
@@ -588,12 +588,11 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
         // pauses the player if the screen is turned off
 
         // check whether the screen is on
-        val pm = context?.getSystemService(Context.POWER_SERVICE) as PowerManager
-        val isScreenOn = pm.isInteractive
+        val isInteractive = requireContext().getSystemService<PowerManager>()!!.isInteractive
 
         // pause player if screen off and setting enabled
-        if (
-            this::exoPlayer.isInitialized && !isScreenOn && PlayerHelper.pausePlayerOnScreenOffEnabled
+        if (this::exoPlayer.isInitialized && !isInteractive &&
+            PlayerHelper.pausePlayerOnScreenOffEnabled
         ) {
             exoPlayer.pause()
         }
@@ -645,7 +644,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
         if (!PlayerHelper.watchPositionsVideo) return
         val watchPosition = WatchPosition(videoId!!, exoPlayer.currentPosition)
         CoroutineScope(Dispatchers.IO).launch {
-            Database.watchPositionDao().insertAll(listOf(watchPosition))
+            Database.watchPositionDao().insert(watchPosition)
         }
     }
 
@@ -714,7 +713,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
                     (videoStream?.height ?: 0) > (videoStream?.width ?: 0)
                 ) {
                     withContext(Dispatchers.Main) {
-                        setFullscreen()
+                        if (binding.playerMotionLayout.progress == 0f) setFullscreen()
                     }
                 }
             }
@@ -737,7 +736,9 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
                 trySeekToTimeStamp()
 
                 exoPlayer.prepare()
-                if (!DataSaverMode.isEnabled(requireContext())) exoPlayer.play()
+                if (PreferenceHelper.getBoolean(PreferenceKeys.PLAY_AUTOMATICALLY, true)) {
+                    exoPlayer.play()
+                }
 
                 if (binding.playerMotionLayout.progress != 1.0f) {
                     // show controllers when not in picture in picture mode
@@ -1547,12 +1548,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
             return false
         }
 
-        val backgroundModeRunning = BackgroundHelper.isServiceRunning(
-            requireContext(),
-            BackgroundMode::class.java
-        )
-
-        return exoPlayer.isPlaying && !backgroundModeRunning
+        return exoPlayer.isPlaying && !BackgroundHelper.isBackgroundServiceRunning(requireContext())
     }
 
     private fun killPlayerFragment() {

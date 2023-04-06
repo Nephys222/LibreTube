@@ -7,7 +7,7 @@ import android.content.Intent
 import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.getSystemService
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.github.libretube.R
@@ -32,12 +32,11 @@ import kotlinx.coroutines.withContext
 class NotificationWorker(appContext: Context, parameters: WorkerParameters) :
     CoroutineWorker(appContext, parameters) {
 
-    private val notificationManager = NotificationManagerCompat.from(appContext)
+    private val notificationManager = appContext.getSystemService<NotificationManager>()!!
 
     // the id where notification channels start
     private var notificationId = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-        val nManager = appContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        nManager.activeNotifications.size + DOWNLOAD_PROGRESS_NOTIFICATION_ID
+        notificationManager.activeNotifications.size + DOWNLOAD_PROGRESS_NOTIFICATION_ID
     } else {
         DOWNLOAD_PROGRESS_NOTIFICATION_ID
     }
@@ -54,24 +53,19 @@ class NotificationWorker(appContext: Context, parameters: WorkerParameters) :
      * Determine whether the time is valid to notify
      */
     private fun checkTime(): Boolean {
-        if (!PreferenceHelper.getBoolean(
-                PreferenceKeys.NOTIFICATION_TIME_ENABLED,
-                false
-            )
-        ) {
+        if (!PreferenceHelper.getBoolean(PreferenceKeys.NOTIFICATION_TIME_ENABLED, false)) {
             return true
         }
 
         val start = getTimePickerPref(PreferenceKeys.NOTIFICATION_START_TIME)
         val end = getTimePickerPref(PreferenceKeys.NOTIFICATION_END_TIME)
-
         val currentTime = LocalTime.now()
-        val isOverNight = start > end
 
-        val startValid = if (isOverNight) start > currentTime else start < currentTime
-        val endValid = if (isOverNight) end < currentTime else start > currentTime
-
-        return (startValid && endValid)
+        return if (start > end) {
+            currentTime !in end..start
+        } else {
+            currentTime in start..end
+        }
     }
 
     private fun getTimePickerPref(key: String): LocalTime {
