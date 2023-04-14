@@ -32,7 +32,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
 class DownloadsFragment : Fragment() {
-    private lateinit var binding: FragmentDownloadsBinding
+    private var _binding: FragmentDownloadsBinding? = null
+    private val binding get() = _binding!!
+
     private var binder: DownloadService.LocalBinder? = null
     private val downloads = mutableListOf<DownloadWithItems>()
     private val downloadReceiver = DownloadReceiver()
@@ -63,7 +65,7 @@ class DownloadsFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        binding = FragmentDownloadsBinding.inflate(layoutInflater)
+        _binding = FragmentDownloadsBinding.inflate(inflater)
         return binding.root
     }
 
@@ -72,9 +74,10 @@ class DownloadsFragment : Fragment() {
 
         val dbDownloads = runBlocking(Dispatchers.IO) {
             Database.downloadDao().getAll()
-        }
+        }.takeIf { it.isNotEmpty() } ?: return
+
+        downloads.clear()
         downloads.addAll(dbDownloads)
-        if (downloads.isEmpty()) return
 
         binding.downloadsEmpty.visibility = View.GONE
         binding.downloads.visibility = View.VISIBLE
@@ -111,6 +114,7 @@ class DownloadsFragment : Fragment() {
             object : RecyclerView.AdapterDataObserver() {
                 override fun onItemRangeRemoved(positionStart: Int, itemCount: Int) {
                     super.onItemRangeRemoved(positionStart, itemCount)
+                    val binding = _binding ?: return
                     if (binding.downloads.adapter?.itemCount == 0) {
                         binding.downloads.visibility = View.GONE
                         binding.downloadsEmpty.visibility = View.VISIBLE
@@ -148,7 +152,7 @@ class DownloadsFragment : Fragment() {
         val index = downloads.indexOfFirst {
             it.downloadItems.any { item -> item.id == id }
         }
-        val view = binding.downloads.findViewHolderForAdapterPosition(index) as? DownloadsViewHolder
+        val view = _binding?.downloads?.findViewHolderForAdapterPosition(index) as? DownloadsViewHolder
 
         view?.binding?.apply {
             when (status) {
@@ -184,5 +188,10 @@ class DownloadsFragment : Fragment() {
         runCatching {
             context?.unbindService(serviceConnection)
         }
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 }

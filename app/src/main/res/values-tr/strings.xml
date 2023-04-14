@@ -454,7 +454,7 @@
     <string name="autoplay_countdown_summary">Sonraki videoyu otomatik oynatmadan önce 5 saniyelik bir geri sayım gösterin.</string>
     <string name="playing_next">Sıradaki %1$s içinde oynanıyor</string>
     <string name="video_id">video kimliği</string>
-    <string name="stats_for_nerds">İnekler için istatistikler</string>
+    <string name="stats_for_nerds">Meraklısı için istatistikler</string>
     <plurals name="years_ago">
         <item quantity="one">%d yıl önce</item>
         <item quantity="other">%d yıl önce</item>
@@ -480,4 +480,10 @@
     <string name="new_group">Yeni</string>
     <string name="play_automatically">Otomatik olarak oynat</string>
     <string name="play_automatically_summary">Seçildiğinde videoyu otomatik olarak oynatmaya başla</string>
+    <string name="fullscreen_gestures">Tam ekran hareketlerine gir/çık</string>
+    <string name="go_to_video">Videoya git</string>
+    <plurals name="channel_new_streams">
+        <item quantity="one">%d yeni yayın</item>
+        <item quantity="other">%d yeni yayın</item>
+    </plurals>
 </resources>

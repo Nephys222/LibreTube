@@ -24,6 +24,7 @@ import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
 import androidx.constraintlayout.motion.widget.MotionLayout
+import androidx.constraintlayout.motion.widget.TransitionAdapter
 import androidx.core.content.getSystemService
 import androidx.core.net.toUri
 import androidx.core.os.bundleOf
@@ -72,6 +73,7 @@ import com.github.libretube.helpers.PlayerHelper.checkForSegments
 import com.github.libretube.helpers.PlayerHelper.loadPlaybackParams
 import com.github.libretube.helpers.PreferenceHelper
 import com.github.libretube.helpers.ProxyHelper
+import com.github.libretube.obj.PlayerNotificationData
 import com.github.libretube.obj.ShareData
 import com.github.libretube.obj.VideoResolution
 import com.github.libretube.services.DownloadService
@@ -90,7 +92,6 @@ import com.github.libretube.ui.models.PlayerViewModel
 import com.github.libretube.ui.sheets.BaseBottomSheet
 import com.github.libretube.ui.sheets.CommentsSheet
 import com.github.libretube.ui.sheets.PlayingQueueSheet
-import com.github.libretube.util.DataSaverMode
 import com.github.libretube.util.HtmlParser
 import com.github.libretube.util.LinkHandler
 import com.github.libretube.util.NowPlayingNotification
@@ -184,8 +185,10 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
 
     private val handler = Handler(Looper.getMainLooper())
     private val mainActivity get() = activity as MainActivity
-    private val windowInsetsControllerCompat get() =  WindowCompat
+    private val windowInsetsControllerCompat get() = WindowCompat
         .getInsetsController(mainActivity.window, mainActivity.window.decorView)
+
+    private var scrubbingTimeBar = false
 
     /**
      * Receiver for all actions in the PiP mode
@@ -283,14 +286,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
         mainActivity.binding.container.visibility = View.VISIBLE
         val mainMotionLayout = mainActivity.binding.mainMotionLayout
 
-        binding.playerMotionLayout.addTransitionListener(object : MotionLayout.TransitionListener {
-            override fun onTransitionStarted(
-                motionLayout: MotionLayout?,
-                startId: Int,
-                endId: Int
-            ) {
-            }
-
+        binding.playerMotionLayout.addTransitionListener(object : TransitionAdapter() {
             override fun onTransitionChange(
                 motionLayout: MotionLayout?,
                 startId: Int,
@@ -325,22 +321,12 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
                     changeOrientationMode()
                 }
             }
-
-            override fun onTransitionTrigger(
-                MotionLayout: MotionLayout?,
-                triggerId: Int,
-                positive: Boolean,
-                progress: Float
-            ) {
-            }
         })
 
-        if (PlayerHelper.swipeGestureEnabled) {
-            binding.playerMotionLayout.addSwipeUpListener {
-                if (this::streams.isInitialized) {
-                    binding.player.hideController()
-                    setFullscreen()
-                }
+        binding.playerMotionLayout.addSwipeUpListener {
+            if (this::streams.isInitialized && PlayerHelper.fullscreenGesturesEnabled) {
+                binding.player.hideController()
+                setFullscreen()
             }
         }
 
@@ -1215,14 +1201,17 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
     }
 
     // set the name of the video chapter in the exoPlayerView
-    private fun setCurrentChapterName() {
+    private fun setCurrentChapterName(position: Long? = null) {
         // return if chapters are empty to avoid crashes
         if (chapters.isEmpty() || _binding == null) return
 
         // call the function again in 100ms
         binding.player.postDelayed(this::setCurrentChapterName, 100)
 
-        val chapterIndex = getCurrentChapterIndex() ?: return
+        // if the user is scrubbing the time bar, don't update
+        if (scrubbingTimeBar && position == null) return
+
+        val chapterIndex = getCurrentChapterIndex(position) ?: return
         val chapterName = chapters[chapterIndex].title.trim()
 
         // change the chapter name textView text to the chapterName
@@ -1237,8 +1226,8 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
     /**
      * Get the name of the currently played chapter
      */
-    private fun getCurrentChapterIndex(): Int? {
-        val currentPosition = exoPlayer.currentPosition / 1000
+    private fun getCurrentChapterIndex(position: Long? = null): Int? {
+        val currentPosition = (position ?: exoPlayer.currentPosition) / 1000
         return chapters.indexOfLast { currentPosition >= it.start }.takeIf { it >= 0 }
     }
 
@@ -1377,7 +1366,12 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
         if (!this::nowPlayingNotification.isInitialized) {
             nowPlayingNotification = NowPlayingNotification(requireContext(), exoPlayer, false)
         }
-        nowPlayingNotification.updatePlayerNotification(videoId!!, streams)
+        val playerNotificationData = PlayerNotificationData(
+            streams.title,
+            streams.uploader,
+            streams.thumbnailUrl
+        )
+        nowPlayingNotification.updatePlayerNotification(videoId!!, playerNotificationData)
     }
 
     /**
@@ -1538,7 +1532,15 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
             SeekbarPreviewListener(
                 streams.previewFrames,
                 playerBinding,
-                streams.duration * 1000
+                streams.duration * 1000,
+                onScrub = {
+                    setCurrentChapterName(it)
+                    scrubbingTimeBar = true
+                },
+                onScrubEnd = {
+                    scrubbingTimeBar = false
+                    setCurrentChapterName(it)
+                }
             )
         )
     }

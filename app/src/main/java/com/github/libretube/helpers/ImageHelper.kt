@@ -11,6 +11,7 @@ import coil.disk.DiskCache
 import coil.load
 import coil.request.CachePolicy
 import coil.request.ImageRequest
+import coil.request.ImageResult
 import com.github.libretube.api.CronetHelper
 import com.github.libretube.constants.PreferenceKeys
 import com.github.libretube.extensions.toAndroidUri
@@ -73,6 +74,14 @@ object ImageHelper {
         imageLoader.enqueue(request)
     }
 
+    suspend fun getImage(context: Context, url: String?): ImageResult {
+        val request = ImageRequest.Builder(context)
+            .data(url)
+            .build()
+
+        return imageLoader.execute(request)
+    }
+
     fun getDownloadedImage(context: Context, path: Path): Bitmap? {
         return path.toAndroidUriOrNull()?.let { getImage(context, it) }
     }
@@ -93,8 +102,7 @@ object ImageHelper {
      * Get a squared bitmap with the same width and height from a bitmap
      * @param bitmap The bitmap to resize
      */
-    fun getSquareBitmap(bitmap: Bitmap?): Bitmap? {
-        bitmap ?: return null
+    fun getSquareBitmap(bitmap: Bitmap): Bitmap {
         val newSize = minOf(bitmap.width, bitmap.height)
         return Bitmap.createBitmap(
             bitmap,

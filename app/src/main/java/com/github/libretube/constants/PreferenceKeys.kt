@@ -96,6 +96,7 @@ object PreferenceKeys {
     const val LBRY_HLS = "lbry_hls"
     const val AUTO_FULLSCREEN_SHORTS = "auto_fullscreen_shorts"
     const val PLAY_AUTOMATICALLY = "play_automatically"
+    const val FULLSCREEN_GESTURES = "fullscreen_gestures"
 
     /**
      * Background mode
@@ -106,6 +107,7 @@ object PreferenceKeys {
      * Notifications
      */
     const val NOTIFICATION_ENABLED = "notification_toggle"
+    const val SHOW_STREAM_THUMBNAILS = "show_stream_thumbnails"
     const val CHECKING_FREQUENCY = "checking_frequency"
     const val REQUIRED_NETWORK = "required_network"
     const val IGNORED_NOTIFICATION_CHANNELS = "ignored_notification_channels"

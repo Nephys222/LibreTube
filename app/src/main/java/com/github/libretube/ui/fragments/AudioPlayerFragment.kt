@@ -14,6 +14,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.constraintlayout.motion.widget.MotionLayout
+import androidx.constraintlayout.motion.widget.TransitionAdapter
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.commit
@@ -28,7 +29,7 @@ import com.github.libretube.helpers.BackgroundHelper
 import com.github.libretube.helpers.ImageHelper
 import com.github.libretube.helpers.NavigationHelper
 import com.github.libretube.obj.ShareData
-import com.github.libretube.services.BackgroundMode
+import com.github.libretube.services.OnlinePlayerService
 import com.github.libretube.ui.activities.MainActivity
 import com.github.libretube.ui.dialogs.ShareDialog
 import com.github.libretube.ui.interfaces.AudioPlayerOptions
@@ -41,7 +42,9 @@ import com.github.libretube.util.PlayingQueue
 import kotlin.math.abs
 
 class AudioPlayerFragment : Fragment(), AudioPlayerOptions {
-    private lateinit var binding: FragmentAudioPlayerBinding
+    private var _binding: FragmentAudioPlayerBinding? = null
+    private val binding get() = _binding!!
+
     private lateinit var audioHelper: AudioHelper
     private val mainActivity get() = context as MainActivity
     private val viewModel: PlayerViewModel by activityViewModels()
@@ -56,13 +59,13 @@ class AudioPlayerFragment : Fragment(), AudioPlayerOptions {
     private var handler = Handler(Looper.getMainLooper())
     private var isPaused: Boolean = false
 
-    private var playerService: BackgroundMode? = null
+    private var playerService: OnlinePlayerService? = null
 
     /** Defines callbacks for service binding, passed to bindService()  */
     private val connection = object : ServiceConnection {
         override fun onServiceConnected(className: ComponentName, service: IBinder) {
             // We've bound to LocalService, cast the IBinder and get LocalService instance
-            val binder = service as BackgroundMode.LocalBinder
+            val binder = service as OnlinePlayerService.LocalBinder
             playerService = binder.getService()
             handleServiceConnection()
         }
@@ -74,7 +77,7 @@ class AudioPlayerFragment : Fragment(), AudioPlayerOptions {
         super.onCreate(savedInstanceState)
 
         audioHelper = AudioHelper(requireContext())
-        Intent(activity, BackgroundMode::class.java).also { intent ->
+        Intent(activity, OnlinePlayerService::class.java).also { intent ->
             activity?.bindService(intent, connection, Context.BIND_AUTO_CREATE)
         }
     }
@@ -84,7 +87,7 @@ class AudioPlayerFragment : Fragment(), AudioPlayerOptions {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        binding = FragmentAudioPlayerBinding.inflate(layoutInflater)
+        _binding = FragmentAudioPlayerBinding.inflate(inflater)
         return binding.root
     }
 
@@ -183,8 +186,6 @@ class AudioPlayerFragment : Fragment(), AudioPlayerOptions {
         mainActivity.supportFragmentManager.commit {
             remove(this@AudioPlayerFragment)
         }
-
-        onDestroy()
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -192,14 +193,7 @@ class AudioPlayerFragment : Fragment(), AudioPlayerOptions {
         mainActivity.binding.container.visibility = View.VISIBLE
         val mainMotionLayout = mainActivity.binding.mainMotionLayout
 
-        binding.playerMotionLayout.addTransitionListener(object : MotionLayout.TransitionListener {
-            override fun onTransitionStarted(
-                motionLayout: MotionLayout?,
-                startId: Int,
-                endId: Int
-            ) {
-            }
-
+        binding.playerMotionLayout.addTransitionListener(object : TransitionAdapter() {
             override fun onTransitionChange(
                 motionLayout: MotionLayout?,
                 startId: Int,
@@ -219,14 +213,6 @@ class AudioPlayerFragment : Fragment(), AudioPlayerOptions {
                     viewModel.isMiniPlayerVisible.value = false
                     mainMotionLayout.progress = 0F
                 }
-            }
-
-            override fun onTransitionTrigger(
-                MotionLayout: MotionLayout?,
-                triggerId: Int,
-                positive: Boolean,
-                progress: Float
-            ) {
             }
         })
 
@@ -277,6 +263,7 @@ class AudioPlayerFragment : Fragment(), AudioPlayerOptions {
      * Update the position, duration and text views belonging to the seek bar
      */
     private fun updateSeekBar() {
+        val binding = _binding ?: return
         val duration = playerService?.getDuration()?.takeIf { it > 0 } ?: let {
             // if there's no duration available, clear everything
             binding.timeBar.value = 0f
@@ -311,6 +298,11 @@ class AudioPlayerFragment : Fragment(), AudioPlayerOptions {
             isPaused = !isPlaying
         }
         initializeSeekBar()
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 
     override fun onDestroy() {
