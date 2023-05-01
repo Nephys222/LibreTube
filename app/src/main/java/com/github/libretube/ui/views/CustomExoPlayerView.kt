@@ -201,7 +201,9 @@ internal class CustomExoPlayerView(
                 cancelHideControllerTask()
             }
 
-            override fun onScrubStop(timeBar: TimeBar, position: Long, canceled: Boolean) {}
+            override fun onScrubStop(timeBar: TimeBar, position: Long, canceled: Boolean) {
+                enqueueHideControllerTask()
+            }
         })
 
         setControllerVisibilityListener(
@@ -219,6 +221,7 @@ internal class CustomExoPlayerView(
 
         playerViewModel?.isFullscreen?.observe(viewLifecycleOwner!!) { isFullscreen ->
             WindowHelper.toggleFullscreen(activity, isFullscreen)
+            updateTopBarMargin()
         }
     }
 
@@ -230,6 +233,12 @@ internal class CustomExoPlayerView(
                 else -> R.drawable.ic_play
             }
         )
+    }
+
+    private fun enqueueHideControllerTask() {
+        handler.postDelayed(AUTO_HIDE_CONTROLLER_DELAY, HIDE_CONTROLLER_TOKEN) {
+            hideController()
+        }
     }
 
     private fun cancelHideControllerTask() {
@@ -254,9 +263,7 @@ internal class CustomExoPlayerView(
         // remove the previous callback from the queue to prevent a flashing behavior
         cancelHideControllerTask()
         // automatically hide the controller after 2 seconds
-        handler.postDelayed(AUTO_HIDE_CONTROLLER_DELAY, HIDE_CONTROLLER_TOKEN) {
-            hideController()
-        }
+        enqueueHideControllerTask()
         super.showController()
     }
 
@@ -644,11 +651,13 @@ internal class CustomExoPlayerView(
      * Add extra margin to the top bar to not overlap the status bar
      */
     private fun updateTopBarMargin() {
-        val isFullscreen =
-            resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE ||
-                playerViewModel?.isFullscreen?.value == true
+        val margin = when {
+            resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE -> 10
+            playerViewModel?.isFullscreen?.value == true -> 20
+            else -> 0
+        }
         binding.topBar.updateLayoutParams<MarginLayoutParams> {
-            topMargin = (if (isFullscreen) 10 else 0).dpToPx().toInt()
+            topMargin = margin.dpToPx().toInt()
         }
     }
 
@@ -742,9 +751,7 @@ internal class CustomExoPlayerView(
         // when a control is clicked, restart the countdown to hide the controller
         if (isControllerFullyVisible) {
             cancelHideControllerTask()
-            handler.postDelayed(AUTO_HIDE_CONTROLLER_DELAY, HIDE_CONTROLLER_TOKEN) {
-                hideController()
-            }
+            enqueueHideControllerTask()
         }
         return super.onInterceptTouchEvent(ev)
     }
