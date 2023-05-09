@@ -64,15 +64,9 @@ import com.github.libretube.extensions.hideKeyboard
 import com.github.libretube.extensions.toID
 import com.github.libretube.extensions.toastFromMainDispatcher
 import com.github.libretube.extensions.updateParameters
-import com.github.libretube.helpers.BackgroundHelper
-import com.github.libretube.helpers.DashHelper
-import com.github.libretube.helpers.ImageHelper
-import com.github.libretube.helpers.NavigationHelper
-import com.github.libretube.helpers.PlayerHelper
+import com.github.libretube.helpers.*
 import com.github.libretube.helpers.PlayerHelper.checkForSegments
 import com.github.libretube.helpers.PlayerHelper.loadPlaybackParams
-import com.github.libretube.helpers.PreferenceHelper
-import com.github.libretube.helpers.ProxyHelper
 import com.github.libretube.obj.PlayerNotificationData
 import com.github.libretube.obj.ShareData
 import com.github.libretube.obj.VideoResolution
@@ -110,6 +104,10 @@ import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
 import com.google.android.exoplayer2.upstream.DefaultDataSource
 import com.google.android.exoplayer2.util.MimeTypes
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import java.io.IOException
+import java.util.*
+import java.util.concurrent.Executors
+import kotlin.math.abs
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -118,10 +116,6 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import retrofit2.HttpException
-import java.io.IOException
-import java.util.*
-import java.util.concurrent.Executors
-import kotlin.math.abs
 
 class PlayerFragment : Fragment(), OnlinePlayerOptions {
     private var _binding: FragmentPlayerBinding? = null
@@ -1327,7 +1321,10 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
                 val uri = streams.dash?.let { ProxyHelper.unwrapIfEnabled(it) }?.toUri().takeIf {
                     streams.livestream || streams.videoStreams.isEmpty()
                 } ?: let {
-                    val manifest = DashHelper.createManifest(streams)
+                    val manifest = DashHelper.createManifest(
+                        streams,
+                        DisplayHelper.supportsHdr(requireContext())
+                    )
 
                     // encode to base64
                     val encoded = Base64.encodeToString(manifest.toByteArray(), Base64.DEFAULT)
