@@ -11,11 +11,11 @@ import com.github.libretube.helpers.ImportHelper
 import com.github.libretube.obj.BackupFile
 import com.github.libretube.ui.base.BasePreferenceFragment
 import com.github.libretube.ui.dialogs.BackupDialog
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 class BackupRestoreSettings : BasePreferenceFragment() {
     private val backupDateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH:mm:ss")
@@ -43,7 +43,7 @@ class BackupRestoreSettings : BasePreferenceFragment() {
      * result listeners for importing and exporting subscriptions
      */
     private val getSubscriptionsFile = registerForActivityResult(
-        ActivityResultContracts.GetContent()
+        ActivityResultContracts.GetContent(),
     ) {
         it?.let {
             lifecycleScope.launch(Dispatchers.IO) {
@@ -62,8 +62,8 @@ class BackupRestoreSettings : BasePreferenceFragment() {
     /**
      * result listeners for importing and exporting playlists
      */
-    private val getPlaylistsFile = registerForActivityResult(ActivityResultContracts.GetContent()) {
-        it?.let {
+    private val getPlaylistsFile = registerForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) {
+        it?.forEach {
             CoroutineScope(Dispatchers.IO).launch {
                 ImportHelper.importPlaylists(requireActivity(), it)
             }
@@ -94,7 +94,7 @@ class BackupRestoreSettings : BasePreferenceFragment() {
 
         val importPlaylists = findPreference<Preference>("import_playlists")
         importPlaylists?.setOnPreferenceClickListener {
-            getPlaylistsFile.launch("*/*")
+            getPlaylistsFile.launch(arrayOf("*/*"))
             true
         }
 

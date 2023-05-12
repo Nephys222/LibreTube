@@ -221,7 +221,7 @@ class MainActivity : BaseActivity() {
     private fun setupSubscriptionsBadge() {
         if (!PreferenceHelper.getBoolean(
                 PreferenceKeys.NEW_VIDEOS_BADGE,
-                false
+                false,
             )
         ) {
             return
@@ -238,8 +238,14 @@ class MainActivity : BaseActivity() {
             if (lastSeenVideoIndex < 1) return@observe
             binding.bottomNav.getOrCreateBadge(R.id.subscriptionsFragment).apply {
                 number = lastSeenVideoIndex
-                backgroundColor = ThemeHelper.getThemeColor(this@MainActivity, R.attr.colorPrimary)
-                badgeTextColor = ThemeHelper.getThemeColor(this@MainActivity, R.attr.colorOnPrimary)
+                backgroundColor = ThemeHelper.getThemeColor(
+                    this@MainActivity,
+                    androidx.appcompat.R.attr.colorPrimary,
+                )
+                badgeTextColor = ThemeHelper.getThemeColor(
+                    this@MainActivity,
+                    com.google.android.material.R.attr.colorOnPrimary,
+                )
             }
         }
     }
@@ -293,7 +299,7 @@ class MainActivity : BaseActivity() {
                 val destIds = listOf(
                     R.id.searchResultFragment,
                     R.id.channelFragment,
-                    R.id.playlistFragment
+                    R.id.playlistFragment,
                 )
                 if (navController.currentDestination?.id in destIds && newText.isNullOrEmpty()) {
                     return false
@@ -316,7 +322,7 @@ class MainActivity : BaseActivity() {
                     navController.navigate(R.id.searchFragment)
                 }
                 item.setShowAsAction(
-                    MenuItem.SHOW_AS_ACTION_ALWAYS or MenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW
+                    MenuItem.SHOW_AS_ACTION_ALWAYS or MenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW,
                 )
                 return true
             }
@@ -385,26 +391,26 @@ class MainActivity : BaseActivity() {
         intent?.getStringExtra(IntentData.channelId)?.let {
             navController.navigate(
                 R.id.channelFragment,
-                bundleOf(IntentData.channelId to it)
+                bundleOf(IntentData.channelId to it),
             )
         }
         intent?.getStringExtra(IntentData.channelName)?.let {
             navController.navigate(
                 R.id.channelFragment,
-                bundleOf(IntentData.channelName to it)
+                bundleOf(IntentData.channelName to it),
             )
         }
         intent?.getStringExtra(IntentData.playlistId)?.let {
             navController.navigate(
                 R.id.playlistFragment,
-                bundleOf(IntentData.playlistId to it)
+                bundleOf(IntentData.playlistId to it),
             )
         }
         intent?.getStringExtra(IntentData.videoId)?.let {
             NavigationHelper.navigateVideo(
                 context = this,
                 videoId = it,
-                timeStamp = intent?.getLongExtra(IntentData.timeStamp, 0L)
+                timeStamp = intent?.getLongExtra(IntentData.timeStamp, 0L),
             )
         }
 
