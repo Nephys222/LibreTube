@@ -444,4 +444,6 @@
     <string name="import_playlists_from">ייבוא רשימות נגינה מתוך</string>
     <string name="export_playlists_to">ייצוא רשימות נגינה אל</string>
     <string name="import_format_piped">Piped / LibreTube‎</string>
+    <string name="home_tab_content">תוכן לשונית בית</string>
+    <string name="mark_as_unwatched">סימון כלא נצפה</string>
 </resources>

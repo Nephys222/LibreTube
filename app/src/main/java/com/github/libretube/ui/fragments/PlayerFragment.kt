@@ -79,6 +79,7 @@ import com.github.libretube.helpers.BackgroundHelper
 import com.github.libretube.helpers.DashHelper
 import com.github.libretube.helpers.DisplayHelper
 import com.github.libretube.helpers.ImageHelper
+import com.github.libretube.helpers.LocaleHelper
 import com.github.libretube.helpers.NavigationHelper
 import com.github.libretube.helpers.PlayerHelper
 import com.github.libretube.helpers.PlayerHelper.checkForSegments
@@ -447,7 +448,8 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
         }
 
         binding.relPlayerShare.setOnLongClickListener {
-            streams.hls ?: return@setOnLongClickListener true
+            if (!this::streams.isInitialized || streams.hls == null)
+                return@setOnLongClickListener true
 
             // start an intent with video as mimetype using the hls stream
             val uri = Uri.parse(ProxyHelper.unwrapIfEnabled(streams.hls!!))
@@ -1329,15 +1331,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
                 val uri = streams.dash?.let { ProxyHelper.unwrapIfEnabled(it) }?.toUri().takeIf {
                     streams.livestream || streams.videoStreams.isEmpty()
                 } ?: let {
-                    val manifest = DashHelper.createManifest(
-                        streams,
-                        DisplayHelper.supportsHdr(requireContext()),
-                    )
-
-                    // encode to base64
-                    val encoded = Base64.encodeToString(manifest.toByteArray(), Base64.DEFAULT)
-
-                    "data:application/dash+xml;charset=utf-8;base64,$encoded".toUri()
+                    PlayerHelper.createDashSource(streams, requireContext())
                 }
 
                 this.setMediaSource(uri, MimeTypes.APPLICATION_MPD)
@@ -1368,7 +1362,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
 
         trackSelector.updateParameters {
             setPreferredAudioLanguage(
-                Locale.getDefault().language.lowercase().substring(0, 2),
+                LocaleHelper.getAppLocale().language.lowercase().substring(0, 2),
             )
         }
 

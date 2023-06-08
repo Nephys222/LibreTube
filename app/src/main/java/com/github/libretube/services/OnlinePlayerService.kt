@@ -10,9 +10,11 @@ import android.util.Log
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
+import androidx.core.net.toUri
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
@@ -94,6 +96,7 @@ class OnlinePlayerService : LifecycleService() {
      * Listener for passing playback state changes to the AudioPlayerFragment
      */
     var onIsPlayingChanged: ((isPlaying: Boolean) -> Unit)? = null
+    var onNewVideo: ((streams: Streams, videoId: String) -> Unit)? = null
 
     /**
      * Setting the required [Notification] for running as a foreground service
@@ -203,6 +206,7 @@ class OnlinePlayerService : LifecycleService() {
             streams?.thumbnailUrl,
         )
         nowPlayingNotification.updatePlayerNotification(videoId, playerNotificationData)
+        streams?.let { onNewVideo?.invoke(it, videoId) }
 
         player?.apply {
             playWhenReady = playWhenReadyPlayer
@@ -297,14 +301,15 @@ class OnlinePlayerService : LifecycleService() {
     private fun setMediaItem() {
         val streams = streams ?: return
 
-        val uri = if (streams.audioStreams.isNotEmpty()) {
-            PlayerHelper.getAudioSource(this, streams.audioStreams)
+        val (uri, mimeType) = if (streams.audioStreams.isNotEmpty()) {
+            PlayerHelper.createDashSource(streams, this, true) to MimeTypes.APPLICATION_MPD
         } else {
-            streams.hls ?: return
+            ProxyHelper.rewriteUrl(streams.hls)?.toUri() to MimeTypes.APPLICATION_M3U8
         }
 
         val mediaItem = MediaItem.Builder()
-            .setUri(ProxyHelper.rewriteUrl(uri))
+            .setUri(uri)
+            .setMimeType(mimeType)
             .setMetadata(streams)
             .build()
         player?.setMediaItem(mediaItem)

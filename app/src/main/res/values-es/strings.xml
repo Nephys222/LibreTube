@@ -136,7 +136,7 @@
     <string name="player">Reproductor</string>
     <string name="appearance_summary">Ajusta la aplicación a tu gusto.</string>
     <string name="playback_speed">Velocidad de reproducción</string>
-    <string name="live">En vivo</string>
+    <string name="live">En directo</string>
     <string name="buffering_goal">Precarga</string>
     <string name="buffering_goal_summary">Cantidad máxima de segundos de vídeo a almacenar en búfer.</string>
     <string name="category_filler">Clips de relleno</string>
@@ -441,4 +441,6 @@
     <string name="export_playlists_to">Exportar listas hacia</string>
     <string name="import_format_piped">Piped / LibreTube</string>
     <string name="import_playlists_from">Importar listas desde</string>
+    <string name="home_tab_content">Contenido de pestaña \"Inicio\"</string>
+    <string name="mark_as_unwatched">Marcar como no visto</string>
 </resources>
