@@ -149,6 +149,8 @@ class PlaylistFragment : Fragment() {
 
                 binding.playlistInfo.text = getChannelAndVideoString(response, response.videos)
                 binding.playlistDescription.text = response.description
+                // hide playlist description text view if not provided
+                binding.playlistDescription.isGone = response.description.orEmpty().isBlank()
 
                 binding.playlistDescription.let { textView ->
                     textView.setOnClickListener {
@@ -171,6 +173,9 @@ class PlaylistFragment : Fragment() {
                             binding.playlistName.text = it
                             playlistName = it
                         },
+                        onChangeDescription = {
+                            binding.playlistDescription.text = it
+                        }
                     ).show(
                         childFragmentManager,
                         PlaylistOptionsBottomSheet::class.java.name,

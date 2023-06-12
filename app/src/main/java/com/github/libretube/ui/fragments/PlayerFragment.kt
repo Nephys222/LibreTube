@@ -16,7 +16,6 @@ import android.os.PowerManager
 import android.text.format.DateUtils
 import android.text.method.LinkMovementMethod
 import android.text.util.Linkify
-import android.util.Base64
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -76,8 +75,6 @@ import com.github.libretube.extensions.toID
 import com.github.libretube.extensions.toastFromMainDispatcher
 import com.github.libretube.extensions.updateParameters
 import com.github.libretube.helpers.BackgroundHelper
-import com.github.libretube.helpers.DashHelper
-import com.github.libretube.helpers.DisplayHelper
 import com.github.libretube.helpers.ImageHelper
 import com.github.libretube.helpers.LocaleHelper
 import com.github.libretube.helpers.NavigationHelper
@@ -563,7 +560,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
             streams.views.formatShort()
         } else {
             // show exact view count
-            String.format("%,d", streams.views)
+            "%,d".format(streams.views)
         }
         val viewInfo = getString(R.string.normal_views, views, localizeDate(streams))
         if (binding.descLinLayout.isVisible) {
@@ -586,9 +583,8 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
         if (this::chapters.isInitialized && chapters.isNotEmpty()) {
             val chapterIndex = getCurrentChapterIndex() ?: return
             // scroll to the current chapter in the chapterRecView in the description
-            val layoutManager = binding.chaptersRecView.layoutManager as LinearLayoutManager
-            layoutManager.scrollToPositionWithOffset(chapterIndex, 0)
-            // set selected
+            binding.chaptersRecView.scrollToPosition(chapterIndex)
+            // set selected item, that should be highlighted
             val chaptersAdapter = binding.chaptersRecView.adapter as ChaptersAdapter
             chaptersAdapter.updateSelectedPosition(chapterIndex)
         }
@@ -628,8 +624,6 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
 
         try {
             saveWatchPosition()
-
-            PlayingQueue.clear()
 
             nowPlayingNotification.destroySelfAndPlayer()
 
@@ -893,14 +887,8 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
     @SuppressLint("SetTextI18n")
     private fun initializePlayerView() {
         // initialize the player view actions
-        binding.player.initialize(
-            this,
-            doubleTapOverlayBinding,
-            playerGestureControlsViewBinding,
-            trackSelector,
-            viewModel,
-            viewLifecycleOwner,
-        )
+        binding.player.initialize(doubleTapOverlayBinding, playerGestureControlsViewBinding)
+        binding.player.initPlayerOptions(viewModel, viewLifecycleOwner, trackSelector, this)
 
         binding.apply {
             val views = streams.views.formatShort()
@@ -1064,6 +1052,8 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
     }
 
     private fun showAutoPlayCountdown() {
+        if (!PlayingQueue.hasNext()) return
+
         binding.player.useController = false
         binding.player.hideController()
         binding.autoplayCountdown.setHideSelfListener {
