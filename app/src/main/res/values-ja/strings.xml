@@ -22,7 +22,7 @@
     <string name="music_songs">YT Musicの曲</string>
     <string name="sponsorblock_summary">このAPIを使用 https://sponsor.ajay.app/</string>
     <string name="category_selfpromo">無償/自己宣伝</string>
-    <string name="category_interaction">操作のお願い (いいねや登録)</string>
+    <string name="category_interaction">操作のお願い</string>
     <string name="category_intro">合間/導入アニメ</string>
     <string name="category_outro">終了シーンとクレジット</string>
     <string name="color_blue">群青色</string>
@@ -72,7 +72,7 @@
     <string name="settings">設定</string>
     <string name="noInternet">インターネットに接続してください。</string>
     <string name="music_videos">YT Musicの動画</string>
-    <string name="location">位置</string>
+    <string name="location">場所</string>
     <string name="retry">再試行</string>
     <string name="comments">コメント</string>
     <string name="all">すべて</string>
@@ -270,7 +270,7 @@
     <string name="playback_pitch">ピッチ</string>
     <string name="error_occurred">エラー</string>
     <string name="copied">コピーしました</string>
-    <string name="change_region">急上昇は現在の地域では利用できないようです。設定で他の地域を選択してください。</string>
+    <string name="change_region">急上昇は現在の地域で利用できません。設定で他の地域を選択してください。</string>
     <string name="share_with_time">時間指定で共有</string>
     <string name="legacy_subscriptions">古い登録チャンネル表示</string>
     <string name="device_info">端末情報</string>
@@ -436,4 +436,15 @@
     <string name="import_format_youtube_csv">YouTube (CSV)</string>
     <string name="unlimited_search_history">無制限の検索履歴</string>
     <string name="home_tab_content">ホームタブに表示するコンテンツ</string>
+    <string name="mark_as_unwatched">未視聴にする</string>
+    <string name="welcome">LibreTube へようこそ</string>
+    <string name="choose_instance">最初にインスタンスを選択！</string>
+    <string name="choose_instance_long">使用する Piped のインスタンスを以下から選択します。Piped のインスタンスは、あなたと YouTube との間の仲介役です。これらインスタンスは物理的に様々な場所にあり、国旗で示されています。物理的にあなたと近いインスタンスはそうでないより高速な可能性が高いです。インスタンスの選択はいつでも設定から変更できます。</string>
+    <string name="change_playlist_description">プレイリストの説明を変更</string>
+    <string name="playlist_description">プレイリストの説明</string>
+    <string name="emptyPlaylistDescription">プレイリストの説明は空にできません</string>
+    <string name="show_search_suggestions">検索語句の候補を表示</string>
+    <string name="off">オフ</string>
+    <string name="manual">手動</string>
+    <string name="automatic">自動</string>
 </resources>

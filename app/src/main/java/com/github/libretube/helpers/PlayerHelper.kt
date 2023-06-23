@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.net.Uri
+import android.text.format.DateUtils
 import android.util.Base64
 import android.view.accessibility.CaptioningManager
 import android.widget.Toast
@@ -23,18 +24,29 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.LoadControl
 import androidx.media3.ui.CaptionStyleCompat
 import com.github.libretube.R
-import com.github.libretube.api.obj.PipedStream
+import com.github.libretube.api.obj.ChapterSegment
 import com.github.libretube.api.obj.Segment
 import com.github.libretube.api.obj.Streams
 import com.github.libretube.constants.PreferenceKeys
-import com.github.libretube.enums.AudioQuality
 import com.github.libretube.enums.PlayerEvent
+import com.github.libretube.enums.SbSkipOptions
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
 
 object PlayerHelper {
     private const val ACTION_MEDIA_CONTROL = "media_control"
     const val CONTROL_TYPE = "control_type"
+    private val SPONSOR_CATEGORIES: Array<String> =
+        arrayOf(
+            "intro",
+            "selfpromo",
+            "interaction",
+            "sponsor",
+            "outro",
+            "filler",
+            "music_offtopic",
+            "preview")
 
     /**
      * Create a base64 encoded DASH stream manifest
@@ -69,63 +81,14 @@ object PlayerHelper {
     /**
      * get the categories for sponsorBlock
      */
-    fun getSponsorBlockCategories(): ArrayList<String> {
-        val categories: ArrayList<String> = arrayListOf()
-        if (PreferenceHelper.getBoolean(
-                "intro_category_key",
-                false,
-            )
-        ) {
-            categories.add("intro")
-        }
-        if (PreferenceHelper.getBoolean(
-                "selfpromo_category_key",
-                false,
-            )
-        ) {
-            categories.add("selfpromo")
-        }
-        if (PreferenceHelper.getBoolean(
-                "interaction_category_key",
-                false,
-            )
-        ) {
-            categories.add("interaction")
-        }
-        if (PreferenceHelper.getBoolean(
-                "sponsors_category_key",
-                true,
-            )
-        ) {
-            categories.add("sponsor")
-        }
-        if (PreferenceHelper.getBoolean(
-                "outro_category_key",
-                false,
-            )
-        ) {
-            categories.add("outro")
-        }
-        if (PreferenceHelper.getBoolean(
-                "filler_category_key",
-                false,
-            )
-        ) {
-            categories.add("filler")
-        }
-        if (PreferenceHelper.getBoolean(
-                "music_offtopic_category_key",
-                false,
-            )
-        ) {
-            categories.add("music_offtopic")
-        }
-        if (PreferenceHelper.getBoolean(
-                "preview_category_key",
-                false,
-            )
-        ) {
-            categories.add("preview")
+    fun getSponsorBlockCategories(): MutableMap<String, SbSkipOptions> {
+        val categories: MutableMap<String, SbSkipOptions> = mutableMapOf()
+
+        for (category in SPONSOR_CATEGORIES){
+            val state = PreferenceHelper.getString(category + "_category", "off").uppercase()
+            if (SbSkipOptions.valueOf(state) != SbSkipOptions.OFF){
+                categories[category] = SbSkipOptions.valueOf(state)
+            }
         }
         return categories
     }
@@ -238,12 +201,6 @@ object PlayerHelper {
         get() = PreferenceHelper.getBoolean(
             PreferenceKeys.PICTURE_IN_PICTURE,
             true,
-        )
-
-    val skipSegmentsManually: Boolean
-        get() = PreferenceHelper.getBoolean(
-            PreferenceKeys.SB_SKIP_MANUALLY,
-            false,
         )
 
     val autoPlayEnabled: Boolean
@@ -476,7 +433,7 @@ object PlayerHelper {
     fun ExoPlayer.checkForSegments(
         context: Context,
         segments: List<Segment>,
-        skipManually: Boolean = false,
+        sponsorBlockConfig: MutableMap<String, SbSkipOptions>,
     ): Long? {
         for (segment in segments) {
             val segmentStart = (segment.segment[0] * 1000f).toLong()
@@ -486,7 +443,7 @@ object PlayerHelper {
             if ((duration - currentPosition).absoluteValue < 500) continue
 
             if (currentPosition in segmentStart until segmentEnd) {
-                if (!skipManually) {
+                if (sponsorBlockConfig[segment.category] == SbSkipOptions.AUTOMATIC) {
                     if (sponsorBlockNotifications) {
                         runCatching {
                             Toast.makeText(context, R.string.segment_skipped, Toast.LENGTH_SHORT)
@@ -494,11 +451,26 @@ object PlayerHelper {
                         }
                     }
                     seekTo(segmentEnd)
-                } else {
+                } else if (sponsorBlockConfig[segment.category] == SbSkipOptions.MANUAL) {
                     return segmentEnd
                 }
             }
         }
         return null
+    }
+
+    /**
+     * Show a dialog with the chapters provided, even if the list is empty
+     */
+    fun showChaptersDialog(context: Context, chapters: List<ChapterSegment>, player: ExoPlayer) {
+        val titles = chapters.map { chapter ->
+            "(${DateUtils.formatElapsedTime(chapter.start)}) ${chapter.title}"
+        }
+        MaterialAlertDialogBuilder(context)
+            .setTitle(R.string.chapters)
+            .setItems(titles.toTypedArray()) { _, index ->
+                player.seekTo(chapters[index].start * 1000)
+            }
+            .show()
     }
 }
