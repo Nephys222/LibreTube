@@ -56,7 +56,7 @@ class SubscriptionsFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
-        savedInstanceState: Bundle?,
+        savedInstanceState: Bundle?
     ): View {
         _binding = FragmentSubscriptionsBinding.inflate(inflater, container, false)
         return binding.root
@@ -67,7 +67,7 @@ class SubscriptionsFragment : Fragment() {
 
         val loadFeedInBackground = PreferenceHelper.getBoolean(
             PreferenceKeys.SAVE_FEED,
-            false,
+            false
         )
 
         // update the text according to the current order and filter
@@ -232,7 +232,7 @@ class SubscriptionsFragment : Fragment() {
                 runBlocking {
                     if (!PreferenceHelper.getBoolean(
                             PreferenceKeys.HIDE_WATCHED_FROM_FEED,
-                            false,
+                            false
                         )
                     ) {
                         streams
@@ -273,7 +273,7 @@ class SubscriptionsFragment : Fragment() {
         binding.subProgress.visibility = View.GONE
         subscriptionsAdapter = VideosAdapter(
             sortedFeed.toMutableList(),
-            showAllAtOnce = false,
+            showAllAtOnce = false
         )
         binding.subFeed.adapter = subscriptionsAdapter
 
@@ -281,15 +281,14 @@ class SubscriptionsFragment : Fragment() {
     }
 
     private fun removeWatchVideosFromFeed(streams: List<StreamItem>): List<StreamItem> {
-        return runBlocking {
-            streams.filter {
-                runBlocking(Dispatchers.IO) {
-                    runCatching {
-                        val watchPosition = DatabaseHolder.Database.watchPositionDao()
-                            .findById(it.url.orEmpty().toID())?.position?.div(1000)
-                        (watchPosition ?: 0) < 0.9 * (it.duration ?: 1L)
-                    }.getOrDefault(false)
-                }
+        return streams.filter {
+            runBlocking(Dispatchers.IO) {
+                val historyItem = DatabaseHolder.Database.watchPositionDao()
+                    .findById(it.url.orEmpty().toID()) ?: return@runBlocking true
+                val progress = historyItem.position / 1000
+                val duration = it.duration ?: 0
+                // show video only in feed when watched less than 1/4
+                progress < 0.9f * duration
             }
         }
     }
@@ -301,7 +300,7 @@ class SubscriptionsFragment : Fragment() {
 
         val legacySubscriptions = PreferenceHelper.getBoolean(
             PreferenceKeys.LEGACY_SUBSCRIPTIONS,
-            false,
+            false
         )
 
         binding.subChannels.layoutManager = if (legacySubscriptions) {
@@ -309,8 +308,8 @@ class SubscriptionsFragment : Fragment() {
                 context,
                 PreferenceHelper.getString(
                     PreferenceKeys.LEGACY_SUBSCRIPTIONS_COLUMNS,
-                    "4",
-                ).toInt(),
+                    "4"
+                ).toInt()
             )
         } else {
             LinearLayoutManager(context)
@@ -321,7 +320,7 @@ class SubscriptionsFragment : Fragment() {
             LegacySubscriptionAdapter(viewModel.subscriptions.value!!)
         } else {
             SubscriptionChannelAdapter(
-                viewModel.subscriptions.value!!.toMutableList(),
+                viewModel.subscriptions.value!!.toMutableList()
             )
         }
 

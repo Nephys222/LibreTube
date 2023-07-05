@@ -403,7 +403,7 @@
     <string name="subscriberAndVideoCounts">%1$s 人のチャンネル登録者 • %2$d 本の動画</string>
     <string name="replies">返信</string>
     <string name="disable_proxy">Pipedのプロキシを無効化</string>
-    <string name="disable_proxy_summary">動画や画像を YouTube のサーバーから直接読み込みます。VPN を併用する場合にのみ有効化してください！YT Music のコンテンツには適用できない可能性があることに注意してください。</string>
+    <string name="disable_proxy_summary">動画や画像を YouTube のサーバーから直接読み込みます。VPN を併用する場合にのみ有効化してください！</string>
     <string name="auto_fullscreen_shorts">ショート動画を自動で全画面表示</string>
     <string name="sleep_timer">スリープタイマー</string>
     <string name="fullscreen_gestures">ジェスチャで全画面を開始/終了</string>
@@ -444,7 +444,20 @@
     <string name="playlist_description">プレイリストの説明</string>
     <string name="emptyPlaylistDescription">プレイリストの説明は空にできません</string>
     <string name="show_search_suggestions">検索語句の候補を表示</string>
-    <string name="off">オフ</string>
-    <string name="manual">手動</string>
-    <string name="automatic">自動</string>
+    <string name="off">無効</string>
+    <string name="manual">手動でスキップ</string>
+    <string name="automatic">自動でスキップ</string>
+    <string name="sb_custom_colors">シーン部分の色を指定</string>
+    <string name="color">色</string>
+    <string name="sb_color_enable">広告シーンの部分の色の指定を切り替え</string>
+    <string name="invalid_color">この色の値は無効です！</string>
+    <string name="enter_hex_value">16進数の色の値を入力</string>
+    <string name="visible">シークバーに表示</string>
+    <string name="jumped_to_highlight">動画のハイライトに飛ぶ</string>
+    <string name="category_highlight">動画のハイライトを表示</string>
+    <string name="chapters_videoHighlight">動画のハイライト</string>
+    <string name="category_highlight_description">その動画の宣伝的な題、サムネイル、または最も興味を引く部分です。チャプター欄からタップするとそこに飛びます。</string>
+    <string name="stop">停止</string>
+    <string name="fallback_piped_proxy_desc">YouTubeに直接接続しても現在の動画が再生できない際に、プロキシ経由で動画を読み込みます（最初の読み込み時間は増加）。無効にすると、YTの制限によりYouTubeの音楽コンテンツが再生されないことがあります。</string>
+    <string name="fallback_piped_proxy">失敗時に Piped プロキシに接続</string>
 </resources>

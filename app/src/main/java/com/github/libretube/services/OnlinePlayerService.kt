@@ -27,10 +27,10 @@ import com.github.libretube.constants.IntentData
 import com.github.libretube.constants.PLAYER_NOTIFICATION_ID
 import com.github.libretube.db.DatabaseHolder.Database
 import com.github.libretube.db.obj.WatchPosition
+import com.github.libretube.enums.SbSkipOptions
 import com.github.libretube.extensions.parcelableExtra
 import com.github.libretube.extensions.setMetadata
 import com.github.libretube.extensions.toID
-import com.github.libretube.enums.SbSkipOptions
 import com.github.libretube.helpers.PlayerHelper
 import com.github.libretube.helpers.PlayerHelper.checkForSegments
 import com.github.libretube.helpers.PlayerHelper.loadPlaybackParams
@@ -78,7 +78,8 @@ class OnlinePlayerService : LifecycleService() {
      * SponsorBlock Segment data
      */
     private var segments: List<Segment> = listOf()
-    private var sponsorBlockConfig: MutableMap<String, SbSkipOptions> = PlayerHelper.getSponsorBlockCategories()
+    private var sponsorBlockConfig: MutableMap<String, SbSkipOptions> =
+        PlayerHelper.getSponsorBlockCategories()
 
     /**
      * [Notification] for the player
@@ -185,20 +186,20 @@ class OnlinePlayerService : LifecycleService() {
 
     private fun playAudio(seekToPosition: Long) {
         initializePlayer()
-        setMediaItem()
+        lifecycleScope.launch(Dispatchers.IO) { setMediaItem() }
 
         // create the notification
         if (!this@OnlinePlayerService::nowPlayingNotification.isInitialized) {
             nowPlayingNotification = NowPlayingNotification(
                 this@OnlinePlayerService,
                 player!!,
-                true,
+                true
             )
         }
         val playerNotificationData = PlayerNotificationData(
             streams?.title,
             streams?.uploader,
-            streams?.thumbnailUrl,
+            streams?.thumbnailUrl
         )
         nowPlayingNotification.updatePlayerNotification(videoId, playerNotificationData)
         streams?.let { onNewVideo?.invoke(it, videoId) }
@@ -256,9 +257,11 @@ class OnlinePlayerService : LifecycleService() {
                     Player.STATE_ENDED -> {
                         if (PlayerHelper.autoPlayEnabled) playNextVideo()
                     }
+
                     Player.STATE_IDLE -> {
                         onDestroy()
                     }
+
                     Player.STATE_BUFFERING -> {}
                     Player.STATE_READY -> {}
                 }
@@ -270,7 +273,7 @@ class OnlinePlayerService : LifecycleService() {
                     Toast.makeText(
                         this@OnlinePlayerService.applicationContext,
                         error.localizedMessage,
-                        Toast.LENGTH_SHORT,
+                        Toast.LENGTH_SHORT
                     ).show()
                 }
             }
@@ -293,13 +296,19 @@ class OnlinePlayerService : LifecycleService() {
     /**
      * Sets the [MediaItem] with the [streams] into the [player]
      */
-    private fun setMediaItem() {
+    private suspend fun setMediaItem() {
         val streams = streams ?: return
 
         val (uri, mimeType) = if (streams.audioStreams.isNotEmpty()) {
-            PlayerHelper.createDashSource(streams, this, true) to MimeTypes.APPLICATION_MPD
+            val disableProxy = ProxyHelper.shouldDisableProxy(streams.videoStreams.first().url!!)
+            PlayerHelper.createDashSource(
+                streams,
+                this,
+                true,
+                disableProxy
+            ) to MimeTypes.APPLICATION_MPD
         } else {
-            ProxyHelper.rewriteUrl(streams.hls)?.toUri() to MimeTypes.APPLICATION_M3U8
+            ProxyHelper.unwrapStreamUrl(streams.hls.orEmpty()).toUri() to MimeTypes.APPLICATION_M3U8
         }
 
         val mediaItem = MediaItem.Builder()
@@ -307,7 +316,7 @@ class OnlinePlayerService : LifecycleService() {
             .setMimeType(mimeType)
             .setMetadata(streams)
             .build()
-        player?.setMediaItem(mediaItem)
+        withContext(Dispatchers.Main) { player?.setMediaItem(mediaItem) }
     }
 
     /**
@@ -319,7 +328,7 @@ class OnlinePlayerService : LifecycleService() {
                 if (sponsorBlockConfig.isEmpty()) return@runCatching
                 segments = RetrofitInstance.api.getSegments(
                     videoId,
-                    JsonHelper.json.encodeToString(sponsorBlockConfig.keys),
+                    JsonHelper.json.encodeToString(sponsorBlockConfig.keys)
                 ).segments
                 checkForSegments()
             }

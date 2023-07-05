@@ -15,12 +15,12 @@ desugaring = "2.0.3"
 cronetEmbedded = "113.5672.61"
 cronetOkHttp = "0.1.0"
 coil = "2.4.0"
-leakcanary = "2.11"
+leakcanary = "2.12"
 room = "2.5.2"
 kotlinxSerialization = "1.5.1"
 kotlinxDatetime = "0.4.0"
 kotlinxRetrofit = "1.0.0"
-media3 = "1.0.2"
+media3 = "1.1.0"
 
 [libraries]
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
