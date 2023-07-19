@@ -289,7 +289,7 @@
     <string name="playlists_order">Ordre des playlists</string>
     <string name="playlistNameReversed">Nom de la playlist (inversé)</string>
     <string name="queue">File</string>
-    <string name="added_to_playlist">Ajouté à la playlist</string>
+    <string name="added_to_playlist">Ajouté à la playlist %1$s</string>
     <string name="sb_markers">Marqueurs</string>
     <string name="sb_markers_summary">Marquez les segments sur la barre de temps.</string>
     <string name="alternative_videos_layout">Disposition alternative des vidéos</string>
@@ -311,7 +311,6 @@
     <string name="layout">Mise en page</string>
     <string name="alternative_player_layout_summary">Afficher les vidéos connexes en une ligne au-dessus des commentaires, à la place d\'au-dessous.</string>
     <string name="audio_track">Piste audio</string>
-    <string name="default_audio_track">Par défaut</string>
     <string name="hls_instead_of_dash">Utiliser HLS</string>
     <string name="hls_instead_of_dash_summary">Utiliser HLS à la place de DASH (sera plus lent, non recommandé)</string>
     <string name="auto_quality">Automatique</string>

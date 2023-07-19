@@ -271,7 +271,7 @@
     <string name="repeat_mode_current">Current</string>
     <string name="backup_restore">Backup &amp; restore</string>
     <string name="backup">Backup</string>
-    <string name="picture_in_picture">Picture in Picture</string>
+    <string name="picture_in_picture">Picture-in-Picture</string>
     <string name="player_resize_mode">Resize mode</string>
     <string name="maximum_image_cache">Max image cache size</string>
     <string name="copied_to_clipboard">Copied to clipboard</string>
@@ -303,11 +303,11 @@
     <string name="playlists_order">Playlists order</string>
     <string name="playlistNameReversed">Playlist name (reversed)</string>
     <string name="time_code">Time code (seconds)</string>
-    <string name="added_to_playlist">Added to playlist</string>
+    <string name="added_to_playlist">Added to playlist %1$s</string>
     <string name="queue">Queue</string>
     <string name="sb_markers">Markers</string>
     <string name="sb_markers_summary">Mark the segments on the time bar.</string>
-    <string name="sb_color_enable">Toggles custom color segments for sponsor block segments</string>
+    <string name="sb_color_enable">Toggles custom color segments for SponsorBlock segments.</string>
     <string name="sb_custom_colors">Custom segment colors</string>
     <string name="color">Color</string>
     <string name="invalid_color">Invalid color value entered!</string>
@@ -330,7 +330,6 @@
     <string name="alternative_player_layout">Alternative player layout</string>
     <string name="alternative_player_layout_summary">Show the related videos as a row above the comments instead of below.</string>
     <string name="audio_track">Audio track</string>
-    <string name="default_audio_track">Default</string>
     <string name="unsupported_file_format">Unsupported file format: %1$s</string>
     <string name="hls_instead_of_dash">Use HLS</string>
     <string name="hls_instead_of_dash_summary">Use HLS instead of DASH (will be slower, not recommended)</string>
@@ -434,7 +433,6 @@
     <string name="visible">Show in seek bar</string>
     <string name="fallback_piped_proxy">Fallback to Piped proxy</string>
     <string name="fallback_piped_proxy_desc">Load videos via the proxy if connecting to YouTube directly doesn\'t work for the current video (increases the initial loading times). If disabled, YouTube music content likely won\'t play due to YT restrictions.</string>
-
     <!-- Backup & Restore Settings -->
     <string name="import_subscriptions_from">Import subscriptions from</string>
     <string name="export_subscriptions_to">Export subscriptions to</string>
@@ -446,6 +444,15 @@
     <string name="import_format_youtube_csv">YouTube (CSV)</string>
     <string name="home_tab_content">Home tab content</string>
     <string name="show_search_suggestions">Show search suggestions</string>
+    <string name="audio_track_format">%1$s - %2$s</string>
+    <string name="unknown_audio_language">Unknown audio language</string>
+    <string name="unknown_audio_track_type">Unknown audio track type</string>
+    <string name="original_or_main_audio_track">original or main</string>
+    <string name="dubbed_audio_track">dubbed</string>
+    <string name="descriptive_audio_track">descriptive</string>
+    <string name="default_or_unknown_audio_track">default or unknown</string>
+    <string name="unknown_or_no_audio">unknown or no audio</string>
+    <string name="continue_watching">Continue watching</string>
 
     <!-- Notification channel strings -->
     <string name="download_channel_name">Download Service</string>

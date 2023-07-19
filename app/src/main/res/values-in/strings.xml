@@ -289,7 +289,7 @@
     <string name="playlists_order">Urutan daftar main</string>
     <string name="playlistNameReversed">Nama daftar main (dibalik)</string>
     <string name="time_code">Kode waktu (detik)</string>
-    <string name="added_to_playlist">Ditambahkan ke daftar putar</string>
+    <string name="added_to_playlist">Ditambahkan ke daftar putar %1$s</string>
     <string name="queue">Antrean</string>
     <string name="sb_markers_summary">Tandai segmen pada bilah waktu.</string>
     <string name="sb_markers">Penanda</string>
@@ -311,7 +311,6 @@
     <string name="alternative_player_layout">Tata letak pemutar alternatif</string>
     <string name="alternative_player_layout_summary">Tampilkan video terkait sebagai baris di atas komentar, bukan di bawah.</string>
     <string name="audio_track">Trek audio</string>
-    <string name="default_audio_track">Bawaan</string>
     <string name="hls_instead_of_dash">Gunakan HLS</string>
     <string name="auto_quality">Otomatis</string>
     <string name="hls_instead_of_dash_summary">Gunakan HLS daripada DASH (akan lebih lambat, tidak disarankan)</string>
@@ -447,7 +446,7 @@
     <string name="manual">Manual</string>
     <string name="off">Mati</string>
     <string name="automatic">Otomatis</string>
-    <string name="sb_color_enable">Mengaktifkan segmen warna kustom untuk segmen pemblokiran sponsor</string>
+    <string name="sb_color_enable">Mengaktifkan segmen warna kustom untuk segmen pemblokiran sponsor.</string>
     <string name="invalid_color">Nilai warna yang dimasukkan tidak valid!</string>
     <string name="visible">Tampilkan dalam bilah seek</string>
     <string name="color">Warna</string>
@@ -460,4 +459,12 @@
     <string name="chapters_videoHighlight">Sorotan Video</string>
     <string name="fallback_piped_proxy">Proksi Piped sebagai cadangan</string>
     <string name="fallback_piped_proxy_desc">Muat video melalui proksi jika menghubungkan ke YouTube secara langsung tidak berfungsi untuk video saat ini (meningkatkan waktu pemuatan awal). Jika dinonaktifkan, konten musik YouTube kemungkinan tidak akan diputar karena pembatasan YouTube.</string>
+    <string name="unknown_audio_track_type">Jenis trek audio tidak diketahui</string>
+    <string name="audio_track_format">%1$s - %2$s</string>
+    <string name="original_or_main_audio_track">asli atau utama</string>
+    <string name="unknown_audio_language">Bahasa audio tidak diketahui</string>
+    <string name="dubbed_audio_track">disulih suara</string>
+    <string name="descriptive_audio_track">deskriptif</string>
+    <string name="default_or_unknown_audio_track">bawaan atau tidak diketahui</string>
+    <string name="unknown_or_no_audio">tidak diketahui atau tidak ada audio</string>
 </resources>

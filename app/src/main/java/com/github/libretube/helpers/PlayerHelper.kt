@@ -5,6 +5,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
+import android.graphics.Color
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
@@ -22,9 +23,11 @@ import androidx.core.view.children
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.PlaybackParameters
+import androidx.media3.common.Tracks
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.LoadControl
+import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.ui.CaptionStyleCompat
 import com.github.libretube.R
 import com.github.libretube.api.obj.ChapterSegment
@@ -32,10 +35,14 @@ import com.github.libretube.api.obj.PreviewFrames
 import com.github.libretube.api.obj.Segment
 import com.github.libretube.api.obj.Streams
 import com.github.libretube.constants.PreferenceKeys
+import com.github.libretube.db.DatabaseHolder
 import com.github.libretube.enums.PlayerEvent
 import com.github.libretube.enums.SbSkipOptions
+import com.github.libretube.extensions.updateParameters
 import com.github.libretube.obj.PreviewFrame
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import kotlinx.coroutines.runBlocking
+import java.util.Locale
 import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
 
@@ -326,6 +333,23 @@ object PlayerHelper {
         return PreferenceHelper.getString(prefKey, "")
     }
 
+    /**
+     * Apply the preferred audio quality: auto or worst
+     */
+    @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
+    fun applyPreferredAudioQuality(context: Context, trackSelector: DefaultTrackSelector) {
+        val prefKey = if (NetworkHelper.isNetworkMetered(context)) {
+            PreferenceKeys.PLAYER_AUDIO_QUALITY_MOBILE
+        } else {
+            PreferenceKeys.PLAYER_AUDIO_QUALITY
+        }
+        when (PreferenceHelper.getString(prefKey, "auto")) {
+            "worst" -> trackSelector.updateParameters {
+                setMaxAudioBitrate(1)
+            }
+        }
+    }
+
     fun getIntentActon(context: Context): String {
         return context.packageName + "." + ACTION_MEDIA_CONTROL
     }
@@ -533,20 +557,25 @@ object PlayerHelper {
         val dialog = MaterialAlertDialogBuilder(context)
             .setTitle(R.string.chapters)
             .setItems(titles.toTypedArray()) { _, index ->
-                player.seekTo(chapters[index].start * 1000)
+                val chapter = chapters.getOrNull(index) ?: return@setItems
+                player.seekTo(chapter.start * 1000)
             }
             .create()
         val handler = Handler(Looper.getMainLooper())
+        val highlightColor =
+            ThemeHelper.getThemeColor(context, android.R.attr.colorControlHighlight)
 
         val updatePosition = Runnable {
             // scroll to the current playing index in the chapter
             val currentPosition =
                 getCurrentChapterIndex(player, chapters) ?: return@Runnable
             dialog.listView.smoothScrollToPosition(currentPosition)
-            val current = dialog.listView.children.toList()[currentPosition]
-            val highlightColor =
-                ThemeHelper.getThemeColor(context, android.R.attr.colorControlHighlight)
-            current.setBackgroundColor(highlightColor)
+
+            val children = dialog.listView.children.toList()
+            // reset the background colors of all chapters
+            children.forEach { it.setBackgroundColor(Color.TRANSPARENT) }
+            // highlight the current chapter
+            children.getOrNull(currentPosition)?.setBackgroundColor(highlightColor)
         }
 
         dialog.setOnShowListener {
@@ -556,5 +585,153 @@ object PlayerHelper {
         }
 
         dialog.show()
+    }
+
+    fun getPosition(videoId: String, duration: Long?): Long? {
+        if (duration == null) return null
+
+        runCatching {
+            val watchPosition = runBlocking {
+                DatabaseHolder.Database.watchPositionDao().findById(videoId)
+            }
+            if (watchPosition != null && watchPosition.position < duration * 1000 * 0.9) {
+                return watchPosition.position
+            }
+        }
+        return null
+    }
+
+    /**
+     * Get the track type string resource corresponding to ExoPlayer role flags used for audio
+     * track types.
+     *
+     * If the role flags doesn't have any role flags used for audio track types, the string
+     * resource `unknown_audio_track_type` is returned.
+     *
+     * @param context   a context to get the string resources used to build the audio track type
+     * @param roleFlags the ExoPlayer role flags from which the audio track type will be returned
+     * @return the track type string resource corresponding to an ExoPlayer role flag or the
+     * `unknown_audio_track_type` one if no role flags corresponding to the ones used for audio
+     * track types is set
+     */
+    private fun getDisplayAudioTrackTypeFromFormat(
+        context: Context,
+        @C.RoleFlags roleFlags: Int
+    ): String {
+        // These role flags should not be set together, so the first role only take into account
+        // flag which matches
+        return when {
+            // If the flag ROLE_FLAG_DESCRIBES_VIDEO is set, return the descriptive_audio_track
+            // string resource
+            roleFlags and C.ROLE_FLAG_DESCRIBES_VIDEO == C.ROLE_FLAG_DESCRIBES_VIDEO ->
+                context.getString(R.string.descriptive_audio_track)
+
+            // If the flag ROLE_FLAG_DESCRIBES_VIDEO is set, return the dubbed_audio_track
+            // string resource
+            roleFlags and C.ROLE_FLAG_DUB == C.ROLE_FLAG_DUB ->
+                context.getString(R.string.dubbed_audio_track)
+
+            // If the flag ROLE_FLAG_DESCRIBES_VIDEO is set, return the original_or_main_audio_track
+            // string resource
+            roleFlags and C.ROLE_FLAG_MAIN == C.ROLE_FLAG_MAIN ->
+                context.getString(R.string.original_or_main_audio_track)
+
+            // Return the unknown_audio_track_type string resource for any other value
+            else -> context.getString(R.string.unknown_audio_track_type)
+        }
+    }
+
+    /**
+     * Get an audio track name from an audio format, using its language tag and its role flags.
+     *
+     * If the given language is `null`, the string resource `unknown_audio_language` is used
+     * instead and when the given role flags have no track type value used by the app, the string
+     * resource `unknown_audio_track_type` is used instead.
+     *
+     * @param context                   a context to get the string resources used to build the
+     *                                  audio track name
+     * @param audioLanguageAndRoleFlags a pair of an audio format language tag and role flags from
+     *                                  which the audio track name will be built
+     * @return an audio track name of an audio format language and role flags, localized according
+     * to the language preferences of the user
+     */
+    fun getAudioTrackNameFromFormat(
+        context: Context,
+        audioLanguageAndRoleFlags: Pair<String?, @C.RoleFlags Int>
+    ): String {
+        val audioLanguage = audioLanguageAndRoleFlags.first
+        return context.getString(R.string.audio_track_format)
+            .format(
+                if (audioLanguage == null) context.getString(R.string.unknown_audio_language)
+                else Locale.forLanguageTag(audioLanguage)
+                    .getDisplayLanguage(
+                        LocaleHelper.getAppLocale()
+                    )
+                    .ifEmpty { context.getString(R.string.unknown_audio_language) },
+                getDisplayAudioTrackTypeFromFormat(context, audioLanguageAndRoleFlags.second)
+            )
+    }
+
+    /**
+     * Get audio languages with their role flags of supported formats from ExoPlayer track groups
+     * and only the selected ones if requested.
+     *
+     * Duplicate audio languages with their role flags are removed.
+     *
+     * @param groups                 the list of [Tracks.Group]s of the current tracks played by the player
+     * @param keepOnlySelectedTracks whether to get only the selected audio languages with their
+     *                               role flags among the supported ones
+     * @return a list of distinct audio languages with their role flags from the supported formats
+     * of the given track groups and only the selected ones if requested
+     */
+    fun getAudioLanguagesAndRoleFlagsFromTrackGroups(
+        groups: List<Tracks.Group>,
+        keepOnlySelectedTracks: Boolean
+    ): List<Pair<String?, @C.RoleFlags Int>> {
+        // Filter unsupported tracks and keep only selected tracks if requested
+        // Use a lambda expression to avoid checking on each audio format if we keep only selected
+        // tracks or not
+        val trackFilter = if (keepOnlySelectedTracks)
+            { group: Tracks.Group, trackIndex: Int ->
+                group.isTrackSupported(trackIndex) && group.isTrackSelected(
+                    trackIndex
+                )
+            } else { group: Tracks.Group, trackIndex: Int -> group.isTrackSupported(trackIndex) }
+
+        return groups.filter {
+            it.type == C.TRACK_TYPE_AUDIO
+        }.flatMap { group ->
+            (0 until group.length).filter {
+                trackFilter(group, it)
+            }.map { group.getTrackFormat(it) }
+        }.map { format ->
+            format.language to format.roleFlags
+        }.distinct()
+    }
+
+    /**
+     * Check whether the given flag is set in the given bitfield.
+     *
+     * @param bitField a bitfield
+     * @param flag     a flag to check its presence in the given bitfield
+     * @return whether the given flag is set in the given bitfield
+     */
+    private fun isFlagSet(bitField: Int, flag: Int) = bitField and flag == flag
+
+    /**
+     * Check whether the given ExoPlayer role flags contain at least one flag used for audio
+     * track types.
+     *
+     * ExoPlayer role flags currently used for audio track types are [C.ROLE_FLAG_DESCRIBES_VIDEO],
+     * [C.ROLE_FLAG_DUB], [C.ROLE_FLAG_MAIN] and [C.ROLE_FLAG_ALTERNATE].
+     *
+     * @param roleFlags the ExoPlayer role flags to check, an int representing a bitfield
+     * @return whether the provided ExoPlayer flags contain a flag used for audio track types
+     */
+    fun haveAudioTrackRoleFlagSet(@C.RoleFlags roleFlags: Int): Boolean {
+        return isFlagSet(roleFlags, C.ROLE_FLAG_DESCRIBES_VIDEO)
+                || isFlagSet(roleFlags, C.ROLE_FLAG_DUB)
+                || isFlagSet(roleFlags, C.ROLE_FLAG_MAIN)
+                || isFlagSet(roleFlags, C.ROLE_FLAG_ALTERNATE)
     }
 }

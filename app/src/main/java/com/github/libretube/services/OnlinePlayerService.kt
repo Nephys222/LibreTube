@@ -17,6 +17,7 @@ import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import com.github.libretube.R
 import com.github.libretube.api.JsonHelper
 import com.github.libretube.api.RetrofitInstance
@@ -42,7 +43,6 @@ import com.github.libretube.util.PlayingQueue
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 
@@ -72,7 +72,7 @@ class OnlinePlayerService : LifecycleService() {
      * The [ExoPlayer] player. Followed tutorial [here](https://developer.android.com/codelabs/exoplayer-intro)
      */
     var player: ExoPlayer? = null
-    private var playWhenReadyPlayer = true
+    private var isTransitioning = true
 
     /**
      * SponsorBlock Segment data
@@ -145,10 +145,9 @@ class OnlinePlayerService : LifecycleService() {
 
     private fun updateWatchPosition() {
         player?.currentPosition?.let {
-            val watchPosition = WatchPosition(videoId, it)
+            if (isTransitioning) return@let
 
-            // indicator that a new video is getting loaded
-            this.streams ?: return@let
+            val watchPosition = WatchPosition(videoId, it)
 
             CoroutineScope(Dispatchers.IO).launch {
                 Database.watchPositionDao().insert(watchPosition)
@@ -162,6 +161,7 @@ class OnlinePlayerService : LifecycleService() {
      */
     private fun loadAudio(playerData: PlayerData) {
         val (videoId, _, _, keepQueue, timestamp) = playerData
+        isTransitioning = true
 
         lifecycleScope.launch(Dispatchers.IO) {
             streams = runCatching {
@@ -186,7 +186,20 @@ class OnlinePlayerService : LifecycleService() {
 
     private fun playAudio(seekToPosition: Long) {
         initializePlayer()
-        lifecycleScope.launch(Dispatchers.IO) { setMediaItem() }
+        lifecycleScope.launch(Dispatchers.IO) {
+            setMediaItem()
+
+            withContext(Dispatchers.Main) {
+                // seek to the previous position if available
+                if (seekToPosition != 0L) {
+                    player?.seekTo(seekToPosition)
+                } else if (PlayerHelper.watchPositionsAudio) {
+                    PlayerHelper.getPosition(videoId, streams?.duration)?.let {
+                        player?.seekTo(it)
+                    }
+                }
+            }
+        }
 
         // create the notification
         if (!this@OnlinePlayerService::nowPlayingNotification.isInitialized) {
@@ -205,24 +218,8 @@ class OnlinePlayerService : LifecycleService() {
         streams?.let { onNewVideo?.invoke(it, videoId) }
 
         player?.apply {
-            playWhenReady = playWhenReadyPlayer
+            playWhenReady = true
             prepare()
-        }
-
-        // seek to the previous position if available
-        if (seekToPosition != 0L) {
-            player?.seekTo(seekToPosition)
-        } else if (PlayerHelper.watchPositionsAudio) {
-            runCatching {
-                val watchPosition = runBlocking {
-                    Database.watchPositionDao().findById(videoId)
-                }
-                streams?.duration?.let {
-                    if (watchPosition != null && watchPosition.position < it * 1000 * 0.9) {
-                        player?.seekTo(watchPosition.position)
-                    }
-                }
-            }
         }
 
         if (PlayerHelper.sponsorBlockEnabled) fetchSponsorBlockSegments()
@@ -234,11 +231,15 @@ class OnlinePlayerService : LifecycleService() {
     private fun initializePlayer() {
         if (player != null) return
 
+        val trackSelector = DefaultTrackSelector(this)
+        PlayerHelper.applyPreferredAudioQuality(this, trackSelector)
+
         player = ExoPlayer.Builder(this)
             .setUsePlatformDiagnostics(false)
             .setHandleAudioBecomingNoisy(true)
             .setAudioAttributes(PlayerHelper.getAudioAttributes(), true)
             .setLoadControl(PlayerHelper.getLoadControl())
+            .setTrackSelector(trackSelector)
             .build()
             .loadPlaybackParams(isBackgroundMode = true)
 
@@ -255,7 +256,7 @@ class OnlinePlayerService : LifecycleService() {
             override fun onPlaybackStateChanged(state: Int) {
                 when (state) {
                     Player.STATE_ENDED -> {
-                        if (PlayerHelper.autoPlayEnabled) playNextVideo()
+                        if (PlayerHelper.autoPlayEnabled && !isTransitioning) playNextVideo()
                     }
 
                     Player.STATE_IDLE -> {
@@ -263,7 +264,9 @@ class OnlinePlayerService : LifecycleService() {
                     }
 
                     Player.STATE_BUFFERING -> {}
-                    Player.STATE_READY -> {}
+                    Player.STATE_READY -> {
+                        isTransitioning = false
+                    }
                 }
             }
 
@@ -300,7 +303,7 @@ class OnlinePlayerService : LifecycleService() {
         val streams = streams ?: return
 
         val (uri, mimeType) = if (streams.audioStreams.isNotEmpty()) {
-            val disableProxy = ProxyHelper.shouldDisableProxy(streams.videoStreams.first().url!!)
+            val disableProxy = ProxyHelper.useYouTubeSourceWithoutProxy(streams.videoStreams.first().url!!)
             PlayerHelper.createDashSource(
                 streams,
                 this,

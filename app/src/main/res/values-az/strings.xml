@@ -289,7 +289,7 @@
     <string name="playlistNameReversed">Oynatma siyahısı adı (əks)</string>
     <string name="playlists_order">Oynatma siyahısı sırası</string>
     <string name="time_code">Vaxt kodu (saniyə)</string>
-    <string name="added_to_playlist">Oynatma siyahısına əlavə edildi</string>
+    <string name="added_to_playlist">Oynatma siyahısına əlavə edildi %1$s</string>
     <string name="queue">Növbə</string>
     <string name="sb_markers">Göstəricilər</string>
     <string name="sb_markers_summary">Vaxt çubuğunda bölümləri işarələ.</string>
@@ -311,7 +311,6 @@
     <string name="alternative_player_layout">Alternativ oynadıcı tərtibatı</string>
     <string name="alternative_player_layout_summary">Əlaqəli videoları aşağı əvəzinə, şərhlər üzərində cərgə kimi göstər.</string>
     <string name="audio_track">Səs axını</string>
-    <string name="default_audio_track">Standart</string>
     <string name="auto_quality">Avtomatik</string>
     <string name="hls_instead_of_dash">HLS istifadə et</string>
     <string name="hls_instead_of_dash_summary">DASH əvəzinə HLS istifadə et (daha yavaş olacaq, tövsiyə edilmədi)</string>
@@ -450,7 +449,7 @@
     <string name="manual">Əl ilə</string>
     <string name="automatic">Avtomatik</string>
     <string name="off">Bağla</string>
-    <string name="sb_color_enable">SponsorBlock bölümləri üçün xüsusi rəng bölümlərin dəyişdirir</string>
+    <string name="sb_color_enable">SponsorBlock bölümləri üçün xüsusi rəng bölümlərin dəyişdirir.</string>
     <string name="invalid_color">Yanlış rəng dəyəri daxil edildi!</string>
     <string name="sb_custom_colors">Xüsusi bölüm rəngləri</string>
     <string name="color">Rəng</string>
@@ -463,4 +462,12 @@
     <string name="stop">Dayandır</string>
     <string name="fallback_piped_proxy">Piped proksiyə qayıdış</string>
     <string name="fallback_piped_proxy_desc">YouTube-a birbaşa qoşulma cari video üçün işləmirsə, videoları proksidən yükləyir (ilkin yükləmə vaxtların artırır). Qeyri-aktiv edilibsə, YouTube musiqi məzmunu YT məhdudiyyətlərinə görə çox güman ki, oynadılmayacaq.</string>
+    <string name="audio_track_format">%1$s - %2$s</string>
+    <string name="unknown_audio_track_type">Naməlum səs axını növü</string>
+    <string name="original_or_main_audio_track">orijinal və ya əsas</string>
+    <string name="dubbed_audio_track">dublyaj edilib</string>
+    <string name="descriptive_audio_track">təsviri</string>
+    <string name="default_or_unknown_audio_track">standart və ya naməlum</string>
+    <string name="unknown_or_no_audio">naməlum və ya səs yoxdur</string>
+    <string name="unknown_audio_language">Naməlum səs dili</string>
 </resources>

@@ -289,7 +289,7 @@
     <string name="playlists_order">Orden de las listas de reproducción</string>
     <string name="playlistNameReversed">Nombre de la lista (Z-A)</string>
     <string name="time_code">Código de tiempo (segundos)</string>
-    <string name="added_to_playlist">Añadido a la lista</string>
+    <string name="added_to_playlist">Añadido a la lista %1$s</string>
     <string name="queue">Cola</string>
     <string name="sb_markers">Señaladores</string>
     <string name="sb_markers_summary">Señala los segmentos en la barra de tiempo.</string>
@@ -311,7 +311,6 @@
     <string name="navbar_order">Ordenar</string>
     <string name="layout">Diseño</string>
     <string name="audio_track">Pista de audio</string>
-    <string name="default_audio_track">Predeterminada</string>
     <string name="auto_quality">Automatico</string>
     <string name="hls_instead_of_dash_summary">Usar HLS en vez de DASH (podría ser lento, no recomendado)</string>
     <string name="hls_instead_of_dash">Usar HLS</string>
@@ -455,7 +454,7 @@
     <string name="automatic">Automático</string>
     <string name="invalid_color">¡Se ha introducido un código de color inválido!</string>
     <string name="visible">Señalador</string>
-    <string name="sb_color_enable">Usa los colores personalizados para los señaladores de la barra de tiempo</string>
+    <string name="sb_color_enable">Usa los colores personalizados para los señaladores de la barra de tiempo.</string>
     <string name="sb_custom_colors">Segmentos con color personalizado</string>
     <string name="color">Color</string>
     <string name="enter_hex_value">Introduce un código de color HEX</string>
@@ -466,4 +465,12 @@
     <string name="stop">Detener</string>
     <string name="fallback_piped_proxy">Regresar al proxy de Piped</string>
     <string name="fallback_piped_proxy_desc">Cargar vídeos a través del proxy si al conectar directamente a YouTube no funciona el video en curso (aumenta el tiempo de carga inicial). Si lo deshabilitas, el contenido de YT Music probablemente no se reproduzca debido a restricciones de YouTube.</string>
+    <string name="audio_track_format">%1$s - %2$s</string>
+    <string name="unknown_or_no_audio">desconocido o sin audio</string>
+    <string name="dubbed_audio_track">doblado</string>
+    <string name="descriptive_audio_track">descriptivo</string>
+    <string name="default_or_unknown_audio_track">predeterminado o desconocido</string>
+    <string name="unknown_audio_language">Idioma del audio desconocido</string>
+    <string name="unknown_audio_track_type">Tipo de pista de audio desconocido</string>
+    <string name="original_or_main_audio_track">original o principal</string>
 </resources>

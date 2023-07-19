@@ -289,7 +289,7 @@
     <string name="playlists_order">ترتيب قوائم التشغيل</string>
     <string name="playlistNameReversed">اسم قائمة التشغيل (معكوس)</string>
     <string name="time_code">رمز الوقت (بالثواني)</string>
-    <string name="added_to_playlist">تمت الإضافة إلى قائمة التشغيل</string>
+    <string name="added_to_playlist">تمت الإضافة إلى قائمة التشغيل %1$s</string>
     <string name="queue">الانتظار</string>
     <string name="sb_markers">العلامات</string>
     <string name="sb_markers_summary">وضع علامة على الأجزاء في شريط الوقت.</string>
@@ -311,7 +311,6 @@
     <string name="alternative_player_layout">تخطيط المشغل البديل</string>
     <string name="alternative_player_layout_summary">وتظهر أشرطة الفيديو ذات الصلة كصف أعلى من التعليقات بدلا من التعليقات الواردة أدناه.</string>
     <string name="audio_track">مسار صوتي</string>
-    <string name="default_audio_track">الإفتراضي</string>
     <string name="hls_instead_of_dash">استخدام HLS</string>
     <string name="hls_instead_of_dash_summary">استخدم HLS بدلا من DASH (سيكون أبطأ ، غير مستحسن)</string>
     <string name="auto_quality">تلقائي</string>
@@ -462,7 +461,7 @@
     <string name="off">معطل</string>
     <string name="manual">يدوي</string>
     <string name="automatic">تلقائي</string>
-    <string name="sb_color_enable">تبديل شرائح الألوان المخصصة لشرائح كتلة الراعي</string>
+    <string name="sb_color_enable">تبديل شرائح الألوان المخصصة لشرائح كتلة الراعي.</string>
     <string name="sb_custom_colors">ألوان شرائح مخصصة</string>
     <string name="invalid_color">تم إدخال قيمة لون غير صالحة!</string>
     <string name="enter_hex_value">أدخل قيمة لون سداسي عشري</string>
@@ -475,4 +474,12 @@
     <string name="stop">إيقاف</string>
     <string name="fallback_piped_proxy">الرجوع إلى الوكيل Piped</string>
     <string name="fallback_piped_proxy_desc">قم بتحميل مقاطع الفيديو عبر الخادم الوكيل إذا كان الاتصال ب YouTube مباشرة لا يعمل مع الفيديو الحالي (يزيد من أوقات التحميل الأولية). إذا تم تعطيله ، فمن المحتمل ألا يتم تشغيل محتوى موسيقى YouTube بسبب قيود YT.</string>
+    <string name="unknown_audio_track_type">نوع مسار صوتي غير معروف</string>
+    <string name="original_or_main_audio_track">أصلي أو رئيسي</string>
+    <string name="dubbed_audio_track">مدبلجة</string>
+    <string name="descriptive_audio_track">وصفي</string>
+    <string name="default_or_unknown_audio_track">افتراضي أو غير معروف</string>
+    <string name="unknown_or_no_audio">غير معروف أو لا يوجد صوت</string>
+    <string name="audio_track_format">%1$s - %2$s</string>
+    <string name="unknown_audio_language">لغة صوت غير معروفة</string>
 </resources>

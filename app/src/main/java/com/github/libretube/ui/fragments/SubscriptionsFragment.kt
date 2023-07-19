@@ -5,10 +5,12 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.ViewGroup.MarginLayoutParams
 import android.widget.Toast
 import androidx.core.view.children
 import androidx.core.view.isGone
 import androidx.core.view.isVisible
+import androidx.core.view.updateLayoutParams
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
@@ -18,18 +20,20 @@ import com.github.libretube.R
 import com.github.libretube.api.obj.StreamItem
 import com.github.libretube.constants.PreferenceKeys
 import com.github.libretube.databinding.FragmentSubscriptionsBinding
+import com.github.libretube.db.DatabaseHelper
 import com.github.libretube.db.DatabaseHolder
 import com.github.libretube.db.obj.SubscriptionGroup
+import com.github.libretube.extensions.dpToPx
 import com.github.libretube.extensions.toID
 import com.github.libretube.helpers.PreferenceHelper
 import com.github.libretube.ui.adapters.LegacySubscriptionAdapter
 import com.github.libretube.ui.adapters.SubscriptionChannelAdapter
 import com.github.libretube.ui.adapters.VideosAdapter
+import com.github.libretube.ui.models.PlayerViewModel
 import com.github.libretube.ui.models.SubscriptionsViewModel
 import com.github.libretube.ui.sheets.BaseBottomSheet
 import com.github.libretube.ui.sheets.ChannelGroupsSheet
 import com.google.android.material.chip.Chip
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
@@ -38,6 +42,7 @@ class SubscriptionsFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val viewModel: SubscriptionsViewModel by activityViewModels()
+    private val playerModel: PlayerViewModel by activityViewModels()
     private var channelGroups: List<SubscriptionGroup> = listOf()
     private var selectedFilterGroup: Int = 0
 
@@ -160,6 +165,15 @@ class SubscriptionsFragment : Fragment() {
             }
         }
 
+        // add some extra margin to the subscribed channels while the mini player is visible
+        // otherwise the last channel would be invisible
+        playerModel.isMiniPlayerVisible.observe(viewLifecycleOwner) {
+            binding.subChannelsContainer.updateLayoutParams<MarginLayoutParams> {
+                val newMargin = if (it) 64 else 0
+                bottomMargin = newMargin.dpToPx().toInt()
+            }
+        }
+
         lifecycleScope.launch {
             initChannelGroups()
         }
@@ -229,15 +243,16 @@ class SubscriptionsFragment : Fragment() {
                     else -> throw IllegalArgumentException()
                 }
             }.let { streams ->
-                runBlocking {
-                    if (!PreferenceHelper.getBoolean(
-                            PreferenceKeys.HIDE_WATCHED_FROM_FEED,
-                            false
-                        )
-                    ) {
-                        streams
-                    } else {
-                        removeWatchVideosFromFeed(streams)
+
+                if (!PreferenceHelper.getBoolean(
+                        PreferenceKeys.HIDE_WATCHED_FROM_FEED,
+                        false
+                    )
+                ) {
+                    streams
+                } else {
+                    runBlocking {
+                        DatabaseHelper.filterUnwatched(streams)
                     }
                 }
             }
@@ -278,19 +293,6 @@ class SubscriptionsFragment : Fragment() {
         binding.subFeed.adapter = subscriptionsAdapter
 
         PreferenceHelper.updateLastFeedWatchedTime()
-    }
-
-    private fun removeWatchVideosFromFeed(streams: List<StreamItem>): List<StreamItem> {
-        return streams.filter {
-            runBlocking(Dispatchers.IO) {
-                val historyItem = DatabaseHolder.Database.watchPositionDao()
-                    .findById(it.url.orEmpty().toID()) ?: return@runBlocking true
-                val progress = historyItem.position / 1000
-                val duration = it.duration ?: 0
-                // show video only in feed when watched less than 1/4
-                progress < 0.9f * duration
-            }
-        }
     }
 
     private fun showSubscriptions() {

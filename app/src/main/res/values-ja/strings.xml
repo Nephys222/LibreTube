@@ -278,14 +278,14 @@
     <string name="most_recent">最新</string>
     <string name="least_recent">最古</string>
     <string name="no_search_result">結果がありません。</string>
-    <string name="added_to_playlist">プレイリストに追加しました</string>
+    <string name="added_to_playlist">プレイリスト %1$s に追加しました</string>
     <string name="skip_buttons">スキップボタン</string>
     <string name="filename">ファイル名</string>
     <string name="invalid_filename">無効なファイル名です！</string>
     <string name="playlistNameReversed">プレイリスト名 (逆順)</string>
     <string name="playlists_order">プレイリストの表示順</string>
     <string name="sb_markers">マーカー</string>
-    <string name="sb_markers_summary">再生時間のバー上に該当部分を表示。</string>
+    <string name="sb_markers_summary">再生時間のバー上で該当部分を色分け。</string>
     <string name="background_channel_description">音声プレイヤーを操作するボタン付きの通知を表示します。</string>
     <string name="livestreams">ライブ配信</string>
     <string name="alternative_videos_layout">別の動画レイアウト</string>
@@ -340,7 +340,6 @@
     <string name="proceed">続ける</string>
     <string name="play_latest_videos">最新の動画を再生</string>
     <string name="audio_track">音声トラック</string>
-    <string name="default_audio_track">標準</string>
     <string name="hls_instead_of_dash_summary">DASHの代わりにHLSを使用します (より低速、非推奨)</string>
     <string name="hls_instead_of_dash">HLSを使う</string>
     <string name="auto_quality">自動</string>
@@ -400,7 +399,7 @@
     <string name="lbry_hls">LBRY HLS</string>
     <string name="uploaderAndVideoCount">%1$s • %2$d 本の動画</string>
     <string name="lbry_hls_summary">可能な場合は、ストリーミングに LBRY HLS を使用します。</string>
-    <string name="subscriberAndVideoCounts">%1$s 人のチャンネル登録者 • %2$d 本の動画</string>
+    <string name="subscriberAndVideoCounts">%1$s 人の登録者 • %2$d 本の動画</string>
     <string name="replies">返信</string>
     <string name="disable_proxy">Pipedのプロキシを無効化</string>
     <string name="disable_proxy_summary">動画や画像を YouTube のサーバーから直接読み込みます。VPN を併用する場合にのみ有効化してください！</string>
@@ -444,12 +443,12 @@
     <string name="playlist_description">プレイリストの説明</string>
     <string name="emptyPlaylistDescription">プレイリストの説明は空にできません</string>
     <string name="show_search_suggestions">検索語句の候補を表示</string>
-    <string name="off">無効</string>
+    <string name="off">オフ</string>
     <string name="manual">手動でスキップ</string>
     <string name="automatic">自動でスキップ</string>
     <string name="sb_custom_colors">シーン部分の色を指定</string>
     <string name="color">色</string>
-    <string name="sb_color_enable">広告シーンの部分の色の指定を切り替え</string>
+    <string name="sb_color_enable">広告シーンの部分の色の指定を切り替える。</string>
     <string name="invalid_color">この色の値は無効です！</string>
     <string name="enter_hex_value">16進数の色の値を入力</string>
     <string name="visible">シークバーに表示</string>
@@ -460,4 +459,12 @@
     <string name="stop">停止</string>
     <string name="fallback_piped_proxy_desc">YouTubeに直接接続しても現在の動画が再生できない際に、プロキシ経由で動画を読み込みます（最初の読み込み時間は増加）。無効にすると、YTの制限によりYouTubeの音楽コンテンツが再生されないことがあります。</string>
     <string name="fallback_piped_proxy">失敗時に Piped プロキシに接続</string>
+    <string name="unknown_or_no_audio">不明または音声なし</string>
+    <string name="default_or_unknown_audio_track">標準または不明</string>
+    <string name="original_or_main_audio_track">そのまま、または主音声</string>
+    <string name="unknown_audio_track_type">音声トラックの種類は不明</string>
+    <string name="unknown_audio_language">音声の言語は不明</string>
+    <string name="audio_track_format">%1$s - %2$s</string>
+    <string name="dubbed_audio_track">吹き替え</string>
+    <string name="descriptive_audio_track">解説</string>
 </resources>

@@ -29,6 +29,7 @@ import androidx.core.os.bundleOf
 import androidx.core.os.postDelayed
 import androidx.core.text.parseAsHtml
 import androidx.core.view.WindowCompat
+import androidx.core.view.isGone
 import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
@@ -45,6 +46,7 @@ import androidx.media3.common.Player
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.cronet.CronetDataSource
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.hls.HlsMediaSource
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -54,7 +56,6 @@ import com.github.libretube.api.JsonHelper
 import com.github.libretube.api.RetrofitInstance
 import com.github.libretube.api.obj.ChapterSegment
 import com.github.libretube.api.obj.Message
-import com.github.libretube.api.obj.PipedStream
 import com.github.libretube.api.obj.Segment
 import com.github.libretube.api.obj.StreamItem
 import com.github.libretube.api.obj.Streams
@@ -112,16 +113,16 @@ import com.github.libretube.util.NowPlayingNotification
 import com.github.libretube.util.PlayingQueue
 import com.github.libretube.util.TextUtils
 import com.github.libretube.util.TextUtils.toTimeInSeconds
-import java.io.IOException
-import java.util.*
-import java.util.concurrent.Executors
+import com.github.libretube.util.YoutubeHlsPlaylistParser
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import retrofit2.HttpException
+import java.io.IOException
+import java.util.*
+import java.util.concurrent.Executors
 import kotlin.math.abs
 
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
@@ -155,7 +156,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
      */
     private var sId: Int = 0
     private var eId: Int = 0
-    private var transitioning = true
+    private var isTransitioning = true
 
     /**
      * for the player
@@ -163,6 +164,11 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
     private lateinit var exoPlayer: ExoPlayer
     private lateinit var trackSelector: DefaultTrackSelector
     private var captionLanguage: String? = PlayerHelper.defaultSubtitleCode
+
+    private val cronetDataSourceFactory = CronetDataSource.Factory(
+        CronetHelper.cronetEngine,
+        Executors.newCachedThreadPool()
+    )
 
     /**
      * Chapters and comments
@@ -328,10 +334,11 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
 
                 if (currentId == eId) {
                     viewModel.isMiniPlayerVisible.value = true
-                    // disable captions
+                    // disable captions temporarily
                     updateCaptionsLanguage(null)
                     binding.player.useController = false
                     commentsViewModel.setCommentSheetExpand(null)
+                    binding.sbSkipBtn.isGone = true
                     mainMotionLayout.progress = 1F
                     (activity as MainActivity).requestOrientationChange()
                 } else if (currentId == sId) {
@@ -641,7 +648,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
 
     // save the watch position if video isn't finished and option enabled
     private fun saveWatchPosition() {
-        if (!this::exoPlayer.isInitialized || !PlayerHelper.watchPositionsVideo || transitioning ||
+        if (!this::exoPlayer.isInitialized || !PlayerHelper.watchPositionsVideo || isTransitioning ||
             exoPlayer.duration == C.TIME_UNSET || exoPlayer.currentPosition in listOf(
                 0L,
                 C.TIME_UNSET
@@ -659,20 +666,18 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
         if (!exoPlayer.isPlaying || !PlayerHelper.sponsorBlockEnabled) return
 
         handler.postDelayed(this::checkForSegments, 100)
-
-        if (!sponsorBlockEnabled) return
-
-        if (segments.isEmpty()) return
+        if (!sponsorBlockEnabled || segments.isEmpty()) return
 
         exoPlayer.checkForSegments(requireContext(), segments, sponsorBlockConfig)
             ?.let { segmentEnd ->
-                binding.sbSkipBtn.visibility = View.VISIBLE
+                if (viewModel.isMiniPlayerVisible.value == true) return@let
+                binding.sbSkipBtn.isVisible = true
                 binding.sbSkipBtn.setOnClickListener {
                     exoPlayer.seekTo(segmentEnd)
                 }
                 return
             }
-        if (!exoPlayer.isInSegment(segments)) binding.sbSkipBtn.visibility = View.GONE
+        if (!exoPlayer.isInSegment(segments)) binding.sbSkipBtn.isGone = true
     }
 
     private fun playVideo() {
@@ -739,9 +744,6 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
                 initializePlayerView()
                 setupSeekbarPreview()
 
-                if (!streams.livestream) seekToWatchPosition()
-                trySeekToTimeStamp()
-
                 exoPlayer.prepare()
                 if (PreferenceHelper.getBoolean(PreferenceKeys.PLAY_AUTOMATICALLY, true)) {
                     exoPlayer.play()
@@ -796,35 +798,6 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
                 }
             }
         }
-    }
-
-    /**
-     *  Seek to saved watch position if available */
-    private fun seekToWatchPosition() {
-        // browse the watch positions
-        val position = try {
-            runBlocking {
-                Database.watchPositionDao().findById(videoId)?.position
-            }
-        } catch (e: Exception) {
-            return
-        }
-        // position is almost the end of the video => don't seek, start from beginning
-        if (position != null && position < streams.duration * 1000 * 0.9) {
-            exoPlayer.seekTo(position)
-        }
-    }
-
-    /**
-     * Seek to the time stamp passed by the intent arguments if available
-     */
-    private fun trySeekToTimeStamp() {
-        // support for time stamped links
-        if (timeStamp != 0L) {
-            exoPlayer.seekTo(timeStamp * 1000)
-        }
-        // delete the time stamp because it already got consumed
-        timeStamp = 0
     }
 
     // used for autoplay and skipping to next video
@@ -940,10 +913,10 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
                 // check if video has ended, next video is available and autoplay is enabled.
                 if (
                     playbackState == Player.STATE_ENDED &&
-                    !transitioning &&
+                    !isTransitioning &&
                     PlayerHelper.autoPlayEnabled
                 ) {
-                    transitioning = true
+                    isTransitioning = true
                     if (PlayerHelper.autoPlayCountdown) {
                         showAutoPlayCountdown()
                     } else {
@@ -953,7 +926,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
 
                 if (playbackState == Player.STATE_READY) {
                     // media actually playing
-                    transitioning = false
+                    isTransitioning = false
                 }
 
                 // listen for the stop button in the notification
@@ -1075,12 +1048,11 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
      * Handle a link clicked in the description
      */
     private fun handleLink(link: String) {
-        val uri = Uri.parse(link)
         // get video id if the link is a valid youtube video link
         val videoId = TextUtils.getVideoIdFromUri(link)
         if (videoId.isNullOrEmpty()) {
             // not a YouTube video link, thus handle normally
-            val intent = Intent(Intent.ACTION_VIEW, uri)
+            val intent = Intent(Intent.ACTION_VIEW, link.toUri())
             startActivity(intent)
             return
         }
@@ -1088,7 +1060,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
         // check if the video is the current video and has a valid time
         if (videoId == this.videoId) {
             // try finding the time stamp of the url and seek to it if found
-            uri.getQueryParameter("t")?.toTimeInSeconds()?.let {
+            link.toUri().getQueryParameter("t")?.toTimeInSeconds()?.let {
                 exoPlayer.seekTo(it * 1000)
             }
         } else {
@@ -1189,7 +1161,6 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
         }.drawable ?: return
         val highlightChapter = ChapterSegment(
             title = getString(R.string.chapters_videoHighlight),
-            image = "",
             start = highlight.segmentStartAndEnd.first.toLong(),
             drawable = drawable
         )
@@ -1224,13 +1195,15 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
         }
     }
 
+    private fun createMediaItem(uri: Uri, mimeType: String) = MediaItem.Builder()
+        .setUri(uri)
+        .setMimeType(mimeType)
+        .setSubtitleConfigurations(subtitles)
+        .setMetadata(streams)
+        .build()
+
     private fun setMediaSource(uri: Uri, mimeType: String) {
-        val mediaItem = MediaItem.Builder()
-            .setUri(uri)
-            .setMimeType(mimeType)
-            .setSubtitleConfigurations(subtitles)
-            .setMetadata(streams)
-            .build()
+        val mediaItem = createMediaItem(uri, mimeType)
         exoPlayer.setMediaItem(mediaItem)
     }
 
@@ -1272,7 +1245,23 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
         updateCaptionsLanguage(captionLanguage)
 
         // set media source and resolution in the beginning
-        lifecycleScope.launch(Dispatchers.IO) { setStreamSource() }
+        lifecycleScope.launch(Dispatchers.IO) {
+            setStreamSource()
+
+            withContext(Dispatchers.Main) {
+                // support for time stamped links
+                if (timeStamp != 0L) {
+                    exoPlayer.seekTo(timeStamp * 1000)
+                    // delete the time stamp because it already got consumed
+                    timeStamp = 0L
+                } else if (!streams.livestream) {
+                    // seek to the saved watch position
+                    PlayerHelper.getPosition(videoId, streams.duration)?.let {
+                        exoPlayer.seekTo(it)
+                    }
+                }
+            }
+        }
     }
 
     private fun setPlayerResolution(resolution: Int) {
@@ -1309,8 +1298,12 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
                     if (streams.livestream && streams.dash != null) ProxyHelper.unwrapStreamUrl(
                         streams.dash!!
                     ).toUri() else {
+                        // skip LBRY urls when checking whether the stream source is usable
+                        val urlToTest = streams.videoStreams.firstOrNull {
+                            !it.quality.orEmpty().contains("LBRY")
+                        }?.url.orEmpty()
                         val shouldDisableProxy =
-                            ProxyHelper.shouldDisableProxy(streams.videoStreams.first().url!!)
+                            ProxyHelper.useYouTubeSourceWithoutProxy(urlToTest)
                         PlayerHelper.createDashSource(
                             streams,
                             requireContext(),
@@ -1322,6 +1315,16 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
             }
             // HLS
             streams.hls != null -> {
+                val hlsMediaSourceFactory = HlsMediaSource.Factory(cronetDataSourceFactory)
+                    .setPlaylistParserFactory(YoutubeHlsPlaylistParser.Factory())
+
+                val mediaSource = hlsMediaSourceFactory.createMediaSource(
+                    createMediaItem(
+                        ProxyHelper.unwrapStreamUrl(streams.hls!!).toUri(),
+                        MimeTypes.APPLICATION_M3U8,
+                    )
+                )
+                exoPlayer.setMediaSource(mediaSource)
                 ProxyHelper.unwrapStreamUrl(streams.hls!!).toUri() to MimeTypes.APPLICATION_M3U8
             }
             // NO STREAM FOUND
@@ -1344,10 +1347,20 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
         trackSelector = DefaultTrackSelector(requireContext())
 
         trackSelector.updateParameters {
-            setPreferredAudioLanguage(
-                LocaleHelper.getAppLocale().language.lowercase().substring(0, 2)
-            )
+            setPreferredAudioLanguage(LocaleHelper.getAppLocale().isO3Language)
+            val enabledVideoCodecs = PlayerHelper.enabledVideoCodecs
+            if (enabledVideoCodecs != "all") {
+                // map the codecs to their corresponding mimetypes
+                val mimeType = when (enabledVideoCodecs) {
+                    "vp9" -> "video/webm"
+                    "avc" -> "video/mp4"
+                    else -> throw IllegalArgumentException()
+                }
+                this.setPreferredVideoMimeType(mimeType)
+            }
         }
+
+        PlayerHelper.applyPreferredAudioQuality(requireContext(), trackSelector)
 
         exoPlayer = ExoPlayer.Builder(requireContext())
             .setUsePlatformDiagnostics(false)
@@ -1429,24 +1442,46 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
             .show(childFragmentManager)
     }
 
-    private fun getAudioStreamGroups(audioStreams: List<PipedStream>?): Map<String?, List<PipedStream>> {
-        return audioStreams.orEmpty()
-            .groupBy { it.audioTrackName }
-    }
-
     override fun onAudioStreamClicked() {
-        val audioGroups = getAudioStreamGroups(streams.audioStreams)
-        val audioLanguages = audioGroups.map { it.key ?: getString(R.string.default_audio_track) }
+        val context = requireContext()
+        val audioLanguagesAndRoleFlags = PlayerHelper.getAudioLanguagesAndRoleFlagsFromTrackGroups(
+            exoPlayer.currentTracks.groups, false
+        )
+        val audioLanguages = audioLanguagesAndRoleFlags.map {
+            PlayerHelper.getAudioTrackNameFromFormat(context, it)
+        }
+        val baseBottomSheet = BaseBottomSheet()
 
-        BaseBottomSheet()
-            .setSimpleItems(audioLanguages) { index ->
-                val audioStreams = audioGroups.values.elementAt(index)
-                val lang = audioStreams.firstOrNull()?.audioTrackId?.substring(0, 2)
+        if (audioLanguagesAndRoleFlags.isEmpty()) {
+            baseBottomSheet.setSimpleItems(
+                listOf(context.getString(R.string.unknown_or_no_audio)),
+                null
+            )
+        } else if (audioLanguagesAndRoleFlags.size == 1
+            && audioLanguagesAndRoleFlags[0].first == null
+            && !PlayerHelper.haveAudioTrackRoleFlagSet(
+                audioLanguagesAndRoleFlags[0].second
+            )
+        ) {
+            // Regardless of audio format or quality, if there is only one audio stream which has
+            // no language and no role flags, it should mean that there is only a single audio
+            // track which has no language or track type set in the video played
+            // Consider it as the default audio track (or unknown)
+            baseBottomSheet.setSimpleItems(
+                listOf(context.getString(R.string.default_or_unknown_audio_track)),
+                null
+            )
+        } else {
+            baseBottomSheet.setSimpleItems(audioLanguages) { index ->
+                val selectedAudioFormat = audioLanguagesAndRoleFlags[index]
                 trackSelector.updateParameters {
-                    setPreferredAudioLanguage(lang)
+                    setPreferredAudioLanguage(selectedAudioFormat.first)
+                    setPreferredAudioRoleFlags(selectedAudioFormat.second)
                 }
             }
-            .show(childFragmentManager)
+        }
+
+        baseBottomSheet.show(childFragmentManager)
     }
 
     override fun onStatsClicked() {

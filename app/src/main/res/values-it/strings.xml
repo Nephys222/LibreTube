@@ -24,7 +24,7 @@
     <string name="empty">Il nome utente e la password non possono essere vuoti.</string>
     <string name="notgmail">Questo è per un account Piped.</string>
     <string name="defres">Risoluzione video</string>
-    <string name="dlisinprogress">Attendere il completamento di tutti i download correnti.</string>
+    <string name="dlisinprogress">Attendere che tutti i download in corso siano terminati.</string>
     <string name="unknown_error">Errore di connessione.</string>
     <string name="server_error">Sembra esserci un problema con il server selezionato. Prova un\'altra istanza.</string>
     <string name="customInstance">Personalizzata</string>
@@ -245,7 +245,7 @@
     <string name="resize_mode_fill">Riempi</string>
     <string name="resize_mode_zoom">Ingrandisci</string>
     <string name="repeat_mode_current">Attuale</string>
-    <string name="picture_in_picture">Picture in Picture</string>
+    <string name="picture_in_picture">Picture-in-Picture</string>
     <string name="player_resize_mode">Modalità ridimensionamento</string>
     <string name="maximum_image_cache">Dimensione massima cache immagini</string>
     <string name="open_copied">Apri</string>
@@ -288,7 +288,7 @@
     <string name="invalid_filename">Nome del file non valido!</string>
     <string name="playlists_order">Ordine delle playlist</string>
     <string name="playlistNameReversed">Nome playlist (invertito)</string>
-    <string name="added_to_playlist">Aggiunto alla playlist</string>
+    <string name="added_to_playlist">Aggiunto alla playlist %1$s</string>
     <string name="queue">Coda</string>
     <string name="sb_markers">Marcatori</string>
     <string name="sb_markers_summary">Segna i segmenti sulla barra del tempo.</string>
@@ -318,7 +318,6 @@
     <string name="layout">Disposizione</string>
     <string name="alternative_player_layout">Layout alternativo del player</string>
     <string name="audio_track">Traccia audio</string>
-    <string name="default_audio_track">Predefinita</string>
     <string name="hls_instead_of_dash">Usa HLS</string>
     <string name="hls_instead_of_dash_summary">Usa HLS invece di DASH (sarà più lento, non consigliato)</string>
     <string name="auto_quality">Automatica</string>
@@ -388,7 +387,7 @@
     <string name="custom_playback_speed">Velocità personalizzata</string>
     <string name="custom_playback_speed_summary">Usa una velocità di riproduzione diversa da quella del lettore normale.</string>
     <string name="category">Categoria</string>
-    <string name="playing_next">Prossimo gioco in %1$s</string>
+    <string name="playing_next">In riproduzione tra %1$s</string>
     <string name="video_id">ID video</string>
     <string name="autoplay_countdown">Conto alla rovescia per riproduzione automatica</string>
     <string name="autoplay_countdown_summary">Mostra un conto alla rovescia di 5 secondi prima di riprodurre automaticamente il video successivo.</string>
@@ -407,7 +406,7 @@
     <string name="lbry_hls">LBRY HLS</string>
     <string name="uploaderAndVideoCount">%1$s • %2$d video</string>
     <string name="subscriberAndVideoCounts">%1$s iscritti • %2$d video</string>
-    <string name="disable_proxy">Disabilita il proxy Piped</string>
+    <string name="disable_proxy">Disabilita proxy Piped</string>
     <string name="disable_proxy_summary">Carica video e immagini direttamente dai server di YouTube. Abilita l\'opzione solo se usi una VPN!</string>
     <string name="auto_fullscreen_shorts">Schermo intero automatico su video brevi</string>
     <string name="channel_groups">Gruppi di canali</string>
@@ -455,7 +454,7 @@
     <string name="off">Disattiva</string>
     <string name="visible">Mostra nella barra di ricerca</string>
     <string name="stop">Ferma</string>
-    <string name="sb_color_enable">Alterna i segmenti di colore personalizzati per i segmenti di blocco dello sponsor</string>
+    <string name="sb_color_enable">Alterna i segmenti di colore personalizzati per i segmenti di SponsorBlock.</string>
     <string name="sb_custom_colors">Colori dei segmenti personalizzati</string>
     <string name="chapters_videoHighlight">Momento saliente</string>
     <string name="jumped_to_highlight">Passato al momento saliente</string>
@@ -466,4 +465,12 @@
     <string name="enter_hex_value">Inserisci il valore esadecimale del colore</string>
     <string name="fallback_piped_proxy_desc">Carica i video tramite il proxy se la connessione diretta a YouTube non funziona per il video corrente (aumenta i tempi di caricamento iniziale). Se disattivato, è probabile che i contenuti musicali di YouTube non vengano riprodotti a causa delle restrizioni di YT.</string>
     <string name="fallback_piped_proxy">Ripiega ad un proxy Piped</string>
+    <string name="unknown_audio_language">Lingua audio sconosciuta</string>
+    <string name="unknown_audio_track_type">Tipo di traccia audio sconosciuta</string>
+    <string name="audio_track_format">%1$s - %2$s</string>
+    <string name="descriptive_audio_track">descrittivo</string>
+    <string name="default_or_unknown_audio_track">predefinito o sconosciuto</string>
+    <string name="unknown_or_no_audio">sconosciuto o senza audio</string>
+    <string name="dubbed_audio_track">doppiato</string>
+    <string name="original_or_main_audio_track">originale o principale</string>
 </resources>
