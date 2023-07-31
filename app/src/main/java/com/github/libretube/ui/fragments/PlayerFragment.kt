@@ -93,6 +93,7 @@ import com.github.libretube.obj.VideoResolution
 import com.github.libretube.parcelable.PlayerData
 import com.github.libretube.services.DownloadService
 import com.github.libretube.ui.activities.MainActivity
+import com.github.libretube.ui.activities.VideoTagsAdapter
 import com.github.libretube.ui.adapters.ChaptersAdapter
 import com.github.libretube.ui.adapters.VideosAdapter
 import com.github.libretube.ui.dialogs.AddToPlaylistDialog
@@ -114,16 +115,17 @@ import com.github.libretube.util.PlayingQueue
 import com.github.libretube.util.TextUtils
 import com.github.libretube.util.TextUtils.toTimeInSeconds
 import com.github.libretube.util.YoutubeHlsPlaylistParser
+import com.github.libretube.util.deArrow
+import java.io.IOException
+import java.util.*
+import java.util.concurrent.Executors
+import kotlin.math.abs
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import retrofit2.HttpException
-import java.io.IOException
-import java.util.*
-import java.util.concurrent.Executors
-import kotlin.math.abs
 
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 class PlayerFragment : Fragment(), OnlinePlayerOptions {
@@ -509,6 +511,21 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
         NavigationHelper.startAudioPlayer(requireContext())
     }
 
+    /**
+     * If enabled, determine the orientation o use based on the video's aspect ratio
+     * Expected behavior: Portrait for shorts, Landscape for normal videos
+     */
+    private fun updateFullscreenOrientation() {
+        if (!PlayerHelper.autoRotationEnabled) {
+            val height = streams.videoStreams.firstOrNull()?.height ?: exoPlayer.videoSize.height
+            val width = streams.videoStreams.firstOrNull()?.width ?: exoPlayer.videoSize.width
+
+            // different orientations of the video are only available when autorotation is disabled
+            val orientation = PlayerHelper.getOrientation(width, height)
+            mainActivity.requestedOrientation = orientation
+        }
+    }
+
     private fun setFullscreen() {
         with(binding.playerMotionLayout) {
             getConstraintSet(R.id.start).constrainHeight(R.id.player, -1)
@@ -524,15 +541,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
         playerBinding.fullscreen.setImageResource(R.drawable.ic_fullscreen_exit)
         playerBinding.exoTitle.visibility = View.VISIBLE
 
-        if (!PlayerHelper.autoRotationEnabled) {
-            val height = streams.videoStreams.firstOrNull()?.height ?: exoPlayer.videoSize.height
-            val width = streams.videoStreams.firstOrNull()?.width ?: exoPlayer.videoSize.width
-
-            // different orientations of the video are only available when autorotation is disabled
-            val orientation = PlayerHelper.getOrientation(width, height)
-            mainActivity.requestedOrientation = orientation
-        }
-
+        updateFullscreenOrientation()
         viewModel.isFullscreen.value = true
     }
 
@@ -690,7 +699,9 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
 
         lifecycleScope.launch(Dispatchers.IO) {
             streams = try {
-                RetrofitInstance.api.getStreams(videoId)
+                RetrofitInstance.api.getStreams(videoId).apply {
+                    relatedStreams = relatedStreams.deArrow()
+                }
             } catch (e: IOException) {
                 context?.toastFromMainDispatcher(R.string.unknown_error, Toast.LENGTH_LONG)
                 return@launch
@@ -744,6 +755,8 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
                 initializePlayerView()
                 setupSeekbarPreview()
 
+                if (viewModel.isFullscreen.value == true) updateFullscreenOrientation()
+
                 exoPlayer.prepare()
                 if (PreferenceHelper.getBoolean(PreferenceKeys.PLAY_AUTOMATICALLY, true)) {
                     exoPlayer.play()
@@ -752,7 +765,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
                 if (binding.playerMotionLayout.progress != 1.0f) {
                     // show controllers when not in picture in picture mode
                     val inPipMode = PlayerHelper.pipEnabled &&
-                            PictureInPictureCompat.isInPictureInPictureMode(requireActivity())
+                        PictureInPictureCompat.isInPictureInPictureMode(requireActivity())
                     if (!inPipMode) {
                         binding.player.useController = true
                     }
@@ -972,7 +985,23 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
         val description = streams.description
 
         setupDescription(binding.playerDescription, description)
-        binding.videoCategory.text = "${context?.getString(R.string.category)}: ${streams.category}"
+        val visibility = when (streams.visibility) {
+            "public" -> context?.getString(R.string.visibility_public)
+            "unlisted" -> context?.getString(R.string.visibility_unlisted)
+            // currently no other visibility could be returned, might change in the future however
+            else -> streams.visibility.replaceFirstChar {
+                if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString()
+            }
+        }.orEmpty()
+        binding.additionalVideoInfo.text = "${context?.getString(R.string.category)}: ${streams.category}\n" +
+                "${context?.getString(R.string.license)}: ${streams.license}\n" +
+                "${context?.getString(R.string.visibility)}: $visibility"
+
+        if (streams.tags.isNotEmpty()) {
+            binding.tagsRecycler.layoutManager = LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false)
+            binding.tagsRecycler.adapter = VideoTagsAdapter(streams.tags)
+        }
+        binding.tagsRecycler.isVisible = streams.tags.isNotEmpty()
 
         binding.playerChannel.setOnClickListener {
             val activity = view?.context as MainActivity
@@ -1295,9 +1324,11 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
             ) && streams.videoStreams.isNotEmpty() -> {
                 // only use the dash manifest generated by YT if either it's a livestream or no other source is available
                 val dashUri =
-                    if (streams.livestream && streams.dash != null) ProxyHelper.unwrapStreamUrl(
-                        streams.dash!!
-                    ).toUri() else {
+                    if (streams.livestream && streams.dash != null) {
+                        ProxyHelper.unwrapStreamUrl(
+                            streams.dash!!
+                        ).toUri()
+                    } else {
                         // skip LBRY urls when checking whether the stream source is usable
                         val urlToTest = streams.videoStreams.firstOrNull {
                             !it.quality.orEmpty().contains("LBRY")
@@ -1321,7 +1352,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
                 val mediaSource = hlsMediaSourceFactory.createMediaSource(
                     createMediaItem(
                         ProxyHelper.unwrapStreamUrl(streams.hls!!).toUri(),
-                        MimeTypes.APPLICATION_M3U8,
+                        MimeTypes.APPLICATION_M3U8
                     )
                 )
                 exoPlayer.setMediaSource(mediaSource)
@@ -1445,7 +1476,8 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
     override fun onAudioStreamClicked() {
         val context = requireContext()
         val audioLanguagesAndRoleFlags = PlayerHelper.getAudioLanguagesAndRoleFlagsFromTrackGroups(
-            exoPlayer.currentTracks.groups, false
+            exoPlayer.currentTracks.groups,
+            false
         )
         val audioLanguages = audioLanguagesAndRoleFlags.map {
             PlayerHelper.getAudioTrackNameFromFormat(context, it)
@@ -1457,9 +1489,9 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
                 listOf(context.getString(R.string.unknown_or_no_audio)),
                 null
             )
-        } else if (audioLanguagesAndRoleFlags.size == 1
-            && audioLanguagesAndRoleFlags[0].first == null
-            && !PlayerHelper.haveAudioTrackRoleFlagSet(
+        } else if (audioLanguagesAndRoleFlags.size == 1 &&
+            audioLanguagesAndRoleFlags[0].first == null &&
+            !PlayerHelper.haveAudioTrackRoleFlagSet(
                 audioLanguagesAndRoleFlags[0].second
             )
         ) {

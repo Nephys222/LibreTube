@@ -289,7 +289,7 @@
     <string name="playlistNameReversed">Oynatma siyahısı adı (əks)</string>
     <string name="playlists_order">Oynatma siyahısı sırası</string>
     <string name="time_code">Vaxt kodu (saniyə)</string>
-    <string name="added_to_playlist">Oynatma siyahısına əlavə edildi %1$s</string>
+    <string name="added_to_playlist">%1$s oynatma siyahısına əlavə edildi</string>
     <string name="queue">Növbə</string>
     <string name="sb_markers">Göstəricilər</string>
     <string name="sb_markers_summary">Vaxt çubuğunda bölümləri işarələ.</string>
@@ -470,4 +470,7 @@
     <string name="default_or_unknown_audio_track">standart və ya naməlum</string>
     <string name="unknown_or_no_audio">naməlum və ya səs yoxdur</string>
     <string name="unknown_audio_language">Naməlum səs dili</string>
+    <string name="continue_watching">Baxmağa davam et</string>
+    <string name="dearrow">DeArrow\'u Aktivləşdir</string>
+    <string name="dearrow_summary">Daha dəqiq və daha az sensasiyalı başlıqlar və miniatürlər göstər. Yüklənilmə müddətin artırır.</string>
 </resources>

@@ -6,7 +6,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.ViewGroup.MarginLayoutParams
-import android.widget.Toast
 import androidx.core.view.children
 import androidx.core.view.isGone
 import androidx.core.view.isVisible
@@ -44,7 +43,8 @@ class SubscriptionsFragment : Fragment() {
     private val viewModel: SubscriptionsViewModel by activityViewModels()
     private val playerModel: PlayerViewModel by activityViewModels()
     private var channelGroups: List<SubscriptionGroup> = listOf()
-    private var selectedFilterGroup: Int = 0
+    private var selectedFilterGroup = 0
+    private var isCurrentTabSubChannels = false
 
     var subscriptionsAdapter: VideosAdapter? = null
     private var selectedSortOrder = PreferenceHelper.getInt(PreferenceKeys.FEED_SORT_ORDER, 0)
@@ -80,36 +80,26 @@ class SubscriptionsFragment : Fragment() {
         binding.filterTV.text = resources.getStringArray(R.array.filterOptions)[selectedFilter]
 
         binding.subRefresh.isEnabled = true
-
-        binding.subProgress.visibility = View.VISIBLE
+        binding.subProgress.isVisible = true
 
         binding.subFeed.layoutManager = VideosAdapter.getLayout(requireContext())
 
-        if (viewModel.videoFeed.value == null || !loadFeedInBackground) {
+        if (!isCurrentTabSubChannels && (viewModel.videoFeed.value == null || !loadFeedInBackground)) {
             viewModel.videoFeed.value = null
-            viewModel.fetchFeed()
-        }
-
-        // listen for error responses
-        viewModel.errorResponse.observe(viewLifecycleOwner) {
-            if (!it) return@observe
-            Toast.makeText(context, R.string.server_error, Toast.LENGTH_SHORT).show()
-            viewModel.errorResponse.value = false
+            viewModel.fetchFeed(requireContext())
         }
 
         viewModel.videoFeed.observe(viewLifecycleOwner) {
-            if (!isShowingFeed() || it == null) return@observe
-            showFeed()
+            if (!isCurrentTabSubChannels && it != null) showFeed()
         }
 
         viewModel.subscriptions.observe(viewLifecycleOwner) {
-            if (isShowingFeed() || it == null) return@observe
-            showSubscriptions()
+            if (isCurrentTabSubChannels && it != null) showSubscriptions()
         }
 
         binding.subRefresh.setOnRefreshListener {
-            viewModel.fetchSubscriptions()
-            viewModel.fetchFeed()
+            viewModel.fetchSubscriptions(requireContext())
+            viewModel.fetchFeed(requireContext())
         }
 
         binding.sortTV.setOnClickListener {
@@ -136,22 +126,24 @@ class SubscriptionsFragment : Fragment() {
             }.show(childFragmentManager)
         }
 
-        binding.toggleSubs.visibility = View.VISIBLE
+        binding.toggleSubs.isVisible = true
 
         binding.toggleSubs.setOnClickListener {
-            if (isShowingFeed()) {
+            binding.subProgress.isVisible = true
+            binding.subRefresh.isRefreshing = true
+            isCurrentTabSubChannels = !isCurrentTabSubChannels
+
+            if (isCurrentTabSubChannels) {
                 if (viewModel.subscriptions.value == null) {
-                    viewModel.fetchSubscriptions()
+                    viewModel.fetchSubscriptions(requireContext())
                 } else {
                     showSubscriptions()
                 }
-                binding.subChannelsContainer.visibility = View.VISIBLE
-                binding.subFeedContainer.visibility = View.GONE
             } else {
                 showFeed()
-                binding.subChannelsContainer.visibility = View.GONE
-                binding.subFeedContainer.visibility = View.VISIBLE
             }
+            binding.subChannelsContainer.isVisible = isCurrentTabSubChannels
+            binding.subFeedContainer.isGone = isCurrentTabSubChannels
         }
 
         binding.scrollviewSub.viewTreeObserver.addOnScrollChangedListener {
@@ -279,13 +271,13 @@ class SubscriptionsFragment : Fragment() {
             }
         }
 
-        binding.subChannelsContainer.visibility = View.GONE
+        binding.subChannelsContainer.isGone = true
+        binding.subProgress.isGone = true
 
         val notLoaded = viewModel.videoFeed.value.isNullOrEmpty()
         binding.subFeedContainer.isGone = notLoaded
         binding.emptyFeed.isVisible = notLoaded
 
-        binding.subProgress.visibility = View.GONE
         subscriptionsAdapter = VideosAdapter(
             sortedFeed.toMutableList(),
             showAllAtOnce = false
@@ -298,42 +290,31 @@ class SubscriptionsFragment : Fragment() {
     private fun showSubscriptions() {
         if (viewModel.subscriptions.value == null) return
 
-        binding.subRefresh.isRefreshing = false
-
         val legacySubscriptions = PreferenceHelper.getBoolean(
             PreferenceKeys.LEGACY_SUBSCRIPTIONS,
             false
         )
 
-        binding.subChannels.layoutManager = if (legacySubscriptions) {
-            GridLayoutManager(
+        if (legacySubscriptions) {
+            binding.subChannels.layoutManager = GridLayoutManager(
                 context,
                 PreferenceHelper.getString(
                     PreferenceKeys.LEGACY_SUBSCRIPTIONS_COLUMNS,
                     "4"
                 ).toInt()
             )
+            binding.subChannels.adapter = LegacySubscriptionAdapter(viewModel.subscriptions.value!!)
         } else {
-            LinearLayoutManager(context)
+            binding.subChannels.layoutManager = LinearLayoutManager(context)
+            binding.subChannels.adapter = SubscriptionChannelAdapter(viewModel.subscriptions.value!!.toMutableList())
         }
 
-        // set the adapter of the subscribed channels
-        binding.subChannels.adapter = if (legacySubscriptions) {
-            LegacySubscriptionAdapter(viewModel.subscriptions.value!!)
-        } else {
-            SubscriptionChannelAdapter(
-                viewModel.subscriptions.value!!.toMutableList()
-            )
-        }
-
-        binding.subFeedContainer.visibility = View.GONE
+        binding.subRefresh.isRefreshing = false
+        binding.subProgress.isGone = true
+        binding.subFeedContainer.isGone = true
 
         val notLoaded = viewModel.subscriptions.value.isNullOrEmpty()
         binding.subChannelsContainer.isGone = notLoaded
         binding.emptyFeed.isVisible = notLoaded
-    }
-
-    private fun isShowingFeed(): Boolean {
-        return !binding.subChannelsContainer.isVisible
     }
 }

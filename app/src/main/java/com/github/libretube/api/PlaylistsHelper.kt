@@ -6,6 +6,7 @@ import com.github.libretube.api.obj.Message
 import com.github.libretube.api.obj.Playlist
 import com.github.libretube.api.obj.Playlists
 import com.github.libretube.api.obj.StreamItem
+import com.github.libretube.constants.PreferenceKeys
 import com.github.libretube.constants.YOUTUBE_FRONTEND_URL
 import com.github.libretube.db.DatabaseHolder
 import com.github.libretube.db.obj.LocalPlaylist
@@ -16,6 +17,7 @@ import com.github.libretube.helpers.ProxyHelper
 import com.github.libretube.obj.FreeTubeImportPlaylist
 import com.github.libretube.obj.FreeTubeVideo
 import com.github.libretube.obj.PipedImportPlaylist
+import com.github.libretube.util.deArrow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -26,16 +28,14 @@ object PlaylistsHelper {
         "[\\da-fA-F]{8}-[\\da-fA-F]{4}-[\\da-fA-F]{4}-[\\da-fA-F]{4}-[\\da-fA-F]{12}".toRegex()
 
     private val token get() = PreferenceHelper.getToken()
-
     val loggedIn: Boolean get() = token.isNotEmpty()
-
     private fun Message.isOk() = this.message == "ok"
 
     suspend fun getPlaylists(): List<Playlists> = withContext(Dispatchers.IO) {
-        if (loggedIn) {
+        val playlists = if (loggedIn) {
             RetrofitInstance.authApi.getUserPlaylists(token)
         } else {
-            DatabaseHolder.Database.localPlaylistsDao().getAll().reversed()
+            DatabaseHolder.Database.localPlaylistsDao().getAll()
                 .map {
                     Playlists(
                         id = it.playlist.id.toString(),
@@ -45,6 +45,18 @@ object PlaylistsHelper {
                         videos = it.videos.size.toLong()
                     )
                 }
+        }
+
+        when (
+            PreferenceHelper.getString(PreferenceKeys.PLAYLISTS_ORDER, "creation_date")
+        ) {
+            "creation_date" -> playlists
+            "creation_date_reversed" -> playlists.reversed()
+            "alphabetic" -> playlists.sortedBy { it.name?.lowercase() }
+            "alphabetic_reversed" -> playlists.sortedBy { it.name?.lowercase() }
+                .reversed()
+
+            else -> playlists
         }
     }
 
@@ -64,6 +76,8 @@ object PlaylistsHelper {
                     relatedStreams = relation.videos.map { it.toStreamItem() }
                 )
             }
+        }.apply {
+            relatedStreams = relatedStreams.deArrow()
         }
     }
 
