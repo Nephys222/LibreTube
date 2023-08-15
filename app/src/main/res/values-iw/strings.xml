@@ -274,9 +274,7 @@
     <string name="backup_customInstances">מופעים מותאמים אישית</string>
     <string name="download_channel_name">שירות ההורדות</string>
     <string name="download_channel_description">מציג התראה בזמן הורדת מדיה.</string>
-    <string name="background_channel_name">מצב רקע</string>
     <string name="save_feed">לטעון את ערוץ ההזנות ברקע</string>
-    <string name="background_channel_description">מציג התראה עם כפתורים כדי לשלוט בנגן השמע.</string>
     <string name="push_channel_name">מתפעל התראות</string>
     <string name="save_feed_summary">לטעון את ערוץ ההזנה של המינוי ברקע ולמנוע את רענונו מחדש אוטומטית.</string>
     <string name="push_channel_description">מציג התראה כשתזרימים חדשים זמינים.</string>
@@ -291,8 +289,6 @@
     <string name="time_code">קוד זמן (שניות)</string>
     <string name="added_to_playlist">נוסף לרשימת הנגינה %1$s</string>
     <string name="queue">תור</string>
-    <string name="sb_markers">סמנים</string>
-    <string name="sb_markers_summary">סימון המקטעים בציר הזמן.</string>
     <string name="livestreams">שידורים חיים</string>
     <string name="alternative_videos_layout">פריסת סרטונים חלופית</string>
     <string name="defaultIconLight">בהיר כברירת מחדל</string>
@@ -479,4 +475,15 @@
     <string name="continue_watching">להמשיך בצפייה</string>
     <string name="dearrow">הפעלת DeArrow</string>
     <string name="dearrow_summary">להציג כותרות ותמונות ממוזערות מדויקות יותר ופחות מפוצצות. תוך שיפור זמני הטעינה.</string>
+    <string name="visibility">חשיפה</string>
+    <string name="visibility_public">ציבורית</string>
+    <string name="visibility_unlisted">לא מופיעה</string>
+    <string name="sort_by">מיון לפי</string>
+    <string name="duration_span">משך: %1$s</string>
+    <string name="uploader_name">שם המעלה</string>
+    <string name="screen_orientation">כיוון המסך</string>
+    <string name="no_chapter">אין פרק</string>
+    <string name="remove_watched_videos">הסרת סרטונים שנצפו</string>
+    <string name="player_channel_description">מציג התראה בזמן הנגינה</string>
+    <string name="player_channel_name">שירות נגן</string>
 </resources>

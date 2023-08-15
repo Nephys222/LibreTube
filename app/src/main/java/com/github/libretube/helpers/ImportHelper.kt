@@ -19,6 +19,7 @@ import com.github.libretube.obj.NewPipeSubscription
 import com.github.libretube.obj.NewPipeSubscriptions
 import com.github.libretube.obj.PipedImportPlaylist
 import com.github.libretube.obj.PipedImportPlaylistFile
+import java.util.stream.Collectors
 import kotlin.streams.toList
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.decodeFromStream
@@ -79,7 +80,7 @@ object ImportHelper {
                     it.bufferedReader().use { reader ->
                         reader.lines().map { line -> line.substringBefore(",") }
                             .filter { channelId -> channelId.length == 24 }
-                            .toList()
+                            .collect(Collectors.toList())
                     }
                 }.orEmpty()
             }
@@ -168,7 +169,9 @@ object ImportHelper {
             ImportFormat.YOUTUBECSV -> {
                 val playlist = PipedImportPlaylist()
                 activity.contentResolver.openInputStream(uri)?.use {
-                    val lines = it.bufferedReader().use { reader -> reader.lines().toList() }
+                    val lines = it.bufferedReader().use { reader ->
+                        reader.lines().collect(Collectors.toList())
+                    }
                     playlist.name = lines[1].split(",").reversed()[2]
                     var splitIndex = lines.indexOfFirst { line -> line.isBlank() }
                     // seek until playlist items table

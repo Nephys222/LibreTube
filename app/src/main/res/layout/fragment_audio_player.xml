@@ -56,16 +56,6 @@
                 app:track="@drawable/player_switch_track"
                 app:trackTint="?colorControlNormal" />
 
-            <ImageView
-                android:id="@+id/dropdown_menu"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:background="?selectableItemBackgroundBorderless"
-                android:scaleX="0.8"
-                android:scaleY="0.8"
-                android:src="@drawable/ic_three_dots" />
-
         </LinearLayout>
 
         <FrameLayout
@@ -186,6 +176,31 @@
             android:layout_marginTop="10dp"
             android:layout_marginBottom="36dp">
 
+            <FrameLayout
+                android:id="@+id/rewindFL"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:background="?attr/selectableItemBackgroundBorderless">
+
+                <ImageView
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:layout_gravity="center"
+                    android:src="@drawable/ic_rewind_md" />
+
+                <TextView
+                    android:id="@+id/rewindTV"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_marginTop="2dp"
+                    android:textSize="8sp"
+                    android:textStyle="bold"
+                    tools:ignore="SmallSp" />
+
+            </FrameLayout>
+
             <ImageView
                 android:id="@+id/prev"
                 android:layout_width="48dp"
@@ -213,8 +228,32 @@
                 android:layout_height="48dp"
                 android:layout_gravity="center"
                 android:layout_marginHorizontal="20dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
                 android:src="@drawable/ic_next" />
+
+            <FrameLayout
+                android:id="@+id/forwardFL"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:background="?attr/selectableItemBackgroundBorderless">
+
+                <ImageView
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:layout_gravity="center"
+                    android:src="@drawable/ic_forward_md" />
+
+                <TextView
+                    android:id="@+id/forwardTV"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_marginTop="2dp"
+                    android:textSize="8sp"
+                    android:textStyle="bold"
+                    tools:ignore="SmallSp" />
+
+            </FrameLayout>
 
         </LinearLayout>
 
@@ -250,6 +289,11 @@
                     android:src="@drawable/ic_video" />
 
                 <ImageView
+                    android:id="@+id/download"
+                    style="@style/AudioPlayerButton"
+                    android:src="@drawable/ic_download" />
+
+                <ImageView
                     android:id="@+id/share"
                     style="@style/AudioPlayerButton"
                     android:src="@drawable/ic_share" />
@@ -258,7 +302,7 @@
                     android:id="@+id/chapters"
                     style="@style/AudioPlayerButton"
                     android:src="@drawable/ic_frame"
-                    android:visibility="gone"/>
+                    android:visibility="gone" />
 
             </LinearLayout>
 

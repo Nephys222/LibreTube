@@ -268,8 +268,6 @@
     <string name="sb_skip_manual_summary">Ez saltatu segmentuak automatikoki, galdetu beti aurretik.</string>
     <string name="download_channel_name">Deskarga zerbitzua</string>
     <string name="download_channel_description">Multimedia deskargatzean jakinarazpen bat erakusten du.</string>
-    <string name="background_channel_name">Atzeko planoko modua</string>
-    <string name="background_channel_description">Audio-erreproduzitzailea maneiatzeko botoiekin jakinarazpen bat erakusten du.</string>
     <string name="push_channel_name">Jakinarazpenen egilea</string>
     <string name="local_subscriptions">Tokiko harpidetzak</string>
     <string name="preferences">Hobespenak</string>
@@ -289,8 +287,6 @@
     <string name="invalid_filename">Fitxategi izen baliogabea!</string>
     <string name="playlists_order">Erreprodukzio zerrenden ordena</string>
     <string name="playlistNameReversed">Erreprodukzio zerrendaren izena (alderantzizkatua)</string>
-    <string name="sb_markers">Markagailuak</string>
-    <string name="sb_markers_summary">Markatu segmentuak denbora-barran.</string>
     <string name="livestreams">Zuzeneko transmisioak</string>
     <string name="alternative_videos_layout">Bideo alternatiboen diseinua</string>
     <string name="defaultIconLight">Lehenetsitako argia</string>

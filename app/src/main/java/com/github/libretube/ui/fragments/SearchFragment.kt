@@ -5,6 +5,8 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.view.isGone
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
@@ -29,14 +31,11 @@ import kotlinx.coroutines.withContext
 class SearchFragment : Fragment() {
     private var _binding: FragmentSearchBinding? = null
     private val binding get() = _binding!!
-
     private val viewModel: SearchViewModel by activityViewModels()
-
-    private var query: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        query = arguments?.getString(IntentData.query)
+        viewModel.searchQuery.value = arguments?.getString(IntentData.query)
     }
 
     override fun onCreateView(
@@ -64,8 +63,8 @@ class SearchFragment : Fragment() {
 
     private fun showData(query: String?) {
         // fetch search suggestions if enabled or show the search history
-        binding.historyEmpty.visibility = View.GONE
-        binding.suggestionsRecycler.visibility = View.VISIBLE
+        binding.historyEmpty.isGone = true
+        binding.suggestionsRecycler.isVisible = true
         if (query.isNullOrEmpty()) {
             showHistory()
         } else if (PreferenceHelper.getBoolean(PreferenceKeys.SEARCH_SUGGESTIONS, true)) {
@@ -107,8 +106,8 @@ class SearchFragment : Fragment() {
                     (activity as MainActivity).searchView
                 )
             } else {
-                binding.suggestionsRecycler.visibility = View.GONE
-                binding.historyEmpty.visibility = View.VISIBLE
+                binding.suggestionsRecycler.isGone = true
+                binding.historyEmpty.isVisible = true
             }
         }
     }

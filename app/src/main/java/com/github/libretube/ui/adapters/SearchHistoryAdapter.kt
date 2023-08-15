@@ -1,9 +1,9 @@
 package com.github.libretube.ui.adapters
 
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.widget.SearchView
+import androidx.core.view.isVisible
 import androidx.recyclerview.widget.RecyclerView
 import com.github.libretube.databinding.SuggestionRowBinding
 import com.github.libretube.db.DatabaseHolder.Database
@@ -18,9 +18,7 @@ class SearchHistoryAdapter(
 ) :
     RecyclerView.Adapter<SuggestionsViewHolder>() {
 
-    override fun getItemCount(): Int {
-        return historyList.size
-    }
+    override fun getItemCount() = historyList.size
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): SuggestionsViewHolder {
         val layoutInflater = LayoutInflater.from(parent.context)
@@ -33,7 +31,7 @@ class SearchHistoryAdapter(
         holder.binding.apply {
             suggestionText.text = historyQuery
 
-            deleteHistory.visibility = View.VISIBLE
+            deleteHistory.isVisible = true
 
             deleteHistory.setOnClickListener {
                 historyList -= historyQuery

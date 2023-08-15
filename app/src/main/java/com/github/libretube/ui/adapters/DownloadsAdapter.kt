@@ -4,9 +4,10 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.isGone
+import androidx.core.view.isVisible
 import androidx.recyclerview.widget.RecyclerView
 import com.github.libretube.R
 import com.github.libretube.constants.IntentData
@@ -21,6 +22,7 @@ import com.github.libretube.ui.viewholders.DownloadsViewHolder
 import com.github.libretube.util.TextUtils
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlin.io.path.deleteIfExists
+import kotlin.io.path.exists
 import kotlin.io.path.fileSize
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
@@ -49,7 +51,7 @@ class DownloadsAdapter(
             videoInfo.text = download.uploadDate?.let { TextUtils.localizeDate(it) }
 
             val downloadSize = items.sumOf { it.downloadSize }
-            val currentSize = items.sumOf { it.path.fileSize() }
+            val currentSize = items.filter { it.path.exists() }.sumOf { it.path.fileSize() }
 
             if (downloadSize == -1L) {
                 progressBar.isIndeterminate = true
@@ -64,11 +66,11 @@ class DownloadsAdapter(
                 context.getString(R.string.unknown)
             }
             if (downloadSize > currentSize) {
-                downloadOverlay.visibility = View.VISIBLE
+                downloadOverlay.isVisible = true
                 resumePauseBtn.setImageResource(R.drawable.ic_download)
                 fileSize.text = "${currentSize.formatAsFileSize()} / $totalSizeInfo"
             } else {
-                downloadOverlay.visibility = View.GONE
+                downloadOverlay.isGone = true
                 fileSize.text = totalSizeInfo
             }
 
@@ -139,7 +141,5 @@ class DownloadsAdapter(
         notifyItemInserted(position)
     }
 
-    override fun getItemCount(): Int {
-        return downloads.size
-    }
+    override fun getItemCount() = downloads.size
 }

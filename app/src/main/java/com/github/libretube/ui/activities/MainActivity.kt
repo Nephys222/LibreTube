@@ -2,12 +2,10 @@ package com.github.libretube.ui.activities
 
 import android.annotation.SuppressLint
 import android.content.Intent
-import android.content.pm.ActivityInfo
 import android.content.res.Configuration
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
-import android.view.View
 import android.view.ViewGroup
 import android.widget.ScrollView
 import androidx.activity.addCallback
@@ -16,6 +14,7 @@ import androidx.appcompat.widget.SearchView
 import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.os.bundleOf
 import androidx.core.view.children
+import androidx.core.view.isVisible
 import androidx.core.widget.NestedScrollView
 import androidx.navigation.NavController
 import androidx.navigation.findNavController
@@ -58,12 +57,7 @@ class MainActivity : BaseActivity() {
     private val searchViewModel: SearchViewModel by viewModels()
     private val subscriptionsViewModel: SubscriptionsViewModel by viewModels()
 
-    val autoRotationEnabled: Boolean by lazy {
-        PreferenceHelper.getBoolean(
-            PreferenceKeys.AUTO_ROTATION,
-            resources.getBoolean(R.bool.config_default_auto_rotation_pref)
-        )
-    }
+    private var savedSearchQuery: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -229,17 +223,6 @@ class MainActivity : BaseActivity() {
     }
 
     /**
-     * Rotate according to the preference
-     */
-    fun requestOrientationChange() {
-        requestedOrientation = if (autoRotationEnabled) {
-            ActivityInfo.SCREEN_ORIENTATION_USER
-        } else {
-            ActivityInfo.SCREEN_ORIENTATION_USER_PORTRAIT
-        }
-    }
-
-    /**
      * Initialize the notification badge showing the amount of new videos
      */
     private fun setupSubscriptionsBadge() {
@@ -309,7 +292,10 @@ class MainActivity : BaseActivity() {
 
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
-                navController.navigate(R.id.searchResultFragment, bundleOf(IntentData.query to query))
+                navController.navigate(
+                    R.id.searchResultFragment,
+                    bundleOf(IntentData.query to query)
+                )
                 searchView.clearFocus()
                 return true
             }
@@ -330,12 +316,15 @@ class MainActivity : BaseActivity() {
                     R.id.channelFragment,
                     R.id.playlistFragment
                 )
-                if (navController.currentDestination?.id in destIds && newText.isNullOrEmpty()) {
+                if (navController.currentDestination?.id in destIds && newText == null) {
                     return false
                 }
 
                 if (navController.currentDestination?.id != R.id.searchFragment) {
-                    navController.navigate(R.id.searchFragment, bundleOf(IntentData.query to newText))
+                    navController.navigate(
+                        R.id.searchFragment,
+                        bundleOf(IntentData.query to newText)
+                    )
                 } else {
                     searchViewModel.setQuery(newText)
                 }
@@ -374,6 +363,14 @@ class MainActivity : BaseActivity() {
                 return !isSearchInProgress()
             }
         })
+
+        // handle search queries passed by the intent
+        if (savedSearchQuery != null) {
+            searchItem.expandActionView()
+            searchView.setQuery(savedSearchQuery, true)
+            savedSearchQuery = null
+        }
+
         return super.onCreateOptionsMenu(menu)
     }
 
@@ -442,6 +439,9 @@ class MainActivity : BaseActivity() {
                 timestamp = intent.getLongExtra(IntentData.timeStamp, 0L)
             )
         }
+        intent?.getStringExtra(IntentData.query)?.let {
+            savedSearchQuery = it
+        }
 
         intent?.getStringExtra("fragmentToOpen")?.let {
             if (it != "downloads") { // Not a shortcut
@@ -469,7 +469,7 @@ class MainActivity : BaseActivity() {
         supportFragmentManager.fragments.forEach { fragment ->
             (fragment as? PlayerFragment)?.binding?.apply {
                 mainContainer.isClickable = false
-                linLayout.visibility = View.VISIBLE
+                linLayout.isVisible = true
                 playerMotionLayout.setTransitionDuration(250)
                 playerMotionLayout.transitionToEnd()
                 playerMotionLayout.getConstraintSet(R.id.start).constrainHeight(R.id.player, 0)
@@ -482,11 +482,7 @@ class MainActivity : BaseActivity() {
         }
 
         playerViewModel.isFullscreen.value = false
-        requestedOrientation = if (autoRotationEnabled) {
-            ActivityInfo.SCREEN_ORIENTATION_USER
-        } else {
-            ActivityInfo.SCREEN_ORIENTATION_USER_PORTRAIT
-        }
+        requestOrientationChange()
     }
 
     @SuppressLint("SwitchIntDef")

@@ -9,8 +9,8 @@ import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
 import com.github.libretube.R
-import com.github.libretube.constants.BACKGROUND_CHANNEL_ID
 import com.github.libretube.constants.IntentData
+import com.github.libretube.constants.PLAYER_CHANNEL_ID
 import com.github.libretube.constants.PLAYER_NOTIFICATION_ID
 import com.github.libretube.db.DatabaseHolder
 import com.github.libretube.db.obj.DownloadWithItems
@@ -20,6 +20,7 @@ import com.github.libretube.helpers.PlayerHelper
 import com.github.libretube.helpers.PlayerHelper.loadPlaybackParams
 import com.github.libretube.obj.PlayerNotificationData
 import com.github.libretube.util.NowPlayingNotification
+import kotlin.io.path.exists
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -34,7 +35,7 @@ class OfflinePlayerService : LifecycleService() {
     override fun onCreate() {
         super.onCreate()
 
-        val notification = NotificationCompat.Builder(this, BACKGROUND_CHANNEL_ID)
+        val notification = NotificationCompat.Builder(this, PLAYER_CHANNEL_ID)
             .setContentTitle(getString(R.string.app_name))
             .setContentText(getString(R.string.playingOnBackground))
             .setSmallIcon(R.drawable.ic_launcher_lockscreen)
@@ -83,19 +84,20 @@ class OfflinePlayerService : LifecycleService() {
             .setAudioAttributes(PlayerHelper.getAudioAttributes(), true)
             .setLoadControl(PlayerHelper.getLoadControl())
             .build()
-            .loadPlaybackParams(isBackgroundMode = true).apply {
-                playWhenReady = true
-            }
+            .loadPlaybackParams(isBackgroundMode = true)
 
-        val audioItem = downloadWithItem.downloadItems.firstOrNull { it.type == FileType.AUDIO }
+        val audioItem = downloadWithItem.downloadItems.filter { it.path.exists() }
+            .firstOrNull { it.type == FileType.AUDIO }
             ?: // in some rare cases, video files can contain audio
-            downloadWithItem.downloadItems.firstOrNull { it.type == FileType.VIDEO } ?: return false
+            downloadWithItem.downloadItems.firstOrNull { it.type == FileType.VIDEO }
+            ?: return false
 
         val mediaItem = MediaItem.Builder()
             .setUri(audioItem.path.toAndroidUri())
             .build()
 
         player?.setMediaItem(mediaItem)
+        player?.playWhenReady = PlayerHelper.playAutomatically
         player?.prepare()
         return true
     }

@@ -4,11 +4,11 @@ import android.graphics.Color
 import android.text.format.DateUtils
 import android.view.LayoutInflater
 import android.view.ViewGroup
-import androidx.core.graphics.ColorUtils
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.recyclerview.widget.RecyclerView
+import com.github.libretube.R
 import com.github.libretube.api.obj.ChapterSegment
-import com.github.libretube.databinding.ChapterColumnBinding
+import com.github.libretube.databinding.ChaptersRowBinding
 import com.github.libretube.helpers.ImageHelper
 import com.github.libretube.helpers.ThemeHelper
 import com.github.libretube.ui.viewholders.ChaptersViewHolder
@@ -21,7 +21,7 @@ class ChaptersAdapter(
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ChaptersViewHolder {
         val layoutInflater = LayoutInflater.from(parent.context)
-        val binding = ChapterColumnBinding.inflate(layoutInflater, parent, false)
+        val binding = ChaptersRowBinding.inflate(layoutInflater, parent, false)
         return ChaptersViewHolder(binding)
     }
 
@@ -36,22 +36,20 @@ class ChaptersAdapter(
             chapterTitle.text = chapter.title
             timeStamp.text = DateUtils.formatElapsedTime(chapter.start)
 
-            val color = when {
-                selectedPosition == position -> {
-                    ThemeHelper.getThemeColor(root.context, android.R.attr.colorControlHighlight)
-                }
+            val chapterEnd = chapters.getOrNull(position + 1)?.start
+                ?: (exoPlayer.duration / 1000)
+            val durationSpan = chapterEnd - chapter.start
+            duration.text = root.context.getString(
+                R.string.duration_span,
+                DateUtils.formatElapsedTime(durationSpan)
+            )
 
-                chapter.drawable != null -> ColorUtils.setAlphaComponent(
-                    ThemeHelper.getThemeColor(
-                        root.context,
-                        android.R.attr.colorPrimary
-                    ),
-                    50
-                )
-
-                else -> Color.TRANSPARENT
+            val color = if (selectedPosition == position) {
+                ThemeHelper.getThemeColor(root.context, android.R.attr.colorControlHighlight)
+            } else {
+                Color.TRANSPARENT
             }
-            chapterLL.setBackgroundColor(color)
+            root.setBackgroundColor(color)
 
             root.setOnClickListener {
                 updateSelectedPosition(position)
@@ -62,6 +60,8 @@ class ChaptersAdapter(
     }
 
     fun updateSelectedPosition(newPosition: Int) {
+        if (selectedPosition == newPosition) return
+
         val oldPosition = selectedPosition
         selectedPosition = newPosition
         notifyItemChanged(oldPosition)

@@ -267,8 +267,6 @@
     <string name="wifi">Wi-Fi</string>
     <string name="mobile_data">Mobilní data</string>
     <string name="sb_skip_manual">Přeskočit ručně</string>
-    <string name="background_channel_name">Režim na pozadí</string>
-    <string name="background_channel_description">Zobrazí oznámení s tlačítky pro ovládání přehrávače zvuku.</string>
     <string name="push_channel_name">Pracovník oznámení</string>
     <string name="download_channel_name">Služba stahování</string>
     <string name="skip_segment">Přeskočit segment</string>
@@ -293,8 +291,6 @@
     <string name="queue">Fronta</string>
     <string name="livestreams">Živé přenosy</string>
     <string name="alternative_videos_layout">Alternativní rozvržení videí</string>
-    <string name="sb_markers">Značky</string>
-    <string name="sb_markers_summary">Označit úseky na časové liště.</string>
     <string name="defaultIconLight">Výchozí světlá</string>
     <string name="confirm_unsubscribing_summary">Zobrazit potvrzovací dialog před zrušením odběru.</string>
     <string name="confirm_unsubscribe">Opravdu chcete zrušit odběr %1$s\?</string>
@@ -476,4 +472,15 @@
     <string name="audio_track_format">%1$s - %2$s</string>
     <string name="unknown_audio_language">Neznámý jazyk zvuku</string>
     <string name="unknown_audio_track_type">Neznámý typ stopy zvuku</string>
+    <string name="visibility_public">Veřejná</string>
+    <string name="visibility_unlisted">Neuvedená</string>
+    <string name="visibility">Viditelnost</string>
+    <string name="duration_span">Délka: %1$s</string>
+    <string name="sort_by">Řazení</string>
+    <string name="uploader_name">Jméno autora</string>
+    <string name="no_chapter">Žádná kapitola</string>
+    <string name="screen_orientation">Otočení obrazovky</string>
+    <string name="remove_watched_videos">Odebrat zhlédnutá videa</string>
+    <string name="player_channel_name">Služba přehrávače</string>
+    <string name="player_channel_description">Zobrazí oznámení při přehrávání</string>
 </resources>

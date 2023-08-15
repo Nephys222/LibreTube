@@ -111,7 +111,7 @@
     <string name="music_playlists">YT Musikk-spillelister</string>
     <string name="category_outro">Sluttinfo og rulletekst</string>
     <string name="sponsorblock_summary">Bruker https://sponsor.ajay.app-API-et</string>
-    <string name="category_interaction">Interaksjonspåminnelse (lik og abonner)</string>
+    <string name="category_interaction">Interaksjonspåminnelse</string>
     <string name="category_outro_description">Info etter slutten av videoen. Ikke for oppsummeringer med info.</string>
     <string name="playOnBackground">Spill i bakgrunnen</string>
     <string name="update_available_text">Gå til utgivelser på GitHub for å laste ned\?</string>
@@ -268,7 +268,6 @@
     <string name="skip_segment">Hopp over</string>
     <string name="sb_skip_manual">Hopp over manuelt</string>
     <string name="sb_skip_manual_summary">Ikke hopp over automatisk, alltid spør.</string>
-    <string name="background_channel_name">Bakgrunnsmodus</string>
     <string name="local_subscriptions">Lokale abonnementer</string>
     <string name="preferences">Innstillinger</string>
     <string name="backup_customInstances">Egendefinerte instanser</string>
@@ -278,7 +277,6 @@
     <string name="download_channel_name">Nedlastingstjeneste</string>
     <string name="download_channel_description">Vis en merknad ved nedlasting av media.</string>
     <string name="push_channel_name">Merknadsarbeider</string>
-    <string name="background_channel_description">Viser en merknad uten knapper for å kontrollere lydspilleren.</string>
     <string name="push_channel_description">Viser en merknad når nye strømmer er tilgjengelige.</string>
     <string name="wifi">Wi-Fi</string>
     <string name="navigation_bar">Navigasjonsfelt</string>
@@ -291,8 +289,6 @@
     <string name="queue">Kø</string>
     <string name="added_to_playlist">Lagt til på spillelisten %1$s</string>
     <string name="time_code">Tidskode</string>
-    <string name="sb_markers">Markører</string>
-    <string name="sb_markers_summary">Marker segmenter i forløpsindikatoren.</string>
     <string name="playlistCloned">Spilleliste klonet</string>
     <string name="confirm_unsubscribe">Opphev abonnement på %1$s\?</string>
     <string name="confirm_unsubscribing_summary">Vis bekreftelsesdialog før opphevelse av abonnement</string>
@@ -462,4 +458,24 @@
     <string name="category_highlight_description">Kan enten være publisert navn, miniatyrbildet, eller den mest interessante delen av videoen. Du kan hoppe til det ved å trykke det i kapitteldelen.</string>
     <string name="category_highlight">Vis videohøydepunkt</string>
     <string name="fallback_piped_proxy_desc">Last inn videoer via mellomtjener hvis tilkobling til YouTube direkte ikke virker for nåværende video (noe som øker innlastingstiden). Ellers vil du antagelig ikke kunne spille YouTube musikk-innhold som følge av begrensninger.</string>
+    <string name="unknown_audio_language">Ukjent lydspråk</string>
+    <string name="unknown_audio_track_type">Ukjent lydsporstype</string>
+    <string name="original_or_main_audio_track">opprinnelig eller hovedspor</string>
+    <string name="dubbed_audio_track">dubbet</string>
+    <string name="no_chapter">Ingen kapitler</string>
+    <string name="descriptive_audio_track">deskriptiv</string>
+    <string name="default_or_unknown_audio_track">forvalgt eller ukjent</string>
+    <string name="unknown_or_no_audio">ukjent eller ingen lyd</string>
+    <string name="dearrow">Skru på DeArrow</string>
+    <string name="dearrow_summary">Mer nøyaktig info og mindre spekulative titler og miniatyrbilde. Øker innlastingstiden.</string>
+    <string name="sort_by">Sorter etter</string>
+    <string name="uploader_name">Opplasternavn</string>
+    <string name="duration_span">Varighet: %1$s</string>
+    <string name="visibility_public">Offentlig</string>
+    <string name="visibility_unlisted">Ulistet</string>
+    <string name="audio_track_format">%1$s — %2$s</string>
+    <string name="continue_watching">Fortsett å se</string>
+    <string name="visibility">Synlighet</string>
+    <string name="screen_orientation">Skjermretning</string>
+    <string name="remove_watched_videos">Fjern sette videoer</string>
 </resources>

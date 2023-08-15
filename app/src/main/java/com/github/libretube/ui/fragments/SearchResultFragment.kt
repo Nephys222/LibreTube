@@ -34,10 +34,10 @@ class SearchResultFragment : Fragment() {
     private val binding get() = _binding!!
 
     private var nextPage: String? = null
-    private var query: String = ""
+    private var query = ""
 
     private lateinit var searchAdapter: SearchAdapter
-    private var apiSearchFilter: String = "all"
+    private var apiSearchFilter = "all"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -152,7 +152,7 @@ class SearchResultFragment : Fragment() {
             PreferenceHelper.getBoolean(PreferenceKeys.SEARCH_HISTORY_TOGGLE, true)
         if (searchHistoryEnabled && query.isNotEmpty()) {
             lifecycleScope.launch(Dispatchers.IO) {
-                DatabaseHelper.addToSearchHistory(SearchHistoryItem(query))
+                DatabaseHelper.addToSearchHistory(SearchHistoryItem(query.trim()))
             }
         }
     }

@@ -190,7 +190,7 @@
     <string name="no_player_found">外部プレイヤーが見つかりません。インストールしてください。</string>
     <string name="data_saver_mode">データ節約モード</string>
     <string name="search_history_summary">検索履歴を保存</string>
-    <string name="watch_history_summary">視聴した動画を端末に保持</string>
+    <string name="watch_history_summary">視聴した動画の履歴を端末に保持</string>
     <string name="history_summary">再生と検索の履歴</string>
     <string name="watch_positions_title">再生位置を記憶</string>
     <string name="reset_watch_positions">リセット</string>
@@ -270,7 +270,7 @@
     <string name="playback_pitch">ピッチ</string>
     <string name="error_occurred">エラー</string>
     <string name="copied">コピーしました</string>
-    <string name="change_region">急上昇は現在の地域で利用できません。設定で他の地域を選択してください。</string>
+    <string name="change_region">急上昇ランキングは現在の地域にはありません。設定で他の地域を選択してください。</string>
     <string name="share_with_time">時間指定で共有</string>
     <string name="legacy_subscriptions">古い登録チャンネル表示</string>
     <string name="device_info">端末情報</string>
@@ -284,13 +284,9 @@
     <string name="invalid_filename">無効なファイル名です！</string>
     <string name="playlistNameReversed">プレイリスト名 (逆順)</string>
     <string name="playlists_order">プレイリストの表示順</string>
-    <string name="sb_markers">マーカー</string>
-    <string name="sb_markers_summary">再生時間のバー上で該当部分を色分け。</string>
-    <string name="background_channel_description">音声プレイヤーを操作するボタン付きの通知を表示します。</string>
     <string name="livestreams">ライブ配信</string>
     <string name="alternative_videos_layout">別の動画レイアウト</string>
     <string name="download_channel_name">ダウンロードサービス</string>
-    <string name="background_channel_name">バックグラウンドモード</string>
     <string name="push_channel_name">通知の実行</string>
     <string name="push_channel_description">新着動画があれば通知を表示します。</string>
     <string name="defaultIconLight">標準 (ライト)</string>
@@ -346,7 +342,7 @@
     <string name="limit_to_runtime">ランタイムの上限</string>
     <string name="trends">急上昇</string>
     <string name="featured">注目</string>
-    <string name="trending">いま急上昇</string>
+    <string name="trending">いま急上昇中</string>
     <string name="queue_insert_related_videos">関連動画を挿入する</string>
     <string name="bookmarks">ブックマーク</string>
     <string name="bookmark">ブックマーク</string>
@@ -470,4 +466,15 @@
     <string name="continue_watching">視聴を続ける</string>
     <string name="dearrow_summary">大げさでなくより正確な題名とサムネイルを表示します。読み込み時間が増えます。</string>
     <string name="dearrow">DeArrow を使用</string>
+    <string name="visibility">公開状態</string>
+    <string name="visibility_public">公開</string>
+    <string name="visibility_unlisted">限定公開</string>
+    <string name="screen_orientation">画面の向き</string>
+    <string name="remove_watched_videos">視聴済みの動画を除去</string>
+    <string name="no_chapter">チャプターなし</string>
+    <string name="uploader_name">公開者の名前</string>
+    <string name="sort_by">並び替え</string>
+    <string name="duration_span">期間: %1$s</string>
+    <string name="player_channel_name">プレイヤーのサービス</string>
+    <string name="player_channel_description">再生中に通知を表示</string>
 </resources>

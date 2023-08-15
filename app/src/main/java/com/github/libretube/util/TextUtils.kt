@@ -7,7 +7,6 @@ import android.text.format.DateUtils
 import com.github.libretube.R
 import java.time.Instant
 import java.time.LocalDate
-import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -64,9 +63,7 @@ object TextUtils {
     }
 
     fun formatRelativeDate(context: Context, unixTime: Long): CharSequence {
-        // TODO: Use LocalDate.ofInstant() when it is available in SDK 34.
-        val date = LocalDateTime.ofInstant(Instant.ofEpochMilli(unixTime), ZoneId.systemDefault())
-            .toLocalDate()
+        val date = LocalDate.ofInstant(Instant.ofEpochMilli(unixTime), ZoneId.systemDefault())
         val now = LocalDate.now()
         val months = date.until(now, ChronoUnit.MONTHS)
 

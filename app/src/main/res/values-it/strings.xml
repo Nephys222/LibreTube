@@ -116,7 +116,7 @@
     <string name="advanced">Avanzate</string>
     <string name="player">Riproduttore</string>
     <string name="appearance_summary">Regola l\'app a tuo piacimento.</string>
-    <string name="live">Dal vivo</string>
+    <string name="live">In diretta</string>
     <string name="shareTo">Condividi l\'URL a</string>
     <string name="torchIcon">Torcia di tendenza</string>
     <string name="legacyIcon">Eredità perduta</string>
@@ -268,13 +268,11 @@
     <string name="skip_segment">Salta il segmento</string>
     <string name="sb_skip_manual">Salta manualmente</string>
     <string name="sb_skip_manual_summary">Non saltare i segmenti automaticamente, chiedi sempre prima.</string>
-    <string name="background_channel_description">Mostra una notifica con i pulsanti per controllare il lettore audio.</string>
     <string name="download_channel_description">Mostra una notifica quando si scaricano i media.</string>
     <string name="local_subscriptions">Iscrizioni locali</string>
     <string name="preferences">Preferenze</string>
     <string name="backup_customInstances">Istanze personalizzate</string>
     <string name="play_next">Riproduci il successivo</string>
-    <string name="background_channel_name">Modalità in sottofondo</string>
     <string name="download_channel_name">Servizio di Download</string>
     <string name="push_channel_name">Operatore di notifica</string>
     <string name="push_channel_description">Mostra una notifica quando sono disponibili nuovi video.</string>
@@ -290,8 +288,6 @@
     <string name="playlistNameReversed">Nome playlist (invertito)</string>
     <string name="added_to_playlist">Aggiunto alla playlist %1$s</string>
     <string name="queue">Coda</string>
-    <string name="sb_markers">Marcatori</string>
-    <string name="sb_markers_summary">Segna i segmenti sulla barra del tempo.</string>
     <string name="livestreams">Trasmissioni in diretta</string>
     <string name="alternative_videos_layout">Layout alternativo per i video</string>
     <string name="defaultIconLight">Chiara predefinita</string>
@@ -476,4 +472,13 @@
     <string name="continue_watching">Continua a guardare</string>
     <string name="dearrow">Attiva DeArrow</string>
     <string name="dearrow_summary">Mostra titoli e miniature più accurati e meno sensazionalistici. Aumenta i tempi di caricamento.</string>
+    <string name="visibility">Visibilità</string>
+    <string name="visibility_public">Pubblico</string>
+    <string name="visibility_unlisted">Non elencato</string>
+    <string name="sort_by">Ordina per</string>
+    <string name="uploader_name">Nome autore</string>
+    <string name="no_chapter">Nessun capitolo</string>
+    <string name="duration_span">Durata: %1$s</string>
+    <string name="screen_orientation">Orientamento dello schermo</string>
+    <string name="remove_watched_videos">Rimuovi i video visti</string>
 </resources>

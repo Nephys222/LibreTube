@@ -18,6 +18,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.os.postDelayed
 import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isGone
 import androidx.core.view.isVisible
 import androidx.core.view.marginStart
@@ -40,12 +41,15 @@ import com.github.libretube.databinding.PlayerGestureControlsViewBinding
 import com.github.libretube.extensions.dpToPx
 import com.github.libretube.extensions.normalize
 import com.github.libretube.extensions.round
+import com.github.libretube.extensions.seekBy
 import com.github.libretube.helpers.AudioHelper
 import com.github.libretube.helpers.BrightnessHelper
 import com.github.libretube.helpers.PlayerHelper
 import com.github.libretube.helpers.PreferenceHelper
 import com.github.libretube.obj.BottomSheetItem
 import com.github.libretube.ui.base.BaseActivity
+import com.github.libretube.ui.extensions.toggleSystemBars
+import com.github.libretube.ui.extensions.trySetTooltip
 import com.github.libretube.ui.interfaces.PlayerGestureOptions
 import com.github.libretube.ui.interfaces.PlayerOptions
 import com.github.libretube.ui.listeners.PlayerGestureController
@@ -124,19 +128,26 @@ open class CustomExoPlayerView(
         // locking the player
         binding.lockPlayer.setOnClickListener {
             // change the locked/unlocked icon
-            binding.lockPlayer.setImageResource(
-                if (!isPlayerLocked) {
-                    R.drawable.ic_locked
-                } else {
-                    R.drawable.ic_unlocked
-                }
-            )
+            val icon = if (!isPlayerLocked) R.drawable.ic_locked else R.drawable.ic_unlocked
+            val tooltip = if (!isPlayerLocked) {
+                R.string.tooltip_unlocked
+            } else {
+                R.string.tooltip_locked
+            }
+
+            binding.lockPlayer.setImageResource(icon)
+            binding.lockPlayer.trySetTooltip(context.getString(tooltip))
 
             // show/hide all the controls
             lockPlayer(isPlayerLocked)
 
             // change locked status
             isPlayerLocked = !isPlayerLocked
+
+            activity.toggleSystemBars(
+                types = WindowInsetsCompat.Type.statusBars(),
+                showBars = !isPlayerLocked
+            )
         }
 
         resizeMode = when (resizeModePref) {
@@ -267,15 +278,15 @@ open class CustomExoPlayerView(
             it?.text = seekIncrementText
         }
         binding.forwardBTN.setOnClickListener {
-            player?.seekTo(player!!.currentPosition + PlayerHelper.seekIncrement)
+            player?.seekBy(PlayerHelper.seekIncrement)
         }
         binding.rewindBTN.setOnClickListener {
-            player?.seekTo(player!!.currentPosition - PlayerHelper.seekIncrement)
+            player?.seekBy(-PlayerHelper.seekIncrement)
         }
         if (PlayerHelper.doubleTapToSeek) return
 
         listOf(binding.forwardBTN, binding.rewindBTN).forEach {
-            it.visibility = View.VISIBLE
+            it.isVisible = true
         }
     }
 
@@ -363,7 +374,7 @@ open class CustomExoPlayerView(
     }
 
     private fun rewind() {
-        player?.seekTo((player?.currentPosition ?: 0L) - PlayerHelper.seekIncrement)
+        player?.seekBy(-PlayerHelper.seekIncrement)
 
         // show the rewind button
         doubleTapOverlayBinding?.apply {
@@ -372,13 +383,13 @@ open class CustomExoPlayerView(
             // start callback to hide the button
             runnableHandler.removeCallbacksAndMessages(HIDE_REWIND_BUTTON_TOKEN)
             runnableHandler.postDelayed(700, HIDE_REWIND_BUTTON_TOKEN) {
-                rewindBTN.visibility = View.GONE
+                rewindBTN.isGone = true
             }
         }
     }
 
     private fun forward() {
-        player?.seekTo(player!!.currentPosition + PlayerHelper.seekIncrement)
+        player?.seekBy(PlayerHelper.seekIncrement)
 
         // show the forward button
         doubleTapOverlayBinding?.apply {
@@ -387,7 +398,7 @@ open class CustomExoPlayerView(
             // start callback to hide the button
             runnableHandler.removeCallbacksAndMessages(HIDE_FORWARD_BUTTON_TOKEN)
             runnableHandler.postDelayed(700, HIDE_FORWARD_BUTTON_TOKEN) {
-                forwardBTN.visibility = View.GONE
+                forwardBTN.isGone = true
             }
         }
     }
@@ -398,7 +409,7 @@ open class CustomExoPlayerView(
         textView: TextView,
         isRewind: Boolean
     ) {
-        container.visibility = View.VISIBLE
+        container.isVisible = true
         // the direction of the action
         val direction = if (isRewind) -1 else 1
 
@@ -452,7 +463,7 @@ open class CustomExoPlayerView(
     }
 
     private fun updateBrightness(distance: Float) {
-        gestureViewBinding.brightnessControlView.visibility = View.VISIBLE
+        gestureViewBinding.brightnessControlView.isVisible = true
         val bar = gestureViewBinding.brightnessProgressBar
 
         if (bar.progress == 0) {
@@ -477,7 +488,7 @@ open class CustomExoPlayerView(
         val bar = gestureViewBinding.volumeProgressBar
         gestureViewBinding.volumeControlView.apply {
             if (visibility == View.GONE) {
-                visibility = View.VISIBLE
+                isVisible = true
                 // Volume could be changed using other mediums, sync progress
                 // bar with new value.
                 bar.progress = audioHelper.getVolumeWithScale(bar.max)
@@ -679,8 +690,8 @@ open class CustomExoPlayerView(
     }
 
     override fun onSwipeEnd() {
-        gestureViewBinding.brightnessControlView.visibility = View.GONE
-        gestureViewBinding.volumeControlView.visibility = View.GONE
+        gestureViewBinding.brightnessControlView.isGone = true
+        gestureViewBinding.volumeControlView.isGone = true
     }
 
     override fun onZoom() {

@@ -23,12 +23,11 @@ import com.github.libretube.api.JsonHelper
 import com.github.libretube.api.RetrofitInstance
 import com.github.libretube.api.obj.Segment
 import com.github.libretube.api.obj.Streams
-import com.github.libretube.constants.BACKGROUND_CHANNEL_ID
 import com.github.libretube.constants.IntentData
+import com.github.libretube.constants.PLAYER_CHANNEL_ID
 import com.github.libretube.constants.PLAYER_NOTIFICATION_ID
 import com.github.libretube.db.DatabaseHolder.Database
 import com.github.libretube.db.obj.WatchPosition
-import com.github.libretube.enums.SbSkipOptions
 import com.github.libretube.extensions.parcelableExtra
 import com.github.libretube.extensions.setMetadata
 import com.github.libretube.extensions.toID
@@ -77,9 +76,8 @@ class OnlinePlayerService : LifecycleService() {
     /**
      * SponsorBlock Segment data
      */
-    private var segments: List<Segment> = listOf()
-    private var sponsorBlockConfig: MutableMap<String, SbSkipOptions> =
-        PlayerHelper.getSponsorBlockCategories()
+    private var segments = listOf<Segment>()
+    private var sponsorBlockConfig = PlayerHelper.getSponsorBlockCategories()
 
     /**
      * [Notification] for the player
@@ -108,7 +106,7 @@ class OnlinePlayerService : LifecycleService() {
     override fun onCreate() {
         super.onCreate()
 
-        val notification = NotificationCompat.Builder(this, BACKGROUND_CHANNEL_ID)
+        val notification = NotificationCompat.Builder(this, PLAYER_CHANNEL_ID)
             .setContentTitle(getString(R.string.app_name))
             .setContentText(getString(R.string.playingOnBackground))
             .setSmallIcon(R.drawable.ic_launcher_lockscreen)
@@ -218,7 +216,7 @@ class OnlinePlayerService : LifecycleService() {
         streams?.let { onNewVideo?.invoke(it, videoId) }
 
         player?.apply {
-            playWhenReady = true
+            playWhenReady = PlayerHelper.playAutomatically
             prepare()
         }
 

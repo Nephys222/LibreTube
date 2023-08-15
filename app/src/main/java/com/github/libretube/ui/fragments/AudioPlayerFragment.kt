@@ -15,6 +15,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.constraintlayout.motion.widget.MotionLayout
 import androidx.constraintlayout.motion.widget.TransitionAdapter
+import androidx.core.view.isGone
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
@@ -25,6 +26,7 @@ import com.github.libretube.constants.IntentData
 import com.github.libretube.databinding.FragmentAudioPlayerBinding
 import com.github.libretube.enums.ShareObjectType
 import com.github.libretube.extensions.normalize
+import com.github.libretube.extensions.seekBy
 import com.github.libretube.extensions.toID
 import com.github.libretube.helpers.AudioHelper
 import com.github.libretube.helpers.BackgroundHelper
@@ -34,13 +36,16 @@ import com.github.libretube.helpers.PlayerHelper
 import com.github.libretube.obj.ShareData
 import com.github.libretube.services.OnlinePlayerService
 import com.github.libretube.ui.activities.MainActivity
+import com.github.libretube.ui.dialogs.DownloadDialog
 import com.github.libretube.ui.dialogs.ShareDialog
 import com.github.libretube.ui.interfaces.AudioPlayerOptions
 import com.github.libretube.ui.listeners.AudioPlayerThumbnailListener
 import com.github.libretube.ui.models.PlayerViewModel
+import com.github.libretube.ui.sheets.ChaptersBottomSheet
 import com.github.libretube.ui.sheets.PlaybackOptionsSheet
 import com.github.libretube.ui.sheets.PlayingQueueSheet
 import com.github.libretube.ui.sheets.VideoOptionsBottomSheet
+import com.github.libretube.util.DataSaverMode
 import com.github.libretube.util.PlayingQueue
 import kotlin.math.abs
 
@@ -53,11 +58,11 @@ class AudioPlayerFragment : Fragment(), AudioPlayerOptions {
     private val viewModel: PlayerViewModel by activityViewModels()
 
     // for the transition
-    private var sId: Int = 0
-    private var eId: Int = 0
+    private var transitionStartId = 0
+    private var transitionEndId = 0
 
     private var handler = Handler(Looper.getMainLooper())
-    private var isPaused: Boolean = false
+    private var isPaused = !PlayerHelper.playAutomatically
 
     private var playerService: OnlinePlayerService? = null
 
@@ -107,10 +112,6 @@ class AudioPlayerFragment : Fragment(), AudioPlayerOptions {
             binding.playerMotionLayout.transitionToEnd()
         }
 
-        binding.dropdownMenu.setOnClickListener {
-            onLongTap()
-        }
-
         binding.autoPlay.isChecked = PlayerHelper.autoPlayEnabled
         binding.autoPlay.setOnCheckedChangeListener { _, isChecked ->
             PlayerHelper.autoPlayEnabled = isChecked
@@ -126,6 +127,16 @@ class AudioPlayerFragment : Fragment(), AudioPlayerOptions {
             val currentIndex = PlayingQueue.currentIndex()
             if (!PlayingQueue.hasNext()) return@setOnClickListener
             PlayingQueue.onQueueItemSelected(currentIndex + 1)
+        }
+
+        listOf(binding.forwardTV, binding.rewindTV).forEach {
+            it.text = (PlayerHelper.seekIncrement / 1000).toString()
+        }
+        binding.rewindFL.setOnClickListener {
+            playerService?.player?.seekBy(-PlayerHelper.seekIncrement)
+        }
+        binding.forwardFL.setOnClickListener {
+            playerService?.player?.seekBy(PlayerHelper.seekIncrement)
         }
 
         binding.openQueue.setOnClickListener {
@@ -151,6 +162,12 @@ class AudioPlayerFragment : Fragment(), AudioPlayerOptions {
             )
         }
 
+        binding.download.setOnClickListener {
+            val videoId = PlayingQueue.getCurrent()?.url?.toID() ?: return@setOnClickListener
+            val downloadDialog = DownloadDialog(videoId)
+            downloadDialog.show(childFragmentManager, DownloadDialog::class.java.name)
+        }
+
         binding.share.setOnClickListener {
             val currentVideo = PlayingQueue.getCurrent() ?: return@setOnClickListener
             ShareDialog(
@@ -165,7 +182,8 @@ class AudioPlayerFragment : Fragment(), AudioPlayerOptions {
             val streams = playerService.streams ?: return@setOnClickListener
             val player = playerService.player ?: return@setOnClickListener
 
-            PlayerHelper.showChaptersDialog(requireContext(), streams.chapters, player)
+            ChaptersBottomSheet(streams.chapters, player)
+                .show(childFragmentManager)
         }
 
         binding.miniPlayerClose.setOnClickListener {
@@ -192,6 +210,8 @@ class AudioPlayerFragment : Fragment(), AudioPlayerOptions {
         binding.volumeProgressBar.let { bar ->
             bar.progress = audioHelper.getVolumeWithScale(bar.max)
         }
+
+        if (!PlayerHelper.playAutomatically) updatePlayPauseButton(false)
     }
 
     private fun killFragment() {
@@ -204,7 +224,7 @@ class AudioPlayerFragment : Fragment(), AudioPlayerOptions {
 
     @SuppressLint("ClickableViewAccessibility")
     private fun initializeTransitionLayout() {
-        mainActivity.binding.container.visibility = View.VISIBLE
+        mainActivity.binding.container.isVisible = true
         val mainMotionLayout = mainActivity.binding.mainMotionLayout
 
         binding.playerMotionLayout.addTransitionListener(object : TransitionAdapter() {
@@ -215,15 +235,15 @@ class AudioPlayerFragment : Fragment(), AudioPlayerOptions {
                 progress: Float
             ) {
                 mainMotionLayout.progress = abs(progress)
-                eId = endId
-                sId = startId
+                transitionEndId = endId
+                transitionStartId = startId
             }
 
             override fun onTransitionCompleted(motionLayout: MotionLayout?, currentId: Int) {
-                if (currentId == eId) {
+                if (currentId == transitionEndId) {
                     viewModel.isMiniPlayerVisible.value = true
                     mainMotionLayout.progress = 1F
-                } else if (currentId == sId) {
+                } else if (currentId == transitionStartId) {
                     viewModel.isMiniPlayerVisible.value = false
                     mainMotionLayout.progress = 0F
                 }
@@ -259,14 +279,20 @@ class AudioPlayerFragment : Fragment(), AudioPlayerOptions {
     }
 
     private fun updateThumbnailAsync(thumbnailUrl: String) {
-        binding.progress.visibility = View.VISIBLE
-        binding.thumbnail.visibility = View.GONE
+        if (DataSaverMode.isEnabled(requireContext())) {
+            binding.progress.isVisible = false
+            return
+        }
+
+        binding.progress.isVisible = true
+        binding.thumbnail.isGone = true
 
         ImageHelper.getAsync(requireContext(), thumbnailUrl) {
+            val binding = _binding ?: return@getAsync
             binding.thumbnail.setImageBitmap(it)
             binding.miniPlayerThumbnail.setImageBitmap(it)
-            binding.thumbnail.visibility = View.VISIBLE
-            binding.progress.visibility = View.GONE
+            binding.thumbnail.isVisible = true
+            binding.progress.isGone = true
         }
     }
 
@@ -308,11 +334,15 @@ class AudioPlayerFragment : Fragment(), AudioPlayerOptions {
         handler.postDelayed(this::updateSeekBar, 200)
     }
 
+    private fun updatePlayPauseButton(isPlaying: Boolean) {
+        val iconResource = if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play
+        binding.playPause.setIconResource(iconResource)
+        binding.miniPlayerPause.setImageResource(iconResource)
+    }
+
     private fun handleServiceConnection() {
         playerService?.onIsPlayingChanged = { isPlaying ->
-            val iconResource = if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play
-            binding.playPause.setIconResource(iconResource)
-            binding.miniPlayerPause.setImageResource(iconResource)
+            updatePlayPauseButton(isPlaying)
             isPaused = !isPlaying
         }
         playerService?.onNewVideo = { streams, videoId ->
@@ -348,19 +378,19 @@ class AudioPlayerFragment : Fragment(), AudioPlayerOptions {
     }
 
     override fun onSwipe(distanceY: Float) {
-        binding.volumeControls.visibility = View.VISIBLE
+        binding.volumeControls.isVisible = true
         updateVolume(distanceY)
     }
 
     override fun onSwipeEnd() {
-        binding.volumeControls.visibility = View.GONE
+        binding.volumeControls.isGone = true
     }
 
     private fun updateVolume(distance: Float) {
         val bar = binding.volumeProgressBar
         binding.volumeControls.apply {
             if (visibility == View.GONE) {
-                visibility = View.VISIBLE
+                isVisible = true
                 // Volume could be changed using other mediums, sync progress
                 // bar with new value.
                 bar.progress = audioHelper.getVolumeWithScale(bar.max)

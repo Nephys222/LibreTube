@@ -54,9 +54,12 @@ object PlayingQueue {
 
     fun hasNext() = getNext() != null
 
-    fun updateCurrent(streamItem: StreamItem) {
+    fun updateCurrent(streamItem: StreamItem, asFirst: Boolean = true) {
         currentStream = streamItem
-        if (!contains(streamItem)) queue.add(0, streamItem)
+        if (!contains(streamItem)) {
+            val indexToAdd = if (asFirst) 0 else size()
+            queue.add(indexToAdd, streamItem)
+        }
     }
 
     fun isNotEmpty() = queue.isNotEmpty()
@@ -85,43 +88,71 @@ object PlayingQueue {
 
     fun move(from: Int, to: Int) = queue.move(from, to)
 
-    private fun fetchMoreFromPlaylist(playlistId: String, nextPage: String?) {
-        var playlistNextPage: String? = nextPage
-        scope.launch {
+    /**
+     * Adds a list of videos to the current queue while updating the position of the current stream
+     * @param isMainList: whether the videos are part of the list, that initially has been used to
+     * start the queue, either from a channel or playlist. If it's false, the current stream won't
+     * be touched, since it's an independent list.
+     */
+    private fun addToQueueAsync(
+        streams: List<StreamItem>,
+        currentStreamItem: StreamItem? = null,
+        isMainList: Boolean = true
+    ) {
+        if (!isMainList) {
+            add(*streams.toTypedArray())
+            return
+        }
+        val currentStream = currentStreamItem ?: this.currentStream
+        // if the stream already got added to the queue earlier, although it's not yet
+        // been found in the playlist, remove it and re-add it later
+        currentStream?.let { stream ->
+            if (streams.includes(stream)) {
+                queue.removeAll {
+                    it.url?.toID() == currentStream.url?.toID()
+                }
+            }
+        }
+        // whether the current stream is not yet part of the list and should be added later
+        val reAddStream = currentStream?.let { !queue.includes(it) } ?: false
+        // add all new stream items to the queue
+        add(*streams.toTypedArray())
+        currentStream?.let {
+            // re-add the stream to the end of the queue,
+            if (reAddStream) updateCurrent(it, false)
+        }
+    }
+
+    private fun fetchMoreFromPlaylist(playlistId: String, nextPage: String?, isMainList: Boolean) {
+        var playlistNextPage = nextPage
+        scope.launch(Dispatchers.IO) {
             while (playlistNextPage != null) {
-                RetrofitInstance.authApi.getPlaylistNextPage(
-                    playlistId,
-                    playlistNextPage!!
-                ).apply {
-                    add(
-                        *this.relatedStreams.toTypedArray()
-                    )
+                RetrofitInstance.authApi.getPlaylistNextPage(playlistId, playlistNextPage!!).run {
+                    addToQueueAsync(relatedStreams, isMainList = isMainList)
                     playlistNextPage = this.nextpage
                 }
             }
         }
     }
 
-    fun insertPlaylist(playlistId: String, newCurrentStream: StreamItem) {
-        scope.launch {
-            try {
+    fun insertPlaylist(playlistId: String, newCurrentStream: StreamItem?) {
+        scope.launch(Dispatchers.IO) {
+            runCatching {
                 val playlist = PlaylistsHelper.getPlaylist(playlistId)
-                add(*playlist.relatedStreams.toTypedArray())
-                updateCurrent(newCurrentStream)
+                val isMainList = newCurrentStream != null
+                addToQueueAsync(playlist.relatedStreams, newCurrentStream, isMainList)
                 if (playlist.nextpage == null) return@launch
-                fetchMoreFromPlaylist(playlistId, playlist.nextpage)
-            } catch (e: Exception) {
-                e.printStackTrace()
+                fetchMoreFromPlaylist(playlistId, playlist.nextpage, isMainList)
             }
         }
     }
 
     private fun fetchMoreFromChannel(channelId: String, nextPage: String?) {
-        var channelNextPage: String? = nextPage
-        scope.launch {
+        var channelNextPage = nextPage
+        scope.launch(Dispatchers.IO) {
             while (channelNextPage != null) {
-                RetrofitInstance.api.getChannelNextPage(channelId, nextPage!!).apply {
-                    add(*relatedStreams.toTypedArray())
+                RetrofitInstance.api.getChannelNextPage(channelId, nextPage!!).run {
+                    addToQueueAsync(relatedStreams)
                     channelNextPage = this.nextpage
                 }
             }
@@ -129,11 +160,10 @@ object PlayingQueue {
     }
 
     fun insertChannel(channelId: String, newCurrentStream: StreamItem) {
-        scope.launch {
+        scope.launch(Dispatchers.IO) {
             runCatching {
                 val channel = RetrofitInstance.api.getChannel(channelId)
-                add(*channel.relatedStreams.toTypedArray())
-                updateCurrent(newCurrentStream)
+                addToQueueAsync(channel.relatedStreams, newCurrentStream)
                 if (channel.nextpage == null) return@launch
                 fetchMoreFromChannel(channelId, channel.nextpage)
             }
@@ -166,5 +196,9 @@ object PlayingQueue {
     fun resetToDefaults() {
         repeatQueue = false
         onQueueTapListener = {}
+    }
+
+    private fun List<StreamItem>.includes(item: StreamItem) = any {
+        it.url?.toID() == item.url?.toID()
     }
 }

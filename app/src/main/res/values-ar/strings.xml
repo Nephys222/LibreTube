@@ -274,8 +274,6 @@
     <string name="local_subscriptions">الاشتراكات المحلية</string>
     <string name="preferences">التفضيلات</string>
     <string name="backup_customInstances">مثيلات مخصصة</string>
-    <string name="background_channel_name">وضع الخلفية</string>
-    <string name="background_channel_description">يعرض إشعارا يحتوي على أزرار للتحكم في مشغل الصوت.</string>
     <string name="push_channel_name">عامل الإخطار</string>
     <string name="push_channel_description">يظهر إشعارًا عند توفر تدفقات جديدة.</string>
     <string name="save_feed">تحميل التغذية في الخلفية</string>
@@ -291,8 +289,6 @@
     <string name="time_code">رمز الوقت (بالثواني)</string>
     <string name="added_to_playlist">تمت الإضافة إلى قائمة التشغيل %1$s</string>
     <string name="queue">الانتظار</string>
-    <string name="sb_markers">العلامات</string>
-    <string name="sb_markers_summary">وضع علامة على الأجزاء في شريط الوقت.</string>
     <string name="livestreams">البث المباشر</string>
     <string name="defaultIconLight">الافتراضي ابيض</string>
     <string name="alternative_videos_layout">اتجاهات فيديو بديلة</string>
@@ -485,4 +481,15 @@
     <string name="continue_watching">مواصلة المشاهدة</string>
     <string name="dearrow_summary">اعرض عناوين وصورا مصغرة أكثر دقة وأقل إثارة. يزيد من أوقات التحميل.</string>
     <string name="dearrow">تمكين دي ارو</string>
+    <string name="visibility_public">عام</string>
+    <string name="visibility">رؤية</string>
+    <string name="visibility_unlisted">غير مدرج</string>
+    <string name="sort_by">ترتيب حسب</string>
+    <string name="duration_span">المدة: %1$s</string>
+    <string name="uploader_name">اسم رافع المحتوى</string>
+    <string name="no_chapter">لا يوجد فصل</string>
+    <string name="screen_orientation">اتجاه الشاشة</string>
+    <string name="remove_watched_videos">إزالة مقاطع الفيديو التي تمت مشاهدتها</string>
+    <string name="player_channel_name">خدمة المشغل</string>
+    <string name="player_channel_description">يُظهر اشعار عند التشغيل</string>
 </resources>

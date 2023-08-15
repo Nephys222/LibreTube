@@ -194,8 +194,6 @@
     <string name="playlistNameReversed">प्लेलिस्ट का नाम (उलट)</string>
     <string name="category_preview_description">अतिरिक्त जानकारी के बिना भविष्य की सामग्री का विवरण देने वाले सेगमेंट के लिए। यदि इसमें क्लिप शामिल हैं जो केवल यहां दिखाई देती हैं, तो बहुत संभव है कि यह गलत श्रेणी हो।</string>
     <string name="category_filler_description">केवल फिलर या हास्य के लिए जोड़े गए स्पर्शरेखा दृश्यों के लिए वीडियो की मुख्य सामग्री को समझने की आवश्यकता नहीं है।</string>
-    <string name="sb_markers">मार्करज</string>
-    <string name="sb_markers_summary">समय पट्टी पर खंडों को चिह्नित करें।</string>
     <string name="update_available">संस्करण %1$s उपलब्ध है</string>
     <string name="audio_track">ऑडियो ट्रैक</string>
     <string name="downloads">डाउनलोडस</string>
@@ -224,7 +222,6 @@
     <string name="bookmark">बुकमार्क</string>
     <string name="bookmarks">बुकमार्कस</string>
     <string name="clear_bookmarks">बुकमार्कस मिटाएं</string>
-    <string name="background_channel_name">बैकग्राउंड मोड</string>
     <string name="local_playlists">स्थानीय प्लेलिस्ट</string>
     <string name="volume">ध्वनि</string>
     <string name="auto">ऑटो</string>
@@ -232,7 +229,6 @@
     <string name="brightness">चमक</string>
     <string name="swipe_controls">स्वाइप नियंत्रण</string>
     <string name="swipe_controls_summary">चमक और ध्वनि को समायोजित करने के लिए स्वाइप जेस्चर का उपयोग करें।</string>
-    <string name="background_channel_description">ऑडियो प्लेयर को नियंत्रित करने के लिए बटनों के साथ सूचना दिखाता है।</string>
     <string name="download_channel_name">डाउनलोड सेवा</string>
     <string name="download_channel_description">मीडिया डाउनलोड करते समय एक सूचना दिखाता है।</string>
     <string name="queue_insert_related_videos">संबंधित वीडियो डालें</string>
@@ -473,4 +469,15 @@
     <string name="unknown_audio_track_type">अज्ञात ऑडियो ट्रैक प्रकार</string>
     <string name="original_or_main_audio_track">मूल या मुख्य</string>
     <string name="dubbed_audio_track">डब किया हुआ</string>
+    <string name="visibility">दृश्यता</string>
+    <string name="visibility_unlisted">गैर-सूचीबद्ध</string>
+    <string name="visibility_public">सार्वजनिक</string>
+    <string name="remove_watched_videos">देखे गए वीडियो हटाएँ</string>
+    <string name="no_chapter">कोई अध्याय नहीं</string>
+    <string name="sort_by">के अनुसार क्रमबद्ध करें</string>
+    <string name="uploader_name">अपलोडर का नाम</string>
+    <string name="player_channel_name">प्लेयर सेवा</string>
+    <string name="screen_orientation">स्क्रीन ओरिएंटेशन</string>
+    <string name="player_channel_description">चलते समय एक सूचना दिखाता है</string>
+    <string name="duration_span">अवधि: %1$s</string>
 </resources>

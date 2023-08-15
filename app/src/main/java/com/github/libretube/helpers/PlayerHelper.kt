@@ -5,11 +5,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
-import android.graphics.Color
 import android.net.Uri
-import android.os.Handler
-import android.os.Looper
-import android.text.format.DateUtils
 import android.util.Base64
 import android.view.accessibility.CaptioningManager
 import android.widget.Toast
@@ -19,7 +15,6 @@ import androidx.core.app.RemoteActionCompat
 import androidx.core.content.getSystemService
 import androidx.core.graphics.drawable.IconCompat
 import androidx.core.net.toUri
-import androidx.core.view.children
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.PlaybackParameters
@@ -31,7 +26,6 @@ import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.ui.CaptionStyleCompat
 import com.github.libretube.R
 import com.github.libretube.api.obj.ChapterSegment
-import com.github.libretube.api.obj.PreviewFrames
 import com.github.libretube.api.obj.Segment
 import com.github.libretube.api.obj.Streams
 import com.github.libretube.constants.PreferenceKeys
@@ -39,8 +33,6 @@ import com.github.libretube.db.DatabaseHolder
 import com.github.libretube.enums.PlayerEvent
 import com.github.libretube.enums.SbSkipOptions
 import com.github.libretube.extensions.updateParameters
-import com.github.libretube.obj.PreviewFrame
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import java.util.Locale
 import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
@@ -122,7 +114,7 @@ object PlayerHelper {
         }
     }
 
-    val autoRotationEnabled: Boolean
+    val autoFullscreenEnabled: Boolean
         get() = PreferenceHelper.getBoolean(
             PreferenceKeys.AUTO_FULLSCREEN,
             false
@@ -324,6 +316,13 @@ object PlayerHelper {
             "all"
         )
 
+    val playAutomatically: Boolean
+        get() = PreferenceHelper
+            .getBoolean(
+                PreferenceKeys.PLAY_AUTOMATICALLY,
+                true
+            )
+
     fun getDefaultResolution(context: Context): String {
         val prefKey = if (NetworkHelper.isNetworkMetered(context)) {
             PreferenceKeys.DEFAULT_RESOLUTION_MOBILE
@@ -458,28 +457,6 @@ object PlayerHelper {
     }
 
     /**
-     * Get the preview frame according to the current position
-     */
-    fun getPreviewFrame(previewFrames: List<PreviewFrames>, position: Long): PreviewFrame? {
-        var startPosition: Long = 0
-        // get the frames with the best quality
-        val frames = previewFrames.maxByOrNull { it.frameHeight }
-        frames?.urls?.forEach { url ->
-            // iterate over all available positions and find the one matching the current position
-            for (y in 0 until frames.framesPerPageY) {
-                for (x in 0 until frames.framesPerPageX) {
-                    val endPosition = startPosition + frames.durationPerFrame
-                    if (position in startPosition until endPosition) {
-                        return PreviewFrame(url, x, y, frames.frameWidth, frames.frameHeight)
-                    }
-                    startPosition = endPosition
-                }
-            }
-        }
-        return null
-    }
-
-    /**
      * get the categories for sponsorBlock
      */
     fun getSponsorBlockCategories(): MutableMap<String, SbSkipOptions> {
@@ -545,46 +522,6 @@ object PlayerHelper {
     fun getCurrentChapterIndex(exoPlayer: ExoPlayer, chapters: List<ChapterSegment>): Int? {
         val currentPosition = exoPlayer.currentPosition / 1000
         return chapters.indexOfLast { currentPosition >= it.start }.takeIf { it >= 0 }
-    }
-
-    /**
-     * Show a dialog with the chapters provided, even if the list is empty
-     */
-    fun showChaptersDialog(context: Context, chapters: List<ChapterSegment>, player: ExoPlayer) {
-        val titles = chapters.map { chapter ->
-            "(${DateUtils.formatElapsedTime(chapter.start)}) ${chapter.title}"
-        }
-        val dialog = MaterialAlertDialogBuilder(context)
-            .setTitle(R.string.chapters)
-            .setItems(titles.toTypedArray()) { _, index ->
-                val chapter = chapters.getOrNull(index) ?: return@setItems
-                player.seekTo(chapter.start * 1000)
-            }
-            .create()
-        val handler = Handler(Looper.getMainLooper())
-        val highlightColor =
-            ThemeHelper.getThemeColor(context, android.R.attr.colorControlHighlight)
-
-        val updatePosition = Runnable {
-            // scroll to the current playing index in the chapter
-            val currentPosition =
-                getCurrentChapterIndex(player, chapters) ?: return@Runnable
-            dialog.listView.smoothScrollToPosition(currentPosition)
-
-            val children = dialog.listView.children.toList()
-            // reset the background colors of all chapters
-            children.forEach { it.setBackgroundColor(Color.TRANSPARENT) }
-            // highlight the current chapter
-            children.getOrNull(currentPosition)?.setBackgroundColor(highlightColor)
-        }
-
-        dialog.setOnShowListener {
-            updatePosition.run()
-            // update the position after a short delay
-            if (dialog.isShowing) handler.postDelayed(updatePosition, 200)
-        }
-
-        dialog.show()
     }
 
     fun getPosition(videoId: String, duration: Long?): Long? {

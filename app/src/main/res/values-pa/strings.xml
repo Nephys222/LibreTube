@@ -115,7 +115,6 @@
     <string name="update_available">ਸੰਸਕਰਣ %1$s ਉਪਲਬਧ ਹੈ</string>
     <string name="appearance">ਦਿੱਖ</string>
     <string name="failed_fetching_instances">ਉਪਲੱਬਧ ਉਦਾਹਰਨਾਂ ਪ੍ਰਾਪਤ ਨਹੀਂ ਕਰ ਸਕਿਆ।</string>
-    <string name="background_channel_description">ਆਡੀਓ ਪਲੇਅਰ ਨੂੰ ਨਿਯੰਤਰਿਤ ਕਰਨ ਲਈ ਬਟਨਾਂ ਨਾਲ ਇੱਕ ਸੂਚਨਾ ਦਿਖਾਉਂਦਾ ਹੈ।</string>
     <string name="hide_watched_from_feed">ਫੀਡ ਤੋਂ ਦੇਖੇ ਗਏ ਵੀਡੀਓ ਨੂੰ ਲੁਕਾਓ</string>
     <string name="shapedIcon">ਮੂਰਖ ਆਕਾਰ</string>
     <string name="flameIcon">ਉੱਡਦੀ ਲਾਟ</string>
@@ -283,8 +282,6 @@
     <string name="time_code">ਸਮਾਂ ਕੋਡ (ਸਕਿੰਟ)</string>
     <string name="added_to_playlist">%1$s ਪਲੇਲਿਸਟ ਵਿੱਚ ਜੋੜਿਆ</string>
     <string name="queue">ਕਤਾਰ</string>
-    <string name="sb_markers">ਮਾਰਕਰ</string>
-    <string name="sb_markers_summary">ਸਮਾਂ ਪੱਟੀ \'ਤੇ ਹਿੱਸਿਆਂ ਨੂੰ ਚਿੰਨ੍ਹਿਤ ਕਰੋ।</string>
     <string name="playlistCloned">ਪਲੇਲਿਸਟ ਕਲੋਨ ਕੀਤੀ ਗਈ</string>
     <string name="confirm_unsubscribe">ਕੀ ਤੁਸੀਂ ਯਕੀਨੀ ਤੌਰ \'ਤੇ %1$s ਦੀ ਸਬਸਕ੍ਰਿਪਸ਼ਨ ਰੱਦ ਕਰਨਾ ਚਾਹੁੰਦੇ ਹੋ\?</string>
     <string name="confirm_unsubscribing">ਸਬਸਕ੍ਰਿਪਸ਼ਨ ਰੱਦ ਕਰਨ ਦੀ ਪੁਸ਼ਟੀ ਕਰੋ</string>
@@ -331,7 +328,6 @@
     <string name="clear_bookmarks">ਬੁੱਕਮਾਰਕਸ ਸਾਫ਼ ਕਰੋ</string>
     <string name="auto_quality">ਆਟੋ</string>
     <string name="hls_instead_of_dash_summary">DASH ਦੀ ਬਜਾਏ HLS ਦੀ ਵਰਤੋਂ ਕਰੋ (ਹੌਲੀ ਹੋਵੇਗੀ, ਸਿਫ਼ਾਰਸ਼ ਨਹੀਂ ਕੀਤੀ ਗਈ)</string>
-    <string name="background_channel_name">ਬੈਕਗਰਾਊਂਡ ਮੋਡ</string>
     <string name="notification_time">ਨੋਟੀਫਿਕੇਸ਼ਨ ਸਮਾਂ ਸੀਮਿਤ ਕਰੋ</string>
     <string name="layout">ਲੇਆਊਟ</string>
     <string name="notification_time_summary">ਸਮਾਂ ਸੀਮਤ ਕਰੋ ਜਿਸ ਵਿੱਚ ਸਟ੍ਰੀਮ ਸੂਚਨਾਵਾਂ ਦਿਖਾਈਆਂ ਜਾਂਦੀਆਂ ਹਨ।</string>
@@ -473,4 +469,15 @@
     <string name="audio_track_format">%1$s - %2$s</string>
     <string name="default_or_unknown_audio_track">ਡਿਫੌਲਟ ਜਾਂ ਅਗਿਆਤ</string>
     <string name="unknown_or_no_audio">ਅਗਿਆਤ ਜਾਂ ਕੋਈ ਆਡੀਓ ਨਹੀਂ</string>
+    <string name="visibility">ਵੇਖਣਯੋਗਤਾ</string>
+    <string name="visibility_public">ਜਨਤਕ</string>
+    <string name="visibility_unlisted">ਗੈਰ-ਸੂਚੀਬੱਧ</string>
+    <string name="screen_orientation">ਸਕ੍ਰੀਨ ਓਰੀਐਂਟੇਸ਼ਨ</string>
+    <string name="remove_watched_videos">ਵੇਖੀਆਂ ਗਈਆਂ ਵੀਡੀਓਜ਼ ਨੂੰ ਹਟਾਓ</string>
+    <string name="no_chapter">ਕੋਈ ਅਧਿਆਇ ਨਹੀਂ</string>
+    <string name="sort_by">ਅਨੁਸਾਰ ਸ਼੍ਰੇਣੀਬੱਧ ਕਰੋ</string>
+    <string name="player_channel_name">ਪਲੇਅਰ ਸੇਵਾ</string>
+    <string name="uploader_name">ਅੱਪਲੋਡ ਕਰਨ ਵਾਲੇ ਦਾ ਨਾਮ</string>
+    <string name="player_channel_description">ਚਲਦੇ ਸਮੇਂ ਇੱਕ ਨੋਟੀਫਿਕੇਸ਼ਨ ਵਿਖਾਉਂਦਾ ਹੈ</string>
+    <string name="duration_span">ਮਿਆਦ: %1$s</string>
 </resources>

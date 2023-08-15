@@ -23,6 +23,7 @@ import com.github.libretube.db.DatabaseHelper
 import com.github.libretube.db.DatabaseHolder
 import com.github.libretube.db.obj.SubscriptionGroup
 import com.github.libretube.extensions.dpToPx
+import com.github.libretube.extensions.formatShort
 import com.github.libretube.extensions.toID
 import com.github.libretube.helpers.PreferenceHelper
 import com.github.libretube.ui.adapters.LegacySubscriptionAdapter
@@ -42,7 +43,7 @@ class SubscriptionsFragment : Fragment() {
 
     private val viewModel: SubscriptionsViewModel by activityViewModels()
     private val playerModel: PlayerViewModel by activityViewModels()
-    private var channelGroups: List<SubscriptionGroup> = listOf()
+    private var channelGroups = listOf<SubscriptionGroup>()
     private var selectedFilterGroup = 0
     private var isCurrentTabSubChannels = false
 
@@ -210,10 +211,10 @@ class SubscriptionsFragment : Fragment() {
     }
 
     private fun showFeed() {
-        if (viewModel.videoFeed.value == null) return
+        val videoFeed = viewModel.videoFeed.value ?: return
 
         binding.subRefresh.isRefreshing = false
-        val feed = viewModel.videoFeed.value!!
+        val feed = videoFeed
             .filter { streamItem ->
                 // filter for selected channel groups
                 if (selectedFilterGroup == 0) {
@@ -283,12 +284,14 @@ class SubscriptionsFragment : Fragment() {
             showAllAtOnce = false
         )
         binding.subFeed.adapter = subscriptionsAdapter
+        binding.toggleSubsText.text = getString(R.string.subscriptions)
 
         PreferenceHelper.updateLastFeedWatchedTime()
     }
 
+    @SuppressLint("SetTextI18n")
     private fun showSubscriptions() {
-        if (viewModel.subscriptions.value == null) return
+        val subscriptions = viewModel.subscriptions.value ?: return
 
         val legacySubscriptions = PreferenceHelper.getBoolean(
             PreferenceKeys.LEGACY_SUBSCRIPTIONS,
@@ -303,10 +306,10 @@ class SubscriptionsFragment : Fragment() {
                     "4"
                 ).toInt()
             )
-            binding.subChannels.adapter = LegacySubscriptionAdapter(viewModel.subscriptions.value!!)
+            binding.subChannels.adapter = LegacySubscriptionAdapter(subscriptions)
         } else {
             binding.subChannels.layoutManager = LinearLayoutManager(context)
-            binding.subChannels.adapter = SubscriptionChannelAdapter(viewModel.subscriptions.value!!.toMutableList())
+            binding.subChannels.adapter = SubscriptionChannelAdapter(subscriptions.toMutableList())
         }
 
         binding.subRefresh.isRefreshing = false
@@ -316,5 +319,8 @@ class SubscriptionsFragment : Fragment() {
         val notLoaded = viewModel.subscriptions.value.isNullOrEmpty()
         binding.subChannelsContainer.isGone = notLoaded
         binding.emptyFeed.isVisible = notLoaded
+
+        val subCount = subscriptions.size.toLong().formatShort()
+        binding.toggleSubsText.text = "${getString(R.string.subscriptions)} ($subCount)"
     }
 }

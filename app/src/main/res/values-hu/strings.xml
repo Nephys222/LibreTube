@@ -197,7 +197,7 @@
     <string name="data_saver_mode_summary">Bélyegképek és egyéb képek kihagyása.</string>
     <string name="no_player_found">Nem található külső lejátszó. Kérjük, győződjön meg, hogy van telepítve.</string>
     <string name="no_search_result">Nincs eredmény.</string>
-    <string name="export_subscriptions">Feliratkozások exportálása</string>
+    <string name="export_subscriptions">Előfizetések exportálása</string>
     <string name="history_size">Előzmények maximális mérete</string>
     <string name="unlimited">Végtelen</string>
     <string name="take_a_break">Itt az idő szünetet tartani</string>
@@ -271,13 +271,11 @@
     <string name="backup_customInstances">Egyéni példányok</string>
     <string name="play_next">Lejátszás következőként</string>
     <string name="download_channel_name">Letöltő szolgáltatás</string>
-    <string name="background_channel_name">Háttér mód</string>
     <string name="push_channel_name">Értesítési munkatárs</string>
     <string name="push_channel_description">Értesítés megjelenítése, amikor új közvetítések érhetők el.</string>
     <string name="navigation_bar">Navigációs sáv</string>
     <string name="download_channel_description">Értesítés megjelenítése média letöltésekor.</string>
     <string name="save_feed_summary">Töltse be az feliratkozott videófolyamot a háttérben, és akadályozza meg az automatikus frissítést.</string>
-    <string name="background_channel_description">Megjelenít egy értesítést a lejátszó vezérlésére szolgáló gombokkal.</string>
     <string name="skip_segment">Szakasz kihagyása</string>
     <string name="sb_skip_manual">Manuális kihagyás</string>
     <string name="sb_skip_manual_summary">Ne hagyja ki a szakaszokat automatikusan, mindig kérdezzen előtte.</string>
@@ -291,8 +289,6 @@
     <string name="playlists_order">Lejátszási lista sorrend</string>
     <string name="time_code">Időkód (másodperc)</string>
     <string name="queue">Sor</string>
-    <string name="sb_markers">Jelölők</string>
-    <string name="sb_markers_summary">Szakaszok megjelölése az idősávon.</string>
     <string name="livestreams">Élő közvetítések</string>
     <string name="alternative_videos_layout">Alternatív videók elrendezés</string>
     <string name="defaultIconLight">Alapértelmezett világos</string>
@@ -473,4 +469,15 @@
     <string name="continue_watching">Nézés folytatása</string>
     <string name="dearrow">DeArrow engedélyezése</string>
     <string name="dearrow_summary">Pontosabb és kevésbé szenzációhajhász címek és bélyegképek megjelenítése. Növeli a betöltési időt.</string>
+    <string name="visibility_unlisted">Listázatlan</string>
+    <string name="duration_span">Időtartam: %1$s</string>
+    <string name="uploader_name">Feltöltő neve</string>
+    <string name="sort_by">Rendezés</string>
+    <string name="visibility_public">Nyilvános</string>
+    <string name="visibility">Láthatóság</string>
+    <string name="no_chapter">Nincs fejezet</string>
+    <string name="screen_orientation">Képernyő tájolás</string>
+    <string name="remove_watched_videos">Megnézett videók eltávolítása</string>
+    <string name="player_channel_name">Lejátszó szolgáltatás</string>
+    <string name="player_channel_description">Értesítést jelenít meg lejátszás közben</string>
 </resources>

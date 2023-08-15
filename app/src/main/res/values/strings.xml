@@ -252,7 +252,7 @@
     <string name="error_occurred">Error</string>
     <string name="copied">Copied</string>
     <string name="share_with_time">Share with time code</string>
-    <string name="export_subscriptions">Export Subscriptions</string>
+    <string name="export_subscriptions">Export subscriptions</string>
     <string name="skip_buttons">Skip buttons</string>
     <string name="skip_buttons_summary">Show buttons to skip to the next or previous video.</string>
     <string name="history_size">Maximum history size</string>
@@ -305,8 +305,6 @@
     <string name="time_code">Time code (seconds)</string>
     <string name="added_to_playlist">Added to playlist %1$s</string>
     <string name="queue">Queue</string>
-    <string name="sb_markers">Markers</string>
-    <string name="sb_markers_summary">Mark the segments on the time bar.</string>
     <string name="sb_color_enable">Toggles custom color segments for SponsorBlock segments.</string>
     <string name="sb_custom_colors">Custom segment colors</string>
     <string name="color">Color</string>
@@ -438,6 +436,10 @@
     <string name="visibility">Visibility</string>
     <string name="visibility_public">Public</string>
     <string name="visibility_unlisted">Unlisted</string>
+    <string name="sort_by">Sort by</string>
+    <string name="uploader_name">Uploader name</string>
+    <string name="duration_span">Duration: %1$s</string>
+    <string name="remove_watched_videos">Remove watched videos</string>
 
     <!-- Backup & Restore Settings -->
     <string name="import_subscriptions_from">Import subscriptions from</string>
@@ -459,16 +461,18 @@
     <string name="default_or_unknown_audio_track">default or unknown</string>
     <string name="unknown_or_no_audio">unknown or no audio</string>
     <string name="continue_watching">Continue watching</string>
+    <string name="no_chapter">No chapter</string>
+    <string name="screen_orientation">Screen orientation</string>
 
     <!-- Notification channel strings -->
     <string name="download_channel_name">Download Service</string>
     <string name="download_channel_description">Shows a notification when downloading media.</string>
-    <string name="background_channel_name">Background Mode</string>
-    <string name="background_channel_description">Shows a notification with buttons to control the audio player.</string>
     <string name="push_channel_name">Notification Worker</string>
     <string name="push_channel_description">Shows a notification when new streams are available.</string>
     <string name="unlimited_search_history">Unlimited search history</string>
     <string name="chapters_videoHighlight">Video Highlight</string>
+    <string name="player_channel_name">Player Service</string>
+    <string name="player_channel_description">Shows a notification when playing</string>
     <!-- Relative time formatting strings (remove when setting the minSdk to 24) -->
     <plurals name="years_ago">
         <item quantity="one">%d year ago</item>
@@ -482,4 +486,24 @@
         <item quantity="one">%d new stream</item>
         <item quantity="other">%d new streams</item>
     </plurals>
+
+    <!--Tooltips -->
+    <string name="tooltip_repeat">Repeat</string>
+    <string name="tooltip_reverse">Reverse</string>
+    <string name="tooltip_sort">Sort</string>
+    <string name="tooltip_watch_position">Watch position</string>
+    <string name="tooltip_clear_queue">Clear queue</string>
+    <string name="tooltip_dismiss">Dismiss</string>
+    <string name="tooltip_locked">Lock player</string>
+    <string name="tooltip_unlocked">Unlock player</string>
+    <string name="tooltip_sponsorblock">Toggle Sponsorblock</string>
+    <string name="tooltip_options">Options</string>
+    <string name="tooltip_minimize">Minimze</string>
+    <string name="tooltip_fullscreen">Fullscreen</string>
+    <string name="tooltip_close">Close</string>
+    <string name="tooltip_play">Play</string>
+    <string name="tooltip_filter">Filter</string>
+    <string name="tooltip_edit_groups">Edit groups</string>
+    <string name="tooltip_create_playlist">Create playlist</string>
+    <string name="tooltip_scroll_to_top">Scroll to top</string>
 </resources>

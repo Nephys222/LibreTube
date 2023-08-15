@@ -107,13 +107,12 @@
                 android:orientation="vertical"
                 android:visibility="gone">
 
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/chapters_recView"
+                <TextView
+                    android:id="@+id/meta_info"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginHorizontal="3dp"
-                    android:layout_marginTop="20dp"
-                    android:nestedScrollingEnabled="false"
+                    android:padding="8dp"
+                    android:textSize="14sp"
                     android:visibility="gone" />
 
                 <TextView
@@ -135,7 +134,7 @@
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/tags_recycler"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
+                    android:layout_height="wrap_content" />
 
             </LinearLayout>
 
@@ -368,6 +367,7 @@
 
     <ImageView
         android:id="@+id/close_imageView"
+        android:tooltipText="@string/tooltip_close"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:alpha="0"
@@ -381,6 +381,7 @@
 
     <ImageView
         android:id="@+id/play_imageView"
+        android:tooltipText="@string/tooltip_play"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:alpha="0"

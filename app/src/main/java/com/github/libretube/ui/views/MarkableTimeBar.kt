@@ -11,7 +11,6 @@ import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.DefaultTimeBar
 import com.github.libretube.api.obj.Segment
-import com.github.libretube.constants.PreferenceKeys
 import com.github.libretube.extensions.dpToPx
 import com.github.libretube.helpers.PreferenceHelper
 import com.github.libretube.helpers.ThemeHelper
@@ -26,7 +25,7 @@ class MarkableTimeBar(
     attributeSet: AttributeSet? = null
 ) : DefaultTimeBar(context, attributeSet) {
 
-    private var segments: List<Segment> = listOf()
+    private var segments = listOf<Segment>()
     private var player: Player? = null
     private var length: Int = 0
 
@@ -38,8 +37,7 @@ class MarkableTimeBar(
     }
 
     private fun drawSegments(canvas: Canvas) {
-        val markersEnabled = PreferenceHelper.getBoolean(PreferenceKeys.SB_SHOW_MARKERS, true)
-        if (player == null || !markersEnabled) return
+        if (player == null) return
 
         canvas.save()
         val horizontalOffset = (parent as View).marginLeft
