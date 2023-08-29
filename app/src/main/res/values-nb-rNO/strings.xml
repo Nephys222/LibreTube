@@ -29,7 +29,7 @@
     <string name="logout">Logg ut</string>
     <string name="cancel">Avbryt</string>
     <string name="loggedIn">Innlogget</string>
-    <string name="app_theme">Programdrakt</string>
+    <string name="app_theme">Drakt</string>
     <string name="share">Del</string>
     <string name="emptyList">Ingenting her</string>
     <string name="createPlaylist">Opprett spilleliste</string>
@@ -173,7 +173,6 @@
     <string name="github">GitHub</string>
     <string name="auth_instance">Instans for identitetsbekreftelse</string>
     <string name="auth_instance_summary">Bruk en annen instans for identitetsbekreftede kall.</string>
-    <string name="watch_positions_summary">Fortsett fra tidligere visningsposisjon</string>
     <string name="chapters">Kapitler</string>
     <string name="require_restart">Programomstart kreves</string>
     <string name="turnInternetOn">Skru på Wi-Fi eller mobildata for å koble deg til Internett.</string>
@@ -300,7 +299,7 @@
     <string name="time">Tid</string>
     <string name="end_time">Slutt-tid</string>
     <string name="start_time">Start-tid</string>
-    <string name="notification_time">Merknadstid</string>
+    <string name="notification_time">Begrens merknadstid</string>
     <string name="notification_time_summary">Tidsperiode merknadene kan vises.</string>
     <string name="navbar_order">Rekkefølge</string>
     <string name="alternative_player_layout_summary">Vis relaterte videoer som rad over kommentarene istedenfor under.</string>
@@ -478,4 +477,31 @@
     <string name="visibility">Synlighet</string>
     <string name="screen_orientation">Skjermretning</string>
     <string name="remove_watched_videos">Fjern sette videoer</string>
+    <string name="tooltip_repeat">Gjentagelse</string>
+    <string name="player_channel_name">Avspillertjeneste</string>
+    <string name="player_channel_description">Viser merknad under avspilling</string>
+    <string name="tooltip_clear_queue">Tøm kø</string>
+    <string name="tooltip_dismiss">Avslå</string>
+    <string name="tooltip_sort">Sortering</string>
+    <string name="tooltip_reverse">Omvendt</string>
+    <string name="tooltip_locked">Lås avspiller</string>
+    <string name="tooltip_unlocked">Lås opp avspiller</string>
+    <string name="tooltip_play">Spill av</string>
+    <string name="tooltip_create_playlist">Opprett spilleliste</string>
+    <string name="tooltip_options">Alternativer</string>
+    <string name="tooltip_minimize">Minimer</string>
+    <string name="tooltip_fullscreen">Fullskjerm</string>
+    <string name="tooltip_close">Lukk</string>
+    <string name="tooltip_filter">Filter</string>
+    <string name="tooltip_edit_groups">Rediger grupper</string>
+    <string name="tooltip_scroll_to_top">Rull til toppen</string>
+    <string name="tooltip_sponsorblock">Veksle SponsorBlock</string>
+    <string name="tooltip_watch_position">Husket framdrift</string>
+    <string name="auto_generated">auto-generert</string>
+    <string name="resolution_limited">begrenset</string>
+    <string name="automatic_once">Automatisk én gang</string>
+    <string name="registration_disabled">Registrering avskrudd</string>
+    <string name="proxy">Mellomtjener</string>
+    <string name="group_name_error_empty">Skriv inn et navn</string>
+    <string name="group_name_error_exists">Velg et unikt navn</string>
 </resources>

@@ -8,5 +8,6 @@ import kotlinx.serialization.Serializable
 @Entity(tableName = "subscriptionGroups")
 data class SubscriptionGroup(
     @PrimaryKey var name: String,
-    val channels: MutableList<String>
+    var channels: List<String>,
+    var index: Int
 )

@@ -135,7 +135,6 @@
     <string name="clear_customInstances">Vymazat přidané</string>
     <string name="watch_history">Historie sledování</string>
     <string name="watch_positions">Pamatovat si pozici</string>
-    <string name="watch_positions_summary">Pokračovat z poslední pozice přehrávání</string>
     <string name="playerVideoFormat">Formát videa pro přehrávač</string>
     <string name="auth_instance">Autentifikační instance</string>
     <string name="auth_instance_summary">Použít jinou instanci pro autentifikační volání.</string>
@@ -483,4 +482,29 @@
     <string name="remove_watched_videos">Odebrat zhlédnutá videa</string>
     <string name="player_channel_name">Služba přehrávače</string>
     <string name="player_channel_description">Zobrazí oznámení při přehrávání</string>
+    <string name="tooltip_repeat">Opakování</string>
+    <string name="tooltip_reverse">Opačně</string>
+    <string name="tooltip_sort">Řazení</string>
+    <string name="tooltip_watch_position">Pozice sledování</string>
+    <string name="tooltip_unlocked">Odemknout přehrávač</string>
+    <string name="tooltip_sponsorblock">Přepnout SponsorBlock</string>
+    <string name="tooltip_options">Možnosti</string>
+    <string name="tooltip_minimize">Minimalizovat</string>
+    <string name="tooltip_fullscreen">Celá obrazovka</string>
+    <string name="tooltip_edit_groups">Upravit skupiny</string>
+    <string name="tooltip_create_playlist">Vytvořit playlist</string>
+    <string name="tooltip_scroll_to_top">Posunout nahoru</string>
+    <string name="tooltip_clear_queue">Vymazat frontu</string>
+    <string name="tooltip_dismiss">Zavřít</string>
+    <string name="tooltip_locked">Uzamknout přehrávač</string>
+    <string name="tooltip_play">Přehrát</string>
+    <string name="tooltip_close">Zavřít</string>
+    <string name="tooltip_filter">Filtr</string>
+    <string name="auto_generated">automaticky vygenerováno</string>
+    <string name="resolution_limited">omezeno</string>
+    <string name="proxy">Proxy</string>
+    <string name="group_name_error_empty">Zadejte nový název</string>
+    <string name="group_name_error_exists">Zvolte prosím jméno, které je unikátní</string>
+    <string name="registration_disabled">Registrace zakázány</string>
+    <string name="automatic_once">Automaticky jednou</string>
 </resources>

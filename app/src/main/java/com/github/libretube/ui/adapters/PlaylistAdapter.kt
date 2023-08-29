@@ -6,6 +6,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.core.view.isGone
+import androidx.core.view.updatePadding
 import androidx.recyclerview.widget.RecyclerView
 import com.github.libretube.R
 import com.github.libretube.api.PlaylistsHelper
@@ -13,6 +14,7 @@ import com.github.libretube.api.obj.StreamItem
 import com.github.libretube.databinding.VideoRowBinding
 import com.github.libretube.enums.PlaylistType
 import com.github.libretube.extensions.TAG
+import com.github.libretube.extensions.dpToPx
 import com.github.libretube.extensions.toID
 import com.github.libretube.extensions.toastFromMainDispatcher
 import com.github.libretube.helpers.ImageHelper
@@ -78,9 +80,10 @@ class PlaylistAdapter(
                 NavigationHelper.navigateVideo(root.context, streamItem.url, playlistId)
             }
             val videoId = streamItem.url!!.toID()
-            val videoName = streamItem.title!!
             root.setOnLongClickListener {
-                VideoOptionsBottomSheet(videoId, videoName)
+                VideoOptionsBottomSheet(streamItem) {
+                    notifyItemChanged(position)
+                }
                     .show(
                         (root.context as BaseActivity).supportFragmentManager,
                         VideoOptionsBottomSheet::class.java.name
@@ -89,9 +92,12 @@ class PlaylistAdapter(
             }
 
             if (!streamItem.uploaderUrl.isNullOrBlank()) {
-                channelContainer.setOnClickListener {
+                videoInfo.setOnClickListener {
                     NavigationHelper.navigateChannel(root.context, streamItem.uploaderUrl.toID())
                 }
+                // add some extra padding to make it easier to click
+                val extraPadding = (3).dpToPx().toInt()
+                videoInfo.updatePadding(top = extraPadding, bottom = extraPadding)
             }
 
             watchProgress.setWatchProgressLength(videoId, streamItem.duration)

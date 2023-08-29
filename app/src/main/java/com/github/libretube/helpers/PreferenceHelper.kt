@@ -2,6 +2,7 @@ package com.github.libretube.helpers
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.core.content.edit
 import androidx.preference.PreferenceManager
 import com.github.libretube.constants.PreferenceKeys
 import java.time.Instant
@@ -11,43 +12,39 @@ object PreferenceHelper {
      * for normal preferences
      */
     lateinit var settings: SharedPreferences
-    private lateinit var editor: SharedPreferences.Editor
 
     /**
      * For sensitive data (like token)
      */
     private lateinit var authSettings: SharedPreferences
-    private lateinit var authEditor: SharedPreferences.Editor
+
+    /**
+     * Possible chars to use for the SB User ID
+     */
+    private const val USER_ID_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
 
     /**
      * set the context that is being used to access the shared preferences
      */
     fun initialize(context: Context) {
         settings = getDefaultSharedPreferences(context)
-        editor = settings.edit()
-
         authSettings = getAuthenticationPreferences(context)
-        authEditor = authSettings.edit()
     }
 
     fun putString(key: String, value: String) {
-        editor.putString(key, value).commit()
+        settings.edit(commit = true) { putString(key, value) }
     }
 
     fun putBoolean(key: String, value: Boolean) {
-        editor.putBoolean(key, value).commit()
+        settings.edit(commit = true) { putBoolean(key, value) }
     }
 
     fun putInt(key: String, value: Int) {
-        editor.putInt(key, value).commit()
-    }
-
-    fun putFloat(key: String, value: Float) {
-        editor.putFloat(key, value).commit()
+        settings.edit(commit = true) { putInt(key, value) }
     }
 
     fun putLong(key: String, value: Long) {
-        editor.putLong(key, value).commit()
+        settings.edit(commit = true) { putLong(key, value) }
     }
 
     fun getString(key: String?, defValue: String): String {
@@ -68,16 +65,12 @@ object PreferenceHelper {
         return settings.getLong(key, defValue)
     }
 
-    fun getFloat(key: String?, defValue: Float): Float {
-        return settings.getFloat(key, defValue)
-    }
-
     fun getStringSet(key: String?, defValue: Set<String>): Set<String> {
         return settings.getStringSet(key, defValue).orEmpty()
     }
 
     fun clearPreferences() {
-        editor.clear().apply()
+        settings.edit { clear() }
     }
 
     fun getToken(): String {
@@ -85,7 +78,7 @@ object PreferenceHelper {
     }
 
     fun setToken(newValue: String) {
-        authEditor.putString(PreferenceKeys.TOKEN, newValue).apply()
+        authSettings.edit { putString(PreferenceKeys.TOKEN, newValue) }
     }
 
     fun getUsername(): String {
@@ -93,11 +86,11 @@ object PreferenceHelper {
     }
 
     fun setUsername(newValue: String) {
-        authEditor.putString(PreferenceKeys.USERNAME, newValue).apply()
+        authSettings.edit { putString(PreferenceKeys.USERNAME, newValue) }
     }
 
     fun setLastSeenVideoId(videoId: String) {
-        editor.putString(PreferenceKeys.LAST_STREAM_VIDEO_ID, videoId).commit()
+        putString(PreferenceKeys.LAST_STREAM_VIDEO_ID, videoId)
     }
 
     fun getLastSeenVideoId(): String {
@@ -113,7 +106,7 @@ object PreferenceHelper {
     }
 
     fun saveErrorLog(log: String) {
-        editor.putString(PreferenceKeys.ERROR_LOG, log).commit()
+        putString(PreferenceKeys.ERROR_LOG, log)
     }
 
     fun getErrorLog(): String {
@@ -133,14 +126,22 @@ object PreferenceHelper {
         if (ignorableChannels.contains(channelId)) {
             ignorableChannels.remove(channelId)
         } else {
-            ignorableChannels.add(
-                channelId
-            )
+            ignorableChannels.add(channelId)
         }
-        editor.putString(
-            PreferenceKeys.IGNORED_NOTIFICATION_CHANNELS,
-            ignorableChannels.joinToString(",")
-        ).apply()
+        settings.edit {
+            val channelsString = ignorableChannels.joinToString(",")
+            putString(PreferenceKeys.IGNORED_NOTIFICATION_CHANNELS, channelsString)
+        }
+    }
+
+    fun getSponsorBlockUserID(): String {
+        var uuid = getString(PreferenceKeys.SB_USER_ID, "")
+        if (uuid.isEmpty()) {
+            // generate a new user id to use for submitting SponsorBlock segments
+            uuid = (0 until 30).map { USER_ID_CHARS.random() }.joinToString("")
+            putString(PreferenceKeys.SB_USER_ID, uuid)
+        }
+        return uuid
     }
 
     private fun getDefaultSharedPreferences(context: Context): SharedPreferences {

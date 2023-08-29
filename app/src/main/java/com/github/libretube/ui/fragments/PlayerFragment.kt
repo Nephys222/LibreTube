@@ -60,6 +60,7 @@ import com.github.libretube.api.obj.Message
 import com.github.libretube.api.obj.Segment
 import com.github.libretube.api.obj.StreamItem
 import com.github.libretube.api.obj.Streams
+import com.github.libretube.api.obj.Subtitle
 import com.github.libretube.compat.PictureInPictureCompat
 import com.github.libretube.compat.PictureInPictureParamsCompat
 import com.github.libretube.constants.IntentData
@@ -74,6 +75,7 @@ import com.github.libretube.extensions.formatShort
 import com.github.libretube.extensions.hideKeyboard
 import com.github.libretube.extensions.parcelable
 import com.github.libretube.extensions.seekBy
+import com.github.libretube.extensions.serializableExtra
 import com.github.libretube.extensions.setMetadata
 import com.github.libretube.extensions.toID
 import com.github.libretube.extensions.toastFromMainDispatcher
@@ -99,7 +101,6 @@ import com.github.libretube.ui.adapters.VideosAdapter
 import com.github.libretube.ui.dialogs.AddToPlaylistDialog
 import com.github.libretube.ui.dialogs.DownloadDialog
 import com.github.libretube.ui.dialogs.ShareDialog
-import com.github.libretube.ui.dialogs.StatsSheet
 import com.github.libretube.ui.extensions.setupSubscriptionButton
 import com.github.libretube.ui.interfaces.OnlinePlayerOptions
 import com.github.libretube.ui.listeners.SeekbarPreviewListener
@@ -109,6 +110,7 @@ import com.github.libretube.ui.sheets.BaseBottomSheet
 import com.github.libretube.ui.sheets.ChaptersBottomSheet
 import com.github.libretube.ui.sheets.CommentsSheet
 import com.github.libretube.ui.sheets.PlayingQueueSheet
+import com.github.libretube.ui.sheets.StatsSheet
 import com.github.libretube.util.HtmlParser
 import com.github.libretube.util.LinkHandler
 import com.github.libretube.util.NowPlayingNotification
@@ -167,7 +169,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
      */
     private lateinit var exoPlayer: ExoPlayer
     private lateinit var trackSelector: DefaultTrackSelector
-    private var captionLanguage = PlayerHelper.defaultSubtitleCode
+    private var currentSubtitle = Subtitle(code = PlayerHelper.defaultSubtitleCode)
 
     private val cronetDataSourceFactory = CronetDataSource.Factory(
         CronetHelper.cronetEngine,
@@ -198,14 +200,14 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
             .getInsetsController(mainActivity.window, mainActivity.window.decorView)
 
     private var scrubbingTimeBar = false
+    private var chaptersBottomSheet: ChaptersBottomSheet? = null
 
     /**
      * Receiver for all actions in the PiP mode
      */
     private val broadcastReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            val action = intent?.getIntExtra(PlayerHelper.CONTROL_TYPE, 0) ?: return
-            when (PlayerEvent.fromInt(action)) {
+        override fun onReceive(context: Context, intent: Intent) {
+            when (intent.serializableExtra<PlayerEvent>(PlayerHelper.CONTROL_TYPE) ?: return) {
                 PlayerEvent.Play -> {
                     exoPlayer.play()
                 }
@@ -234,8 +236,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
                     }
                 }
 
-                else -> {
-                }
+                else -> Unit
             }
         }
     }
@@ -252,7 +253,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
         // broadcast receiver for PiP actions
         context?.registerReceiver(
             broadcastReceiver,
-            IntentFilter(PlayerHelper.getIntentActon(requireContext()))
+            IntentFilter(PlayerHelper.getIntentAction(requireContext()))
         )
 
         // schedule task to save the watch position each second
@@ -324,6 +325,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
                 binding.player.hideController()
                 binding.player.useController = false
                 commentsViewModel.setCommentSheetExpand(false)
+                chaptersBottomSheet?.dismiss()
                 transitionEndId = endId
                 transitionStartId = startId
             }
@@ -334,7 +336,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
                 if (currentId == transitionEndId) {
                     viewModel.isMiniPlayerVisible.value = true
                     // disable captions temporarily
-                    updateCaptionsLanguage(null)
+                    updateCurrentSubtitle(null)
                     binding.player.useController = false
                     commentsViewModel.setCommentSheetExpand(null)
                     binding.sbSkipBtn.isGone = true
@@ -343,7 +345,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
                 } else if (currentId == transitionStartId) {
                     viewModel.isMiniPlayerVisible.value = false
                     // re-enable captions
-                    updateCaptionsLanguage(captionLanguage)
+                    updateCurrentSubtitle(currentSubtitle)
                     binding.player.useController = true
                     commentsViewModel.setCommentSheetExpand(true)
                     mainMotionLayout.progress = 0F
@@ -359,7 +361,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
             }
         }
 
-        binding.playerMotionLayout.progress = 1.toFloat()
+        binding.playerMotionLayout.progress = 1F
         binding.playerMotionLayout.transitionToStart()
 
         val activity = requireActivity()
@@ -403,7 +405,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
         binding.commentsToggle.setOnClickListener {
             // set the max height to not cover the currently playing video
             commentsViewModel.handleLink = this::handleLink
-            commentsViewModel.maxHeight = binding.root.height - binding.player.height
+            updateMaxSheetHeight()
             commentsViewModel.videoId = videoId
             CommentsSheet().show(childFragmentManager)
         }
@@ -491,6 +493,10 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
             LinearLayoutManager.HORIZONTAL,
             false
         )
+    }
+
+    private fun updateMaxSheetHeight() {
+        viewModel.maxSheetHeightPx = binding.root.height - binding.player.height
     }
 
     private fun playOnBackground() {
@@ -672,11 +678,12 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
         if (!sponsorBlockEnabled || segments.isEmpty()) return
 
         exoPlayer.checkForSegments(requireContext(), segments, sponsorBlockConfig)
-            ?.let { segmentEnd ->
+            ?.let { segment ->
                 if (viewModel.isMiniPlayerVisible.value == true) return@let
                 binding.sbSkipBtn.isVisible = true
                 binding.sbSkipBtn.setOnClickListener {
-                    exoPlayer.seekTo(segmentEnd)
+                    exoPlayer.seekTo((segment.segmentStartAndEnd.second * 1000f).toLong())
+                    segment.skipped = true
                 }
                 return
             }
@@ -707,21 +714,16 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
                 return@launch
             }
 
-            if (PlayingQueue.isEmpty()) {
-                lifecycleScope.launch(Dispatchers.IO) {
-                    if (playlistId != null) {
-                        PlayingQueue.insertPlaylist(playlistId!!, streams.toStreamItem(videoId))
-                    } else if (channelId != null) {
-                        PlayingQueue.insertChannel(channelId!!, streams.toStreamItem(videoId))
-                    } else {
-                        PlayingQueue.updateCurrent(streams.toStreamItem(videoId))
-                        if (PlayerHelper.autoInsertRelatedVideos) {
-                            PlayingQueue.add(*streams.relatedStreams.toTypedArray())
-                        }
-                    }
-                }
+            val isFirstVideo = PlayingQueue.isEmpty()
+            if (isFirstVideo) {
+                PlayingQueue.updateQueue(streams.toStreamItem(videoId), playlistId, channelId)
             } else {
                 PlayingQueue.updateCurrent(streams.toStreamItem(videoId))
+            }
+            val isLastVideo = !isFirstVideo && PlayingQueue.isLast()
+            val isAutoQueue = playlistId == null && channelId == null
+            if (PlayerHelper.autoInsertRelatedVideos && (isFirstVideo || isLastVideo) && isAutoQueue) {
+                PlayingQueue.add(*streams.relatedStreams.toTypedArray(), skipExisting = true)
             }
 
             if (PreferenceHelper.getBoolean(PreferenceKeys.AUTO_FULLSCREEN_SHORTS, false)) {
@@ -771,8 +773,15 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
 
                 // enable the chapters dialog in the player
                 playerBinding.chapterLL.setOnClickListener {
-                    ChaptersBottomSheet(chapters, exoPlayer)
-                        .show(childFragmentManager)
+                    updateMaxSheetHeight()
+                    val sheet = chaptersBottomSheet ?: ChaptersBottomSheet(chapters, exoPlayer).also {
+                        chaptersBottomSheet = it
+                    }
+                    if (sheet.isVisible) {
+                        sheet.dismiss()
+                    } else {
+                        sheet.show(childFragmentManager)
+                    }
                 }
 
                 setCurrentChapterName()
@@ -821,6 +830,9 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
         playVideo()
         // close comment bottom sheet for next video
         commentsViewModel.commentsSheetDismiss?.invoke()
+        // kill the chapters bottom sheet
+        chaptersBottomSheet?.dismiss()
+        chaptersBottomSheet = null
     }
 
     private fun prepareExoPlayerView() {
@@ -926,6 +938,12 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
             override fun onPlaybackStateChanged(playbackState: Int) {
                 saveWatchPosition()
 
+                if (playbackState == Player.STATE_READY) {
+                    if (streams.category == Streams.categoryMusic) {
+                        exoPlayer.setPlaybackSpeed(1f)
+                    }
+                }
+
                 // set the playback speed to one if having reached the end of a livestream
                 if (playbackState == Player.STATE_BUFFERING && binding.player.isLive &&
                     exoPlayer.duration - exoPlayer.currentPosition < 700
@@ -934,16 +952,16 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
                 }
 
                 // check if video has ended, next video is available and autoplay is enabled.
-                if (
-                    playbackState == Player.STATE_ENDED &&
-                    !isTransitioning &&
-                    PlayerHelper.autoPlayEnabled
-                ) {
-                    isTransitioning = true
-                    if (PlayerHelper.autoPlayCountdown) {
-                        showAutoPlayCountdown()
+                if (playbackState == Player.STATE_ENDED) {
+                    if (!isTransitioning && PlayerHelper.autoPlayEnabled) {
+                        isTransitioning = true
+                        if (PlayerHelper.autoPlayCountdown) {
+                            showAutoPlayCountdown()
+                        } else {
+                            playNextVideo()
+                        }
                     } else {
-                        playNextVideo()
+                        binding.player.showController()
                     }
                 }
 
@@ -1174,7 +1192,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
         val highlightChapter = ChapterSegment(
             title = getString(R.string.chapters_videoHighlight),
             start = highlight.segmentStartAndEnd.first.toLong(),
-            drawable = frame?.toDrawable(requireContext().resources)
+            highlightDrawable = frame?.toDrawable(requireContext().resources)
         )
         chapters.add(highlightChapter)
         chapters.sortBy { it.start }
@@ -1212,7 +1230,10 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
     }
 
     private fun getSubtitleConfigs(): List<SubtitleConfiguration> = streams.subtitles.map {
-        SubtitleConfiguration.Builder(it.url!!.toUri()).setLanguage(it.code)
+        val roleFlags = getSubtitleRoleFlags(it)
+        SubtitleConfiguration.Builder(it.url!!.toUri())
+            .setRoleFlags(roleFlags)
+            .setLanguage(it.code)
             .setMimeType(it.mimeType).build()
     }
 
@@ -1253,7 +1274,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
         }
 
         // set the default subtitle if available
-        updateCaptionsLanguage(captionLanguage)
+        updateCurrentSubtitle(currentSubtitle)
 
         // set media source and resolution in the beginning
         lifecycleScope.launch(Dispatchers.IO) {
@@ -1421,16 +1442,31 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
             return
         }
 
-        val subtitles = streams.subtitles.map { it.name!! to it.code!! }
-        val subtitleOptions = listOf(getString(R.string.none) to "").plus(subtitles)
+        val subtitles = listOf(Subtitle(name = getString(R.string.none))).plus(streams.subtitles)
 
         BaseBottomSheet()
-            .setSimpleItems(subtitleOptions.map { it.first }) { index ->
-                val subtitleLanguage = subtitleOptions.getOrNull(index)?.second
-                updateCaptionsLanguage(subtitleLanguage)
-                this.captionLanguage = subtitleLanguage
+            .setSimpleItems(
+                subtitles.map {
+                    if (it.autoGenerated != true) {
+                        it.name!!
+                    } else {
+                        "${it.name} (${getString(R.string.auto_generated)})"
+                    }
+                }
+            ) { index ->
+                val subtitle = subtitles.getOrNull(index) ?: return@setSimpleItems
+                updateCurrentSubtitle(subtitle)
+                this.currentSubtitle = subtitle
             }
             .show(childFragmentManager)
+    }
+
+    private fun getSubtitleRoleFlags(subtitle: Subtitle?): Int {
+        return if (subtitle?.autoGenerated != true) {
+            C.ROLE_FLAG_CAPTION
+        } else {
+            PlayerHelper.ROLE_FLAG_AUTO_GEN_SUBTITLE
+        }
     }
 
     override fun onQualityClicked() {
@@ -1493,6 +1529,10 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
         baseBottomSheet.show(childFragmentManager)
     }
 
+    override fun exitFullscreen() {
+        unsetFullscreen()
+    }
+
     override fun onStatsClicked() {
         if (!this::streams.isInitialized) return
         StatsSheet(exoPlayer, videoId)
@@ -1517,7 +1557,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
             }
             binding.linLayout.isGone = true
 
-            updateCaptionsLanguage(null)
+            updateCurrentSubtitle(null)
         } else {
             // close button got clicked in PiP mode
             // pause the video and keep the app alive
@@ -1535,7 +1575,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
                 binding.linLayout.isVisible = true
             }
 
-            updateCaptionsLanguage(captionLanguage)
+            updateCurrentSubtitle(currentSubtitle)
 
             binding.optionsLL.post {
                 binding.optionsLL.requestLayout()
@@ -1543,11 +1583,10 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
         }
     }
 
-    private fun updateCaptionsLanguage(language: String?) {
-        trackSelector.updateParameters {
-            setPreferredTextRoleFlags(C.ROLE_FLAG_CAPTION)
-            setPreferredTextLanguage(language)
-        }
+    private fun updateCurrentSubtitle(subtitle: Subtitle?) = trackSelector.updateParameters {
+        val roleFlags = if (subtitle?.code != null) getSubtitleRoleFlags(subtitle) else 0
+        setPreferredTextRoleFlags(roleFlags)
+        setPreferredTextLanguage(subtitle?.code)
     }
 
     fun onUserLeaveHint() {

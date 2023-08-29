@@ -4,7 +4,7 @@ import com.github.libretube.db.obj.DownloadItem
 import com.github.libretube.enums.FileType
 import com.github.libretube.helpers.ProxyHelper
 import com.github.libretube.parcelable.DownloadData
-import java.nio.file.Paths
+import kotlin.io.path.Path
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.Serializable
 
@@ -41,7 +41,7 @@ data class Streams(
     val previewFrames: List<PreviewFrames> = emptyList()
 ) {
     fun toDownloadItems(downloadData: DownloadData): List<DownloadItem> {
-        val (id, name, videoFormat, videoQuality, audioFormat, audioQuality, subCode) = downloadData
+        val (id, name, videoFormat, videoQuality, audioFormat, audioQuality, audioTrackLocale, subCode) = downloadData
         val items = mutableListOf<DownloadItem>()
 
         if (!videoQuality.isNullOrEmpty() && !videoFormat.isNullOrEmpty()) {
@@ -53,7 +53,7 @@ data class Streams(
 
         if (!audioQuality.isNullOrEmpty() && !audioFormat.isNullOrEmpty()) {
             val stream = audioStreams.find {
-                it.quality == audioQuality && it.format == audioFormat
+                it.quality == audioQuality && it.format == audioFormat && it.audioTrackLocale == audioTrackLocale
             }
             stream?.toDownloadItem(FileType.AUDIO, id, name)?.let { items.add(it) }
         }
@@ -64,7 +64,7 @@ data class Streams(
                     type = FileType.SUBTITLE,
                     videoId = id,
                     fileName = "${name}_$subCode.srt",
-                    path = Paths.get(""),
+                    path = Path(""),
                     url = subtitles.find {
                         it.code == subCode
                     }?.url?.let { ProxyHelper.unwrapUrl(it) }
@@ -90,5 +90,9 @@ data class Streams(
             uploaderVerified = uploaderVerified,
             shortDescription = description
         )
+    }
+
+    companion object {
+        const val categoryMusic = "Music"
     }
 }

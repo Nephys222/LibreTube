@@ -162,7 +162,6 @@
     <string name="require_restart">É preciso reiniciar o aplicativo</string>
     <string name="deleteAccount_summary">Apagar sua conta do Piped</string>
     <string name="no_audio">Sem áudio</string>
-    <string name="watch_positions_summary">Reproduzir donde parou</string>
     <string name="always">Sempre</string>
     <string name="selected">Selecionado</string>
     <string name="watch_history_summary">Acompanhar os vídeos assistidos localmente</string>
@@ -483,4 +482,28 @@
     <string name="remove_watched_videos">Remover videos assistidos</string>
     <string name="player_channel_name">Serviços do Player</string>
     <string name="player_channel_description">Mostrar uma notificação quando estiver Reproduzindo</string>
+    <string name="tooltip_create_playlist">Criar playlist</string>
+    <string name="tooltip_repeat">Repetir</string>
+    <string name="tooltip_clear_queue">Limpar fila</string>
+    <string name="tooltip_close">Fechar</string>
+    <string name="tooltip_watch_position">Posição assistida</string>
+    <string name="tooltip_minimize">Minimizar</string>
+    <string name="tooltip_unlocked">Player travado</string>
+    <string name="tooltip_fullscreen">Tela cheia</string>
+    <string name="tooltip_locked">Travar Player</string>
+    <string name="tooltip_sponsorblock">Habilita/Desabilitar SponsorBlock</string>
+    <string name="tooltip_dismiss">Desistir</string>
+    <string name="tooltip_edit_groups">Editar grupos</string>
+    <string name="tooltip_sort">Organizar</string>
+    <string name="auto_generated">Autogerado</string>
+    <string name="tooltip_options">Opções</string>
+    <string name="tooltip_play">Tocar</string>
+    <string name="tooltip_filter">Filtro</string>
+    <string name="tooltip_scroll_to_top">Rolar para o topo</string>
+    <string name="tooltip_reverse">Reveso</string>
+    <string name="resolution_limited">Resolução limitada</string>
+    <string name="registration_disabled">Registro desabilitado</string>
+    <string name="automatic_once">Automático uma vez</string>
+    <string name="group_name_error_empty">Por favor insira um nome</string>
+    <string name="group_name_error_exists">Escolha um nome que seja único</string>
 </resources>

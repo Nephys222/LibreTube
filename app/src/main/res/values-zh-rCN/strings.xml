@@ -168,7 +168,6 @@
     <string name="restore">恢复</string>
     <string name="deleteAccount">删除账户</string>
     <string name="watch_history">观看历史</string>
-    <string name="watch_positions_summary">从上次播放位置继续</string>
     <string name="watch_positions">记住观看位置</string>
     <string name="auth_instance_summary">对认证指令(call)使用不同实例。</string>
     <string name="auth_instances">选择认证实例</string>
@@ -477,4 +476,29 @@
     <string name="remove_watched_videos">移除已观看的视频</string>
     <string name="player_channel_name">播放器服务</string>
     <string name="player_channel_description">播放时显示通知</string>
+    <string name="tooltip_play">播放</string>
+    <string name="tooltip_filter">筛选器</string>
+    <string name="tooltip_edit_groups">编辑群组</string>
+    <string name="tooltip_reverse">颠倒</string>
+    <string name="tooltip_repeat">重复</string>
+    <string name="tooltip_sort">排序</string>
+    <string name="tooltip_create_playlist">创建播放列表</string>
+    <string name="tooltip_watch_position">观看位置</string>
+    <string name="tooltip_scroll_to_top">滚动到顶部</string>
+    <string name="tooltip_clear_queue">清除队列</string>
+    <string name="tooltip_dismiss">不理睬</string>
+    <string name="tooltip_locked">锁定播放器</string>
+    <string name="tooltip_unlocked">解锁播放器</string>
+    <string name="tooltip_sponsorblock">开/关 SponsorBlock</string>
+    <string name="tooltip_options">选项</string>
+    <string name="tooltip_fullscreen">全屏</string>
+    <string name="tooltip_minimize">最小化</string>
+    <string name="tooltip_close">关闭</string>
+    <string name="auto_generated">自动生成的</string>
+    <string name="resolution_limited">受限</string>
+    <string name="registration_disabled">禁止注册</string>
+    <string name="proxy">代理</string>
+    <string name="group_name_error_empty">请输入名称</string>
+    <string name="group_name_error_exists">请选择唯一名称</string>
+    <string name="automatic_once">仅自动拦截一次</string>
 </resources>

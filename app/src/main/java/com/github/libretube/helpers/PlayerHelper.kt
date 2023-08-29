@@ -24,6 +24,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.LoadControl
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.ui.CaptionStyleCompat
+import com.github.libretube.LibreTubeApp
 import com.github.libretube.R
 import com.github.libretube.api.obj.ChapterSegment
 import com.github.libretube.api.obj.Segment
@@ -41,18 +42,8 @@ import kotlinx.coroutines.runBlocking
 object PlayerHelper {
     private const val ACTION_MEDIA_CONTROL = "media_control"
     const val CONTROL_TYPE = "control_type"
-    private val SPONSOR_CATEGORIES =
-        arrayOf(
-            "intro",
-            "selfpromo",
-            "interaction",
-            "sponsor",
-            "outro",
-            "filler",
-            "music_offtopic",
-            "preview"
-        )
     const val SPONSOR_HIGHLIGHT_CATEGORY = "poi_highlight"
+    const val ROLE_FLAG_AUTO_GEN_SUBTITLE = C.ROLE_FLAG_SUPPLEMENTARY
 
     /**
      * Create a base64 encoded DASH stream manifest
@@ -349,13 +340,13 @@ object PlayerHelper {
         }
     }
 
-    fun getIntentActon(context: Context): String {
+    fun getIntentAction(context: Context): String {
         return context.packageName + "." + ACTION_MEDIA_CONTROL
     }
 
-    private fun getPendingIntent(activity: Activity, code: Int): PendingIntent {
-        val intent = Intent(getIntentActon(activity)).putExtra(CONTROL_TYPE, code)
-        return PendingIntentCompat.getBroadcast(activity, code, intent, 0, false)
+    private fun getPendingIntent(activity: Activity, event: PlayerEvent): PendingIntent {
+        val intent = Intent(getIntentAction(activity)).putExtra(CONTROL_TYPE, event)
+        return PendingIntentCompat.getBroadcast(activity, event.ordinal, intent, 0, false)
     }
 
     private fun getRemoteAction(
@@ -369,7 +360,7 @@ object PlayerHelper {
             IconCompat.createWithResource(activity, id),
             text,
             text,
-            getPendingIntent(activity, event.value)
+            getPendingIntent(activity, event)
         )
     }
 
@@ -462,7 +453,9 @@ object PlayerHelper {
     fun getSponsorBlockCategories(): MutableMap<String, SbSkipOptions> {
         val categories: MutableMap<String, SbSkipOptions> = mutableMapOf()
 
-        for (category in SPONSOR_CATEGORIES) {
+        for (category in LibreTubeApp.instance.resources.getStringArray(
+            R.array.sponsorBlockSegments
+        )) {
             val state = PreferenceHelper.getString(category + "_category", "off").uppercase()
             if (SbSkipOptions.valueOf(state) != SbSkipOptions.OFF) {
                 categories[category] = SbSkipOptions.valueOf(state)
@@ -483,7 +476,7 @@ object PlayerHelper {
         context: Context,
         segments: List<Segment>,
         sponsorBlockConfig: MutableMap<String, SbSkipOptions>
-    ): Long? {
+    ): Segment? {
         for (segment in segments.filter { it.category != SPONSOR_HIGHLIGHT_CATEGORY }) {
             val (start, end) = segment.segmentStartAndEnd
             val (segmentStart, segmentEnd) = (start * 1000f).toLong() to (end * 1000f).toLong()
@@ -492,7 +485,12 @@ object PlayerHelper {
             if ((duration - currentPosition).absoluteValue < 500) continue
 
             if (currentPosition in segmentStart until segmentEnd) {
-                if (sponsorBlockConfig[segment.category] == SbSkipOptions.AUTOMATIC) {
+                if (sponsorBlockConfig[segment.category] == SbSkipOptions.AUTOMATIC ||
+                    (
+                        sponsorBlockConfig[segment.category] == SbSkipOptions.AUTOMATIC_ONCE &&
+                            !segment.skipped
+                        )
+                ) {
                     if (sponsorBlockNotifications) {
                         runCatching {
                             Toast.makeText(context, R.string.segment_skipped, Toast.LENGTH_SHORT)
@@ -500,8 +498,14 @@ object PlayerHelper {
                         }
                     }
                     seekTo(segmentEnd)
-                } else if (sponsorBlockConfig[segment.category] == SbSkipOptions.MANUAL) {
-                    return segmentEnd
+                    segment.skipped = true
+                } else if (sponsorBlockConfig[segment.category] == SbSkipOptions.MANUAL ||
+                    (
+                        sponsorBlockConfig[segment.category] == SbSkipOptions.AUTOMATIC_ONCE &&
+                            segment.skipped
+                        )
+                ) {
+                    return segment
                 }
             }
         }
@@ -521,7 +525,16 @@ object PlayerHelper {
      */
     fun getCurrentChapterIndex(exoPlayer: ExoPlayer, chapters: List<ChapterSegment>): Int? {
         val currentPosition = exoPlayer.currentPosition / 1000
-        return chapters.indexOfLast { currentPosition >= it.start }.takeIf { it >= 0 }
+        return chapters
+            .filter {
+                it.highlightDrawable == null ||
+                    // remove the video highlight if it's already longer ago than [ChapterSegment.HIGHLIGHT_LENGTH],
+                    // otherwise the SponsorBlock highlight would be shown from its starting point to the end
+                    (currentPosition - it.start) < ChapterSegment.HIGHLIGHT_LENGTH
+            }
+            .sortedBy { it.start }
+            .indexOfLast { currentPosition >= it.start }
+            .takeIf { it >= 0 }
     }
 
     fun getPosition(videoId: String, duration: Long?): Long? {

@@ -246,7 +246,6 @@
     <string name="maximum_image_cache">Ukuran cache gambar maks</string>
     <string name="copied_to_clipboard">Disalin ke papan klip</string>
     <string name="open_copied">Buka</string>
-    <string name="watch_positions_summary">Lanjutkan dari posisi pemutaran terakhir</string>
     <string name="require_restart">Pemulaian ulang aplikasi dibutuhkan</string>
     <string name="navLabelVisibility">Keterlihatan label</string>
     <string name="always">Selalu</string>
@@ -463,7 +462,7 @@
     <string name="descriptive_audio_track">deskriptif</string>
     <string name="default_or_unknown_audio_track">bawaan atau tidak diketahui</string>
     <string name="unknown_or_no_audio">tidak diketahui atau tidak ada audio</string>
-    <string name="continue_watching">Lanjut menonton</string>
+    <string name="continue_watching">Lanjut Menonton</string>
     <string name="dearrow">Aktifkan DeArrow</string>
     <string name="dearrow_summary">Tampilkan judul dan thumbnail yang lebih akurat dan tidak terlalu sensasional. Meningkatkan waktu pemuatan.</string>
     <string name="visibility">Visibilitas</string>
@@ -477,4 +476,29 @@
     <string name="remove_watched_videos">Hapus video yang sudah ditonton</string>
     <string name="player_channel_name">Layanan Pemutar</string>
     <string name="player_channel_description">Menampilkan notifikasi saat memutar</string>
+    <string name="tooltip_repeat">Ulangi</string>
+    <string name="tooltip_clear_queue">Hapus antrean</string>
+    <string name="tooltip_dismiss">Abaikan</string>
+    <string name="tooltip_locked">Kunci pemutar</string>
+    <string name="tooltip_unlocked">Buka kunci pemutar</string>
+    <string name="tooltip_close">Tutup</string>
+    <string name="tooltip_play">Putar</string>
+    <string name="tooltip_reverse">Balik</string>
+    <string name="tooltip_sort">Urutkan</string>
+    <string name="tooltip_watch_position">Posisi tontonan</string>
+    <string name="tooltip_sponsorblock">Saklar SponsorBlock</string>
+    <string name="tooltip_create_playlist">Buat daftar putar</string>
+    <string name="tooltip_scroll_to_top">Gulir ke atas</string>
+    <string name="tooltip_options">Opsi</string>
+    <string name="tooltip_fullscreen">Layar penuh</string>
+    <string name="tooltip_minimize">Kecilkan</string>
+    <string name="tooltip_filter">Saring</string>
+    <string name="tooltip_edit_groups">Sunting kelompok</string>
+    <string name="resolution_limited">terbatas</string>
+    <string name="proxy">Proksi</string>
+    <string name="group_name_error_empty">Silakan masukkan nama</string>
+    <string name="group_name_error_exists">Silakan pilih nama yang berbeda</string>
+    <string name="auto_generated">dibuat secara otomatis</string>
+    <string name="registration_disabled">Pendaftaran dinonaktifkan</string>
+    <string name="automatic_once">Otomatis sekali</string>
 </resources>

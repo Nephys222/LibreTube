@@ -170,6 +170,7 @@ class MainActivity : BaseActivity() {
             when (navController.currentDestination?.id) {
                 startFragmentId -> {
                     moveTaskToBack(true)
+                    onUserLeaveHint()
                 }
 
                 R.id.searchResultFragment -> {

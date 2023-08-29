@@ -5,16 +5,22 @@ import android.content.res.Configuration
 import android.util.AttributeSet
 import android.view.View
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.isVisible
 import androidx.lifecycle.LifecycleOwner
+import androidx.media3.common.C
 import androidx.media3.exoplayer.trackselection.TrackSelector
 import androidx.media3.ui.PlayerView.ControllerVisibilityListener
 import com.github.libretube.R
+import com.github.libretube.extensions.toID
 import com.github.libretube.helpers.PlayerHelper
 import com.github.libretube.helpers.WindowHelper
 import com.github.libretube.obj.BottomSheetItem
+import com.github.libretube.ui.base.BaseActivity
+import com.github.libretube.ui.dialogs.SubmitSegmentDialog
 import com.github.libretube.ui.extensions.toggleSystemBars
 import com.github.libretube.ui.interfaces.OnlinePlayerOptions
 import com.github.libretube.ui.models.PlayerViewModel
+import com.github.libretube.util.PlayingQueue
 
 class OnlinePlayerView(
     context: Context,
@@ -32,27 +38,21 @@ class OnlinePlayerView(
                 BottomSheetItem(
                     context.getString(R.string.quality),
                     R.drawable.ic_hd,
-                    { "${player?.videoSize?.height}p" }
+                    this::getCurrentResolutionSummary
                 ) {
                     playerOptions?.onQualityClicked()
                 },
                 BottomSheetItem(
                     context.getString(R.string.audio_track),
                     R.drawable.ic_audio,
-                    { getCurrentAudioTrackTitle() }
+                    this::getCurrentAudioTrackTitle
                 ) {
                     playerOptions?.onAudioStreamClicked()
                 },
                 BottomSheetItem(
                     context.getString(R.string.captions),
                     R.drawable.ic_caption,
-                    {
-                        if (trackSelector != null && trackSelector!!.parameters.preferredTextLanguages.isNotEmpty()) {
-                            trackSelector!!.parameters.preferredTextLanguages[0]
-                        } else {
-                            context.getString(R.string.none)
-                        }
-                    }
+                    this::getCurrentCaptionLanguage
                 ) {
                     playerOptions?.onCaptionsClicked()
                 },
@@ -63,6 +63,29 @@ class OnlinePlayerView(
                     playerOptions?.onStatsClicked()
                 }
             )
+    }
+
+    @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
+    private fun getCurrentResolutionSummary(): String {
+        val currentQuality = player?.videoSize?.height ?: 0
+        var summary = "${currentQuality}p"
+        val trackSelector = trackSelector ?: return summary
+        val selectedQuality = trackSelector.parameters.maxVideoHeight
+        if (selectedQuality == Int.MAX_VALUE) {
+            summary += " - ${context.getString(R.string.auto)}"
+        } else if (selectedQuality > currentQuality) {
+            summary += " - ${context.getString(R.string.resolution_limited)}"
+        }
+        return summary
+    }
+
+    @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
+    private fun getCurrentCaptionLanguage(): String {
+        return if (trackSelector != null && trackSelector!!.parameters.preferredTextLanguages.isNotEmpty()) {
+            trackSelector!!.parameters.preferredTextLanguages[0]
+        } else {
+            context.getString(R.string.none)
+        }
     }
 
     private fun getCurrentAudioTrackTitle(): String {
@@ -140,6 +163,15 @@ class OnlinePlayerView(
         binding.autoPlay.setOnCheckedChangeListener { _, isChecked ->
             PlayerHelper.autoPlayEnabled = isChecked
         }
+
+        binding.sbSubmit.isVisible = PlayerHelper.sponsorBlockEnabled
+        binding.sbSubmit.setOnClickListener {
+            val currentPosition = player?.currentPosition?.takeIf { it != C.TIME_UNSET }
+            val duration = player?.duration?.takeIf { it != C.TIME_UNSET }
+            val videoId = PlayingQueue.getCurrent()?.url?.toID() ?: return@setOnClickListener
+            SubmitSegmentDialog(videoId, currentPosition ?: 0, duration)
+                .show((context as BaseActivity).supportFragmentManager, null)
+        }
     }
 
     override fun hideController() {
@@ -149,11 +181,6 @@ class OnlinePlayerView(
             WindowHelper.toggleFullscreen(activity, true)
         }
         updateTopBarMargin()
-    }
-
-    override fun onSwipeCenterScreen(distanceY: Float) {
-        super.onSwipeCenterScreen(distanceY)
-        playerViewModel?.isFullscreen?.value = false
     }
 
     override fun getTopBarMarginDp(): Int {
@@ -166,5 +193,9 @@ class OnlinePlayerView(
 
     override fun isFullscreen(): Boolean {
         return playerViewModel?.isFullscreen?.value ?: super.isFullscreen()
+    }
+
+    override fun minimizeOrExitPlayer() {
+        playerOptions?.exitFullscreen()
     }
 }

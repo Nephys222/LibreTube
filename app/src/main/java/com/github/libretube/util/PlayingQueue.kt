@@ -24,9 +24,17 @@ object PlayingQueue {
 
     fun clear() = queue.clear()
 
-    fun add(vararg streamItem: StreamItem) {
+    /**
+     * @param skipExisting Whether to skip the [streamItem] if it's already part of the queue
+     */
+    fun add(vararg streamItem: StreamItem, skipExisting: Boolean = false) {
         for (stream in streamItem) {
-            if (currentStream?.url?.toID() == stream.url?.toID() || stream.title.isNullOrBlank()) continue
+            if (skipExisting && contains(stream)) continue
+            if (currentStream?.url?.toID() == stream.url?.toID() ||
+                stream.title.isNullOrBlank()
+            ) {
+                continue
+            }
             // remove if already present
             queue.remove(stream)
             queue.add(stream)
@@ -67,6 +75,8 @@ object PlayingQueue {
     fun isEmpty() = queue.isEmpty()
 
     fun size() = queue.size
+
+    fun isLast() = currentIndex() == size() - 1
 
     fun currentIndex(): Int = queue.indexOfFirst {
         it.url?.toID() == currentStream?.url?.toID()
@@ -159,7 +169,7 @@ object PlayingQueue {
         }
     }
 
-    fun insertChannel(channelId: String, newCurrentStream: StreamItem) {
+    private fun insertChannel(channelId: String, newCurrentStream: StreamItem) {
         scope.launch(Dispatchers.IO) {
             runCatching {
                 val channel = RetrofitInstance.api.getChannel(channelId)
@@ -176,6 +186,16 @@ object PlayingQueue {
                 val streams = RetrofitInstance.api.getStreams(videoId.toID())
                 add(streams.toStreamItem(videoId))
             }
+        }
+    }
+
+    fun updateQueue(streamItem: StreamItem, playlistId: String?, channelId: String?) {
+        if (playlistId != null) {
+            insertPlaylist(playlistId, streamItem)
+        } else if (channelId != null) {
+            insertChannel(channelId, streamItem)
+        } else {
+            updateCurrent(streamItem)
         }
     }
 

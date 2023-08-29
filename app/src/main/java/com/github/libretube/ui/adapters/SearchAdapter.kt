@@ -6,6 +6,7 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import com.github.libretube.R
 import com.github.libretube.api.obj.ContentItem
+import com.github.libretube.api.obj.StreamItem
 import com.github.libretube.databinding.ChannelRowBinding
 import com.github.libretube.databinding.PlaylistsRowBinding
 import com.github.libretube.databinding.VideoRowBinding
@@ -55,7 +56,7 @@ class SearchAdapter(
         val playlistRowBinding = holder.playlistRowBinding
 
         if (videoRowBinding != null) {
-            bindVideo(searchItem, videoRowBinding)
+            bindVideo(searchItem, videoRowBinding, position)
         } else if (channelRowBinding != null) {
             bindChannel(searchItem, channelRowBinding)
         } else if (playlistRowBinding != null) {
@@ -65,14 +66,14 @@ class SearchAdapter(
 
     override fun getItemViewType(position: Int): Int {
         return when (currentList[position].type) {
-            "stream" -> 0
-            "channel" -> 1
-            "playlist" -> 2
+            StreamItem.TYPE_STREAM -> 0
+            StreamItem.TYPE_CHANNEL -> 1
+            StreamItem.TYPE_PLAYLIST -> 2
             else -> 3
         }
     }
 
-    private fun bindVideo(item: ContentItem, binding: VideoRowBinding) {
+    private fun bindVideo(item: ContentItem, binding: VideoRowBinding, position: Int) {
         binding.apply {
             ImageHelper.loadImage(item.thumbnail, thumbnail)
             thumbnailDuration.setFormattedDuration(item.duration, item.isShort)
@@ -95,9 +96,10 @@ class SearchAdapter(
                 NavigationHelper.navigateVideo(root.context, item.url)
             }
             val videoId = item.url.toID()
-            val videoName = item.title!!
             root.setOnLongClickListener {
-                VideoOptionsBottomSheet(videoId, videoName)
+                VideoOptionsBottomSheet(item.toStreamItem()) {
+                    notifyItemChanged(position)
+                }
                     .show(
                         (root.context as BaseActivity).supportFragmentManager,
                         VideoOptionsBottomSheet::class.java.name

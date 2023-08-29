@@ -8,13 +8,19 @@ import android.view.ViewGroup
 import android.view.ViewTreeObserver
 import androidx.core.view.isVisible
 import androidx.fragment.app.activityViewModels
+import androidx.fragment.app.commit
+import androidx.fragment.app.replace
 import com.github.libretube.R
 import com.github.libretube.databinding.CommentsSheetBinding
 import com.github.libretube.ui.fragments.CommentsMainFragment
 import com.github.libretube.ui.models.CommentsViewModel
+import com.github.libretube.ui.models.PlayerViewModel
 
 class CommentsSheet : UndimmedBottomSheet() {
-    lateinit var binding: CommentsSheetBinding
+    private var _binding: CommentsSheetBinding? = null
+    val binding get() = _binding!!
+
+    private val playerViewModel: PlayerViewModel by activityViewModels()
     private val commentsViewModel: CommentsViewModel by activityViewModels()
 
     override fun onCreateView(
@@ -22,7 +28,7 @@ class CommentsSheet : UndimmedBottomSheet() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        binding = CommentsSheetBinding.inflate(layoutInflater)
+        _binding = CommentsSheetBinding.inflate(layoutInflater)
         return binding.root
     }
 
@@ -31,33 +37,31 @@ class CommentsSheet : UndimmedBottomSheet() {
 
         commentsViewModel.commentsSheetDismiss = this::dismiss
 
-        binding.apply {
-            dragHandle.viewTreeObserver.addOnGlobalLayoutListener(object :
-                ViewTreeObserver.OnGlobalLayoutListener {
-                override fun onGlobalLayout() {
-                    dragHandle.viewTreeObserver.removeOnGlobalLayoutListener(this)
+        val binding = binding
 
-                    // limit the recyclerview height to not cover the video
-                    binding.standardBottomSheet.layoutParams =
-                        binding.commentFragContainer.layoutParams.apply {
-                            height = commentsViewModel.maxHeight
-                        }
-                }
-            })
+        binding.dragHandle.viewTreeObserver.addOnGlobalLayoutListener(object :
+            ViewTreeObserver.OnGlobalLayoutListener {
+            override fun onGlobalLayout() {
+                binding.dragHandle.viewTreeObserver.removeOnGlobalLayoutListener(this)
 
-            btnBack.setOnClickListener {
-                if (childFragmentManager.backStackEntryCount > 0) {
-                    childFragmentManager.popBackStack()
-                }
+                // limit the recyclerview height to not cover the video
+                binding.standardBottomSheet.layoutParams =
+                    binding.commentFragContainer.layoutParams.apply {
+                        height = playerViewModel.maxSheetHeightPx
+                    }
             }
+        })
 
-            btnClose.setOnClickListener { dismiss() }
+        binding.btnBack.setOnClickListener {
+            if (childFragmentManager.backStackEntryCount > 0) {
+                childFragmentManager.popBackStack()
+            }
         }
 
-        childFragmentManager.apply {
-            beginTransaction()
-                .replace(R.id.commentFragContainer, CommentsMainFragment())
-                .commit()
+        binding.btnClose.setOnClickListener { dismiss() }
+
+        childFragmentManager.commit {
+            replace<CommentsMainFragment>(R.id.commentFragContainer)
         }
 
         commentsViewModel.setCommentSheetExpand(true)
@@ -69,6 +73,17 @@ class CommentsSheet : UndimmedBottomSheet() {
             }
         }
     }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
+    }
+
+    override fun getSheetMaxHeightPx() = playerViewModel.maxSheetHeightPx
+
+    override fun getDragHandle() = binding.dragHandle
+
+    override fun getBottomSheet() = binding.standardBottomSheet
 
     fun updateFragmentInfo(showBackButton: Boolean, title: String) {
         binding.btnBack.isVisible = showBackButton

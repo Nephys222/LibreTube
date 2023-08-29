@@ -169,7 +169,6 @@
     <string name="deleteAccount_summary">מחיקת חשבון ה־Piped</string>
     <string name="watch_history">היסטוריית צפייה</string>
     <string name="watch_positions">שמירת המיקום</string>
-    <string name="watch_positions_summary">להמשיך מנקודת הנגינה האחרונה</string>
     <string name="auth_instance">עותק אימות</string>
     <string name="auth_instance_summary">להשתמש בעותק אחר לשיחות מאומתות.</string>
     <string name="auth_instances">בחירת עותק אימות</string>
@@ -225,7 +224,7 @@
     <string name="least_views">הכי פחות צפיות</string>
     <string name="required_network">חיבור נדרש</string>
     <string name="network_all">הכול</string>
-    <string name="network_metered">מוגבלת</string>
+    <string name="network_metered">מדודה</string>
     <string name="network_wifi">ברשת אלחוטית בלבד</string>
     <string name="translate">תרגום</string>
     <string name="no_search_result">אין תוצאות.</string>
@@ -486,4 +485,29 @@
     <string name="remove_watched_videos">הסרת סרטונים שנצפו</string>
     <string name="player_channel_description">מציג התראה בזמן הנגינה</string>
     <string name="player_channel_name">שירות נגן</string>
+    <string name="tooltip_dismiss">התעלמות</string>
+    <string name="tooltip_locked">נעילת הנגן</string>
+    <string name="tooltip_sort">מיון</string>
+    <string name="tooltip_watch_position">מיקום צפייה</string>
+    <string name="tooltip_clear_queue">מחיקת תור</string>
+    <string name="resolution_limited">מוגבלת</string>
+    <string name="tooltip_reverse">היפוך</string>
+    <string name="tooltip_unlocked">שחרור הנגן</string>
+    <string name="auto_generated">נוצר אוטומטית</string>
+    <string name="tooltip_sponsorblock">מתג SponsorBlock</string>
+    <string name="tooltip_edit_groups">עריכת קבוצות</string>
+    <string name="tooltip_create_playlist">יצירת רשימת נגינה</string>
+    <string name="tooltip_scroll_to_top">גלילה לראש</string>
+    <string name="tooltip_repeat">חזרה</string>
+    <string name="tooltip_options">אפשרויות</string>
+    <string name="tooltip_minimize">מזעור</string>
+    <string name="tooltip_fullscreen">מסך מלא</string>
+    <string name="tooltip_close">סגירה</string>
+    <string name="tooltip_play">נגינה</string>
+    <string name="tooltip_filter">מסנן</string>
+    <string name="registration_disabled">ההרשמה מושבתת</string>
+    <string name="proxy">מתווך</string>
+    <string name="group_name_error_empty">נא למלא שם</string>
+    <string name="group_name_error_exists">נא לבחור שם ייחודי</string>
+    <string name="automatic_once">אוטומטית פעם אחת</string>
 </resources>

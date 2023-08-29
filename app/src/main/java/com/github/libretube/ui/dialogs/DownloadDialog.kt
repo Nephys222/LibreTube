@@ -1,13 +1,13 @@
 package com.github.libretube.ui.dialogs
 
 import android.app.Dialog
+import android.content.DialogInterface
 import android.os.Bundle
 import android.text.InputFilter
 import android.text.format.Formatter
 import android.util.Log
 import android.widget.ArrayAdapter
 import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
 import androidx.core.view.isGone
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.Lifecycle
@@ -65,7 +65,7 @@ class DownloadDialog(
             .setPositiveButton(R.string.download, null)
             .show()
             .apply {
-                getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener {
                     onDownloadConfirm.invoke()
                 }
             }
@@ -120,7 +120,7 @@ class DownloadDialog(
             R.layout.dropdown_item,
             videoStreams.map {
                 val fileSize = Formatter.formatShortFileSize(context, it.contentLength)
-                "${it.quality} ${it.format} ($fileSize)"
+                "${it.quality} ${it.codec} ($fileSize)"
             }.toMutableList().also {
                 it.add(0, getString(R.string.no_video))
             }
@@ -130,8 +130,12 @@ class DownloadDialog(
             requireContext(),
             R.layout.dropdown_item,
             audioStreams.map {
-                val fileSize = Formatter.formatShortFileSize(context, it.contentLength)
-                "${it.quality} ${it.codec} ($fileSize)"
+                val fileSize = it.contentLength
+                    .takeIf { l -> l > 0 }
+                    ?.let { cl -> Formatter.formatShortFileSize(context, cl) }
+                val infoStr = listOfNotNull(it.audioTrackLocale, fileSize)
+                    .joinToString(", ")
+                "${it.quality} ${it.format} ($infoStr)"
             }.toMutableList().also {
                 it.add(0, getString(R.string.no_audio))
             }
@@ -179,6 +183,7 @@ class DownloadDialog(
                 videoQuality = videoStream?.quality,
                 audioFormat = audioStream?.format,
                 audioQuality = audioStream?.quality,
+                audioLanguage = audioStream?.audioTrackLocale,
                 subtitleCode = subtitle?.code
             )
             DownloadHelper.startDownloadService(requireContext(), downloadData)

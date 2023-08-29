@@ -47,9 +47,9 @@ import java.net.URL
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
 import java.util.concurrent.Executors
-import kotlin.io.path.absolute
 import kotlin.io.path.createFile
 import kotlin.io.path.deleteIfExists
+import kotlin.io.path.div
 import kotlin.io.path.fileSize
 import kotlin.math.min
 import kotlinx.coroutines.CancellationException
@@ -371,7 +371,9 @@ class DownloadService : LifecycleService() {
             FileType.VIDEO -> streams.videoStreams
             else -> null
         }
-        stream?.find { it.format == item.format && it.quality == item.quality }?.let {
+        stream?.find {
+            it.format == item.format && it.quality == item.quality && it.audioTrackLocale == item.language
+        }?.let {
             item.url = it.url
         }
         Database.downloadDao().updateDownloadItem(item)
@@ -499,7 +501,7 @@ class DownloadService : LifecycleService() {
      * Get a [File] from the corresponding download directory and the file name
      */
     private fun getDownloadPath(directory: String, fileName: String): Path {
-        return DownloadHelper.getDownloadDir(this, directory).resolve(fileName).absolute()
+        return DownloadHelper.getDownloadDir(this, directory) / fileName
     }
 
     override fun onDestroy() {
