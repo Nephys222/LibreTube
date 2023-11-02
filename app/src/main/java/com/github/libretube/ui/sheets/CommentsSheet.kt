@@ -5,7 +5,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.view.ViewTreeObserver
 import androidx.core.view.isVisible
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.commit
@@ -38,19 +37,6 @@ class CommentsSheet : UndimmedBottomSheet() {
         commentsViewModel.commentsSheetDismiss = this::dismiss
 
         val binding = binding
-
-        binding.dragHandle.viewTreeObserver.addOnGlobalLayoutListener(object :
-            ViewTreeObserver.OnGlobalLayoutListener {
-            override fun onGlobalLayout() {
-                binding.dragHandle.viewTreeObserver.removeOnGlobalLayoutListener(this)
-
-                // limit the recyclerview height to not cover the video
-                binding.standardBottomSheet.layoutParams =
-                    binding.commentFragContainer.layoutParams.apply {
-                        height = playerViewModel.maxSheetHeightPx
-                    }
-            }
-        })
 
         binding.btnBack.setOnClickListener {
             if (childFragmentManager.backStackEntryCount > 0) {

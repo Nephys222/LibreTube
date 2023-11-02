@@ -31,7 +31,6 @@ import kotlinx.coroutines.withContext
 
 class CommentsRepliesFragment : Fragment() {
     private var _binding: FragmentCommentsBinding? = null
-    private val binding get() = _binding!!
 
     private lateinit var repliesPage: CommentsPage
     private lateinit var repliesAdapter: CommentsAdapter
@@ -45,7 +44,7 @@ class CommentsRepliesFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View {
         _binding = FragmentCommentsBinding.inflate(inflater, container, false)
-        return binding.root
+        return _binding!!.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -54,9 +53,15 @@ class CommentsRepliesFragment : Fragment() {
         val videoId = arguments.getString(IntentData.videoId, "")
         val comment = arguments.parcelable<Comment>(IntentData.comment)!!
 
+        val binding = _binding ?: return
+
+        val commentsSheet = parentFragment as? CommentsSheet
+        commentsSheet?.binding?.btnScrollToTop?.isGone = true
+
         repliesAdapter = CommentsAdapter(
             null,
             videoId,
+            viewModel.channelAvatar,
             mutableListOf(comment),
             true,
             viewModel.handleLink
@@ -96,10 +101,10 @@ class CommentsRepliesFragment : Fragment() {
         nextPage: String,
         repliesAdapter: CommentsAdapter
     ) {
-        binding.progress.isVisible = true
+        _binding?.progress?.isVisible = true
         fetchReplies(videoId, nextPage) {
             repliesAdapter.updateItems(it.comments)
-            binding.progress.isGone = true
+            _binding?.progress?.isGone = true
         }
     }
 
@@ -111,6 +116,7 @@ class CommentsRepliesFragment : Fragment() {
         lifecycleScope.launch(Dispatchers.IO) {
             if (isLoading) return@launch
             isLoading = true
+
             repliesPage = try {
                 RetrofitInstance.api.getCommentsNextPage(videoId, nextPage)
             } catch (e: Exception) {

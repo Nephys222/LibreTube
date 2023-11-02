@@ -8,11 +8,11 @@ import com.github.libretube.db.obj.SearchHistoryItem
 import com.github.libretube.db.obj.WatchHistoryItem
 import com.github.libretube.extensions.toID
 import com.github.libretube.helpers.PreferenceHelper
-import java.time.Instant
-import java.time.ZoneId
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlinx.datetime.toKotlinLocalDate
+import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 
 object DatabaseHelper {
     private const val MAX_SEARCH_HISTORY_SIZE = 20
@@ -21,36 +21,34 @@ object DatabaseHelper {
         videoId,
         streams.toStreamItem(videoId)
     )
-    suspend fun addToWatchHistory(
-        videoId: String,
-        stream: StreamItem
-    ) = withContext(Dispatchers.IO) {
-        val watchHistoryItem = WatchHistoryItem(
-            videoId,
-            stream.title,
-            stream.uploaded?.let {
-                Instant.ofEpochMilli(
-                    it
-                ).atZone(ZoneId.systemDefault()).toLocalDate().toKotlinLocalDate()
-            },
-            stream.uploaderName,
-            stream.uploaderUrl?.toID(),
-            stream.uploaderAvatar,
-            stream.thumbnail,
-            stream.duration
-        )
-        Database.watchHistoryDao().insert(watchHistoryItem)
-        val maxHistorySize = PreferenceHelper.getString(PreferenceKeys.WATCH_HISTORY_SIZE, "100")
-        if (maxHistorySize == "unlimited") {
-            return@withContext
-        }
+    suspend fun addToWatchHistory(videoId: String, stream: StreamItem) =
+        withContext(Dispatchers.IO) {
+            val watchHistoryItem = WatchHistoryItem(
+                videoId,
+                stream.title,
+                Instant.fromEpochMilliseconds(stream.uploaded)
+                    .toLocalDateTime(TimeZone.currentSystemDefault()).date,
+                stream.uploaderName,
+                stream.uploaderUrl?.toID(),
+                stream.uploaderAvatar,
+                stream.thumbnail,
+                stream.duration
+            )
+            Database.watchHistoryDao().insert(watchHistoryItem)
+            val maxHistorySize = PreferenceHelper.getString(
+                PreferenceKeys.WATCH_HISTORY_SIZE,
+                "100"
+            )
+            if (maxHistorySize == "unlimited") {
+                return@withContext
+            }
 
-        // delete the first watch history entry if the limit is reached
-        val watchHistory = Database.watchHistoryDao().getAll()
-        if (watchHistory.size > maxHistorySize.toInt()) {
-            Database.watchHistoryDao().delete(watchHistory.first())
+            // delete the first watch history entry if the limit is reached
+            val watchHistory = Database.watchHistoryDao().getAll()
+            if (watchHistory.size > maxHistorySize.toInt()) {
+                Database.watchHistoryDao().delete(watchHistory.first())
+            }
         }
-    }
 
     suspend fun addToSearchHistory(searchHistoryItem: SearchHistoryItem) {
         Database.searchHistoryDao().insert(searchHistoryItem)

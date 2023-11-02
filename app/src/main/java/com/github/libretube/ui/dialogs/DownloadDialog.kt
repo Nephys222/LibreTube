@@ -18,6 +18,7 @@ import com.github.libretube.api.RetrofitInstance
 import com.github.libretube.api.obj.PipedStream
 import com.github.libretube.api.obj.Streams
 import com.github.libretube.api.obj.Subtitle
+import com.github.libretube.constants.IntentData
 import com.github.libretube.databinding.DialogDownloadBinding
 import com.github.libretube.extensions.TAG
 import com.github.libretube.extensions.getWhileDigit
@@ -32,10 +33,15 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import retrofit2.HttpException
 
-class DownloadDialog(
-    private val videoId: String
-) : DialogFragment() {
+class DownloadDialog : DialogFragment() {
+    private lateinit var videoId: String
     private var onDownloadConfirm = {}
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        videoId = arguments?.getString(IntentData.videoId)!!
+    }
+
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val binding = DialogDownloadBinding.inflate(layoutInflater)
 
@@ -156,8 +162,14 @@ class DownloadDialog(
         restorePreviousSelections(binding, videoStreams, audioStreams, subtitles)
 
         onDownloadConfirm = onDownloadConfirm@{
-            if (binding.fileName.text.toString().isEmpty()) {
+            val fileName = binding.fileName.text.toString()
+            if (fileName.isBlank()) {
                 Toast.makeText(context, R.string.invalid_filename, Toast.LENGTH_SHORT).show()
+                return@onDownloadConfirm
+            }
+
+            if (fileName.length > MAX_FILE_NAME_LENGTH - 20) { // reserve 20 chars for quality and extension
+                Toast.makeText(context, R.string.filename_too_long, Toast.LENGTH_SHORT).show()
                 return@onDownloadConfirm
             }
 
@@ -263,6 +275,11 @@ class DownloadDialog(
     }
 
     companion object {
+        /**
+         * Max file name length at Android systems
+         */
+        private const val MAX_FILE_NAME_LENGTH = 255
+
         private const val VIDEO_DOWNLOAD_QUALITY = "video_download_quality"
         private const val VIDEO_DOWNLOAD_FORMAT = "video_download_format"
         private const val AUDIO_DOWNLOAD_QUALITY = "audio_download_quality"

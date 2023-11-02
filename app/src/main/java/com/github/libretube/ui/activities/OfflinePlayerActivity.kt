@@ -18,6 +18,7 @@ import androidx.media3.datasource.FileDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.MergingMediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
+import androidx.media3.exoplayer.source.SingleSampleMediaSource
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.ui.PlayerView
 import com.github.libretube.compat.PictureInPictureCompat
@@ -30,7 +31,6 @@ import com.github.libretube.enums.FileType
 import com.github.libretube.extensions.toAndroidUri
 import com.github.libretube.extensions.updateParameters
 import com.github.libretube.helpers.PlayerHelper
-import com.github.libretube.helpers.PlayerHelper.loadPlaybackParams
 import com.github.libretube.helpers.WindowHelper
 import com.github.libretube.ui.base.BaseActivity
 import com.github.libretube.ui.interfaces.TimeFrameReceiver
@@ -55,7 +55,7 @@ class OfflinePlayerActivity : BaseActivity() {
     private val playerViewModel: PlayerViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        WindowHelper.toggleFullscreen(this, true)
+        WindowHelper.toggleFullscreen(window, true)
 
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_USER_LANDSCAPE
 
@@ -78,39 +78,31 @@ class OfflinePlayerActivity : BaseActivity() {
     private fun initializePlayer() {
         trackSelector = DefaultTrackSelector(this)
 
-        player = ExoPlayer.Builder(this)
-            .setUsePlatformDiagnostics(false)
-            .setHandleAudioBecomingNoisy(true)
-            .setTrackSelector(trackSelector)
-            .setLoadControl(PlayerHelper.getLoadControl())
-            .setAudioAttributes(PlayerHelper.getAudioAttributes(), true)
-            .setUsePlatformDiagnostics(false)
-            .build().apply {
-                addListener(object : Player.Listener {
-                    override fun onEvents(player: Player, events: Player.Events) {
-                        super.onEvents(player, events)
-                        // update the displayed duration on changes
-                        playerBinding.duration.text = DateUtils.formatElapsedTime(
-                            player.duration / 1000
-                        )
-                    }
+        player = PlayerHelper.createPlayer(this, trackSelector, false)
 
-                    override fun onPlaybackStateChanged(playbackState: Int) {
-                        super.onPlaybackStateChanged(playbackState)
-                        // setup seekbar preview
-                        if (playbackState == Player.STATE_READY) {
-                            binding.player.binding.exoProgress.addListener(
-                                SeekbarPreviewListener(
-                                    timeFrameReceiver ?: return,
-                                    binding.player.binding,
-                                    player.duration
-                                )
-                            )
-                        }
-                    }
-                })
+        player.addListener(object : Player.Listener {
+            override fun onEvents(player: Player, events: Player.Events) {
+                super.onEvents(player, events)
+                // update the displayed duration on changes
+                playerBinding.duration.text = DateUtils.formatElapsedTime(
+                    player.duration / 1000
+                )
             }
-            .loadPlaybackParams()
+
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                super.onPlaybackStateChanged(playbackState)
+                // setup seekbar preview
+                if (playbackState == Player.STATE_READY) {
+                    binding.player.binding.exoProgress.addListener(
+                        SeekbarPreviewListener(
+                            timeFrameReceiver ?: return,
+                            binding.player.binding,
+                            player.duration
+                        )
+                    )
+                }
+            }
+        })
 
         playerView = binding.player
         playerView.setShowSubtitleButton(true)
@@ -165,7 +157,8 @@ class OfflinePlayerActivity : BaseActivity() {
     private fun setMediaSource(videoUri: Uri?, audioUri: Uri?, subtitleUri: Uri?) {
         val subtitle = subtitleUri?.let {
             SubtitleConfiguration.Builder(it)
-                .setMimeType(MimeTypes.APPLICATION_SUBRIP)
+                .setMimeType(MimeTypes.APPLICATION_TTML)
+                .setLanguage("en")
                 .build()
         }
 
@@ -184,7 +177,13 @@ class OfflinePlayerActivity : BaseActivity() {
                 val audioSource = ProgressiveMediaSource.Factory(FileDataSource.Factory())
                     .createMediaSource(MediaItem.fromUri(audioUri))
 
-                val mediaSource = MergingMediaSource(audioSource, videoSource)
+                var mediaSource = MergingMediaSource(audioSource, videoSource)
+                if (subtitle != null) {
+                    val subtitleSource = SingleSampleMediaSource.Factory(FileDataSource.Factory())
+                        .createMediaSource(subtitle, C.TIME_UNSET)
+
+                    mediaSource = MergingMediaSource(mediaSource, subtitleSource)
+                }
 
                 player.setMediaSource(mediaSource)
             }

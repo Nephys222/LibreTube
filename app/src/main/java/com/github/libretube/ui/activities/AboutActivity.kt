@@ -6,11 +6,6 @@ import android.os.Bundle
 import androidx.core.text.HtmlCompat
 import androidx.core.text.parseAsHtml
 import com.github.libretube.R
-import com.github.libretube.constants.GITHUB_URL
-import com.github.libretube.constants.LICENSE_URL
-import com.github.libretube.constants.PIPED_GITHUB_URL
-import com.github.libretube.constants.WEBLATE_URL
-import com.github.libretube.constants.WEBSITE_URL
 import com.github.libretube.databinding.ActivityAboutBinding
 import com.github.libretube.helpers.ClipboardHelper
 import com.github.libretube.helpers.IntentHelper
@@ -39,6 +34,7 @@ class AboutActivity : BaseActivity() {
             startActivity(Intent.createChooser(sendIntent, null))
         }
 
+        setupCard(binding.donate, DONATE_URL)
         setupCard(binding.website, WEBSITE_URL)
         setupCard(binding.piped, PIPED_GITHUB_URL)
         setupCard(binding.translate, WEBLATE_URL)
@@ -110,5 +106,14 @@ class AboutActivity : BaseActivity() {
             .setMessage(text)
             .setPositiveButton(R.string.okay, null)
             .show()
+    }
+
+    companion object {
+        private const val DONATE_URL = "https://github.com/libre-tube/LibreTube#donate"
+        private const val WEBSITE_URL = "https://libretube.dev"
+        private const val GITHUB_URL = "https://github.com/libre-tube/LibreTube"
+        private const val PIPED_GITHUB_URL = "https://github.com/TeamPiped/Piped"
+        private const val WEBLATE_URL = "https://hosted.weblate.org/projects/libretube/libretube/"
+        private const val LICENSE_URL = "https://gnu.org/"
     }
 }

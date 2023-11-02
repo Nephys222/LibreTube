@@ -504,4 +504,24 @@
     <string name="sb_create_segment">建立片段</string>
     <string name="segment_type">片段類型</string>
     <string name="sb_invalid_segment">無效的片段開始或結束</string>
+    <string name="filename_too_long">檔案名稱太長了！</string>
+    <string name="sponsorblock_user_id">SponsorBlock 使用者 ID</string>
+    <string name="contribute_to_sponsorblock">貢獻給 SponsorBlock</string>
+    <string name="donate">捐款</string>
+    <string name="music_artists">YouTube Music 藝人</string>
+    <string name="no_fullscreen_resolution">非全螢幕解析度</string>
+    <string name="same_as_fullscreen">與全螢幕相同</string>
+    <string name="playback_during_call_summary">請注意，這也會影響應用程式，使其不再處理任何種類的音訊焦點。</string>
+    <string name="playback_during_call">電話通話中持續播放</string>
+    <string name="autoplay_playlists_summary">無論選定的自動播放設定如何，都會自動播放在播放清單上的下一部影片</string>
+    <string name="autoplay_playlists">自動播放播放清單</string>
+    <string name="remember_playback_speed">記住播放速度</string>
+    <string name="vote_for_segment">為分節投票</string>
+    <string name="upvote">上</string>
+    <string name="segment">分節</string>
+    <string name="undo">復原</string>
+    <string name="segment_submitted">已遞交分節</string>
+    <string name="downvote">下</string>
+    <string name="repeat_mode_all">重播全部</string>
+    <string name="successfully_removed_from_playlist">已成功從播放清單中移除「%1$s」。</string>
 </resources>

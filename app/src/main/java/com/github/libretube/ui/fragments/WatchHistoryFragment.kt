@@ -52,9 +52,7 @@ class WatchHistoryFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         playerViewModel.isMiniPlayerVisible.observe(viewLifecycleOwner) {
-            _binding?.watchHistoryRecView?.updatePadding(
-                bottom = if (it) (64).dpToPx().toInt() else 0
-            )
+            _binding?.watchHistoryRecView?.updatePadding(bottom = if (it) 64f.dpToPx() else 0)
         }
 
         val watchHistory = runBlocking(Dispatchers.IO) {
@@ -127,10 +125,7 @@ class WatchHistoryFragment : Fragment() {
                 return false
             }
 
-            override fun onSwiped(
-                viewHolder: RecyclerView.ViewHolder,
-                direction: Int
-            ) {
+            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
                 val position = viewHolder.absoluteAdapterPosition
                 watchHistoryAdapter.removeFromWatchHistory(position)
             }

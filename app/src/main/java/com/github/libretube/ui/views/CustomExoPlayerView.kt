@@ -11,6 +11,7 @@ import android.text.format.DateUtils
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
+import android.view.Window
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.TextView
@@ -25,7 +26,6 @@ import androidx.core.view.updateLayoutParams
 import androidx.media3.common.C
 import androidx.media3.common.Player
 import androidx.media3.common.text.Cue
-import androidx.media3.common.util.RepeatModeUtil
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.CaptionStyleCompat
@@ -41,6 +41,7 @@ import com.github.libretube.extensions.dpToPx
 import com.github.libretube.extensions.normalize
 import com.github.libretube.extensions.round
 import com.github.libretube.extensions.seekBy
+import com.github.libretube.extensions.togglePlayPauseState
 import com.github.libretube.helpers.AudioHelper
 import com.github.libretube.helpers.BrightnessHelper
 import com.github.libretube.helpers.PlayerHelper
@@ -86,6 +87,12 @@ open class CustomExoPlayerView(
             updateDisplayedDurationType()
             updateCurrentPosition()
         }
+
+    /**
+     * The window that needs to be addressed for showing and hiding the system bars
+     * If null, the activity's default/main window will be used
+     */
+    var currentWindow: Window? = null
 
     /**
      * Preferences
@@ -143,7 +150,7 @@ open class CustomExoPlayerView(
             // change locked status
             isPlayerLocked = !isPlayerLocked
 
-            activity.toggleSystemBars(
+            (currentWindow ?: activity.window).toggleSystemBars(
                 types = WindowInsetsCompat.Type.statusBars(),
                 showBars = !isPlayerLocked
             )
@@ -156,14 +163,7 @@ open class CustomExoPlayerView(
         }
 
         binding.playPauseBTN.setOnClickListener {
-            when {
-                player?.isPlaying == false && player?.playbackState == Player.STATE_ENDED -> {
-                    player?.seekTo(0)
-                }
-
-                player?.isPlaying == false && player?.isLoading == false -> player?.play()
-                else -> player?.pause()
-            }
+            player?.togglePlayPauseState()
         }
 
         player?.addListener(object : Player.Listener {
@@ -241,13 +241,13 @@ open class CustomExoPlayerView(
     }
 
     private fun enqueueHideControllerTask() {
-        handler.postDelayed(AUTO_HIDE_CONTROLLER_DELAY, HIDE_CONTROLLER_TOKEN) {
+        runnableHandler.postDelayed(AUTO_HIDE_CONTROLLER_DELAY, HIDE_CONTROLLER_TOKEN) {
             hideController()
         }
     }
 
     private fun cancelHideControllerTask() {
-        handler?.removeCallbacksAndMessages(HIDE_CONTROLLER_TOKEN)
+        runnableHandler.removeCallbacksAndMessages(HIDE_CONTROLLER_TOKEN)
     }
 
     override fun hideController() {
@@ -302,10 +302,11 @@ open class CustomExoPlayerView(
             context.getString(R.string.repeat_mode),
             R.drawable.ic_repeat,
             {
-                if (player?.repeatMode == RepeatModeUtil.REPEAT_TOGGLE_MODE_NONE) {
-                    context.getString(R.string.repeat_mode_none)
-                } else {
-                    context.getString(R.string.repeat_mode_current)
+                when (PlayingQueue.repeatMode) {
+                    Player.REPEAT_MODE_OFF -> context.getString(R.string.repeat_mode_none)
+                    Player.REPEAT_MODE_ONE -> context.getString(R.string.repeat_mode_current)
+                    Player.REPEAT_MODE_ALL -> context.getString(R.string.repeat_mode_all)
+                    else -> throw IllegalArgumentException()
                 }
             }
         ) {
@@ -442,7 +443,7 @@ open class CustomExoPlayerView(
             .setDuration((ANIMATION_DURATION * 1.5).toLong())
             .withEndAction {
                 // move the text back into the button
-                handler.postDelayed(100) {
+                runnableHandler.postDelayed(100) {
                     textView.animate()
                         .setDuration(ANIMATION_DURATION / 2)
                         .translationX(0f)
@@ -533,27 +534,12 @@ open class CustomExoPlayerView(
     }
 
     override fun onRepeatModeClicked() {
-        val repeatModeNames = listOf(
-            context.getString(R.string.repeat_mode_none),
-            context.getString(R.string.repeat_mode_current),
-            context.getString(R.string.all)
-        )
         // repeat mode options dialog
         BaseBottomSheet()
-            .setSimpleItems(repeatModeNames) { index ->
-                PlayingQueue.repeatQueue = when (index) {
-                    0 -> {
-                        player?.repeatMode = Player.REPEAT_MODE_OFF
-                        false
-                    }
-
-                    1 -> {
-                        player?.repeatMode = Player.REPEAT_MODE_ONE
-                        false
-                    }
-
-                    else -> true
-                }
+            .setSimpleItems(
+                PlayerHelper.repeatModes.map { context.getString(it.second) }
+            ) { index ->
+                PlayingQueue.repeatMode = PlayerHelper.repeatModes[index].first
             }
             .show(supportFragmentManager)
     }
@@ -565,13 +551,8 @@ open class CustomExoPlayerView(
         super.onConfigurationChanged(newConfig)
 
         // add a larger bottom margin to the time bar in landscape mode
-        val offset = when {
-            isFullscreen() -> 20.dpToPx()
-            else -> 10.dpToPx()
-        }
-
         binding.progressBar.updateLayoutParams<MarginLayoutParams> {
-            bottomMargin = offset.toInt()
+            bottomMargin = (if (isFullscreen()) 20f else 10f).dpToPx()
         }
 
         updateTopBarMargin()
@@ -613,7 +594,7 @@ open class CustomExoPlayerView(
      */
     fun updateTopBarMargin() {
         binding.topBar.updateLayoutParams<MarginLayoutParams> {
-            topMargin = getTopBarMarginDp().dpToPx().toInt()
+            topMargin = getTopBarMarginDp().toFloat().dpToPx()
         }
     }
 
@@ -745,6 +726,6 @@ open class CustomExoPlayerView(
         private const val SUBTITLE_BOTTOM_PADDING_FRACTION = 0.158f
         private const val ANIMATION_DURATION = 100L
         private const val AUTO_HIDE_CONTROLLER_DELAY = 2000L
-        private val LANDSCAPE_MARGIN_HORIZONTAL = (20).dpToPx().toInt()
+        private val LANDSCAPE_MARGIN_HORIZONTAL = 20f.dpToPx()
     }
 }

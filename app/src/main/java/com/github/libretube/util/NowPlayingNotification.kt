@@ -22,11 +22,9 @@ import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import coil.request.ImageRequest
+import com.github.libretube.LibreTubeApp.Companion.PLAYER_CHANNEL_NAME
 import com.github.libretube.R
 import com.github.libretube.constants.IntentData
-import com.github.libretube.constants.PLAYER_CHANNEL_ID
-import com.github.libretube.constants.PLAYER_NOTIFICATION_ID
-import com.github.libretube.extensions.TAG
 import com.github.libretube.extensions.seekBy
 import com.github.libretube.extensions.toMediaMetadataCompat
 import com.github.libretube.helpers.BackgroundHelper
@@ -34,6 +32,7 @@ import com.github.libretube.helpers.ImageHelper
 import com.github.libretube.helpers.PlayerHelper
 import com.github.libretube.obj.PlayerNotificationData
 import com.github.libretube.ui.activities.MainActivity
+import java.util.UUID
 
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 class NowPlayingNotification(
@@ -205,7 +204,7 @@ class NowPlayingNotification(
             }
         }
 
-        mediaSession = MediaSessionCompat(context, TAG())
+        mediaSession = MediaSessionCompat(context, UUID.randomUUID().toString())
         mediaSession.setCallback(sessionCallback)
 
         updateSessionMetadata()
@@ -300,6 +299,7 @@ class NowPlayingNotification(
             }
 
             PLAY_PAUSE -> {
+                if (player.playerError != null) player.prepare()
                 if (player.isPlaying) player.pause() else player.play()
             }
 
@@ -315,10 +315,7 @@ class NowPlayingNotification(
     /**
      * Updates or creates the [notificationBuilder]
      */
-    fun updatePlayerNotification(
-        videoId: String,
-        data: PlayerNotificationData
-    ) {
+    fun updatePlayerNotification(videoId: String, data: PlayerNotificationData) {
         this.videoId = videoId
         this.notificationData = data
         // reset the thumbnail bitmap in order to become reloaded for the new video
@@ -346,7 +343,7 @@ class NowPlayingNotification(
      * Initializes the [notificationBuilder] attached to the [player] and shows it.
      */
     private fun createNotificationBuilder() {
-        notificationBuilder = NotificationCompat.Builder(context, PLAYER_CHANNEL_ID)
+        notificationBuilder = NotificationCompat.Builder(context, PLAYER_CHANNEL_NAME)
             .setSmallIcon(R.drawable.ic_launcher_lockscreen)
             .setContentIntent(createCurrentContentIntent())
             .setDeleteIntent(createIntent(STOP))
@@ -403,6 +400,7 @@ class NowPlayingNotification(
     }
 
     companion object {
+        const val PLAYER_NOTIFICATION_ID = 1
         private const val PREV = "prev"
         private const val NEXT = "next"
         private const val REWIND = "rewind"

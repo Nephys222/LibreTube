@@ -16,6 +16,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.constraintlayout.motion.widget.MotionLayout
 import androidx.constraintlayout.motion.widget.TransitionAdapter
+import androidx.core.os.bundleOf
 import androidx.core.view.isGone
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
@@ -50,8 +51,9 @@ import com.github.libretube.ui.sheets.PlayingQueueSheet
 import com.github.libretube.ui.sheets.VideoOptionsBottomSheet
 import com.github.libretube.util.DataSaverMode
 import com.github.libretube.util.PlayingQueue
-import kotlinx.coroutines.launch
+import com.google.android.material.elevation.SurfaceColors
 import kotlin.math.abs
+import kotlinx.coroutines.launch
 
 class AudioPlayerFragment : Fragment(), AudioPlayerOptions {
     private var _binding: FragmentAudioPlayerBinding? = null
@@ -168,25 +170,30 @@ class AudioPlayerFragment : Fragment(), AudioPlayerOptions {
 
         binding.download.setOnClickListener {
             val videoId = PlayingQueue.getCurrent()?.url?.toID() ?: return@setOnClickListener
-            val downloadDialog = DownloadDialog(videoId)
-            downloadDialog.show(childFragmentManager, DownloadDialog::class.java.name)
+
+            val newFragment = DownloadDialog()
+            newFragment.arguments = bundleOf(IntentData.videoId to videoId)
+            newFragment.show(childFragmentManager, DownloadDialog::class.java.name)
         }
 
         binding.share.setOnClickListener {
             val currentVideo = PlayingQueue.getCurrent() ?: return@setOnClickListener
-            ShareDialog(
-                id = currentVideo.url!!.toID(),
-                shareObjectType = ShareObjectType.VIDEO,
-                shareData = ShareData(currentVideo = currentVideo.title)
-            ).show(childFragmentManager, null)
+
+            val bundle = bundleOf(
+                IntentData.id to currentVideo.url!!.toID(),
+                IntentData.shareObjectType to ShareObjectType.VIDEO,
+                IntentData.shareData to ShareData(currentVideo = currentVideo.title)
+            )
+            val newShareDialog = ShareDialog()
+            newShareDialog.arguments = bundle
+            newShareDialog.show(childFragmentManager, null)
         }
 
         binding.chapters.setOnClickListener {
             val playerService = playerService ?: return@setOnClickListener
-            val streams = playerService.streams ?: return@setOnClickListener
-            val player = playerService.player ?: return@setOnClickListener
+            viewModel.chaptersLiveData.value = playerService.streams?.chapters.orEmpty()
 
-            ChaptersBottomSheet(streams.chapters, player)
+            ChaptersBottomSheet()
                 .show(childFragmentManager)
         }
 
@@ -230,6 +237,9 @@ class AudioPlayerFragment : Fragment(), AudioPlayerOptions {
     private fun initializeTransitionLayout() {
         mainActivity.binding.container.isVisible = true
         val mainMotionLayout = mainActivity.binding.mainMotionLayout
+
+        val surfaceColor = SurfaceColors.getColorForElevation(requireContext(), 3f)
+        binding.audioPlayerContainer.setBackgroundColor(surfaceColor)
 
         binding.playerMotionLayout.addTransitionListener(object : TransitionAdapter() {
             override fun onTransitionChange(
@@ -354,6 +364,7 @@ class AudioPlayerFragment : Fragment(), AudioPlayerOptions {
     }
 
     private fun handleServiceConnection() {
+        viewModel.player = playerService?.player
         playerService?.onIsPlayingChanged = { isPlaying ->
             updatePlayPauseButton(isPlaying)
             isPaused = !isPlaying
@@ -377,6 +388,8 @@ class AudioPlayerFragment : Fragment(), AudioPlayerOptions {
             activity?.unbindService(connection)
         }
 
+        viewModel.player = null
+
         super.onDestroy()
     }
 
@@ -386,9 +399,8 @@ class AudioPlayerFragment : Fragment(), AudioPlayerOptions {
 
     override fun onLongTap() {
         val current = PlayingQueue.getCurrent() ?: return
-        VideoOptionsBottomSheet(
-            current
-        )
+        VideoOptionsBottomSheet()
+            .apply { arguments = bundleOf(IntentData.shareData to current) }
             .show(childFragmentManager)
     }
 

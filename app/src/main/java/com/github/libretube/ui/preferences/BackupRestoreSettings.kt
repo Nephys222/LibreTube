@@ -7,12 +7,14 @@ import androidx.annotation.StringRes
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.Preference
 import com.github.libretube.R
+import com.github.libretube.constants.IntentData
 import com.github.libretube.enums.ImportFormat
 import com.github.libretube.helpers.BackupHelper
 import com.github.libretube.helpers.ImportHelper
 import com.github.libretube.obj.BackupFile
 import com.github.libretube.ui.base.BasePreferenceFragment
 import com.github.libretube.ui.dialogs.BackupDialog
+import com.github.libretube.ui.dialogs.BackupDialog.Companion.BACKUP_DIALOG_REQUEST_KEY
 import com.github.libretube.ui.dialogs.RequireRestartDialog
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import java.time.LocalDateTime
@@ -21,6 +23,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
 
 class BackupRestoreSettings : BasePreferenceFragment() {
     private val backupDateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH:mm:ss")
@@ -175,14 +178,18 @@ class BackupRestoreSettings : BasePreferenceFragment() {
             true
         }
 
+        childFragmentManager.setFragmentResultListener(
+            BACKUP_DIALOG_REQUEST_KEY,
+            this
+        ) { _, resultBundle ->
+            val encodedBackupFile = resultBundle.getString(IntentData.backupFile)!!
+            backupFile = Json.decodeFromString(encodedBackupFile)
+            val timestamp = backupDateTimeFormatter.format(LocalDateTime.now())
+            createBackupFile.launch("libretube-backup-$timestamp.json")
+        }
         val advancedBackup = findPreference<Preference>("backup")
         advancedBackup?.setOnPreferenceClickListener {
-            BackupDialog {
-                backupFile = it
-                val timestamp = backupDateTimeFormatter.format(LocalDateTime.now())
-                createBackupFile.launch("libretube-backup-$timestamp.json")
-            }
-                .show(childFragmentManager, null)
+            BackupDialog().show(childFragmentManager, null)
             true
         }
 

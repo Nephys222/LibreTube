@@ -296,10 +296,10 @@
     <string name="confirm_unsubscribing">Conferma la disiscrizione</string>
     <string name="play_all">Riproduci tutti</string>
     <string name="confirm_unsubscribing_summary">Mostra una finestra di conferma prima di annullare l\'iscrizione.</string>
-    <string name="start_time">Ora di inizio</string>
+    <string name="start_time">Tempo iniziale</string>
     <string name="notification_time">Limita orari di notifica</string>
     <string name="time">Tempo</string>
-    <string name="end_time">Ora di fine</string>
+    <string name="end_time">Tempo finale</string>
     <string name="notification_time_summary">Limita l\'intervallo di ore in cui le notifiche di video vengono mostrate.</string>
     <string name="local_playlists">Playlist locali</string>
     <string name="brightness">Luminosità</string>
@@ -510,4 +510,24 @@
     <string name="sb_invalid_segment">Inizio o fine del segmento non valido</string>
     <string name="sb_create_segment">Crea segmento</string>
     <string name="segment_type">Tipo di segmento</string>
+    <string name="contribute_to_sponsorblock">Contribuisci a SponsorBlock</string>
+    <string name="filename_too_long">Nome del file troppo lungo!</string>
+    <string name="sponsorblock_user_id">ID utente SponsorBlock</string>
+    <string name="donate">Dona</string>
+    <string name="no_fullscreen_resolution">Nessuna risoluzione a schermo intero</string>
+    <string name="music_artists">Artisti YT Music</string>
+    <string name="same_as_fullscreen">Uguale allo schermo intero</string>
+    <string name="playback_during_call_summary">Nota che ciò provoca anche la perdita di gestione di qualsiasi tipo di focus audio dell\'app.</string>
+    <string name="playback_during_call">Continua la riproduzione durante una telefonata</string>
+    <string name="autoplay_playlists_summary">Riproduci automaticamente il video seguente in playlist indipendentemente dall\'impostazione di autoriproduzione selezionata</string>
+    <string name="autoplay_playlists">Autoriproduci le playlist</string>
+    <string name="remember_playback_speed">Ricorda la velocità di riproduzione</string>
+    <string name="vote_for_segment">Valuta il segmento</string>
+    <string name="upvote">Positivo</string>
+    <string name="segment">Segmento</string>
+    <string name="undo">Annulla</string>
+    <string name="segment_submitted">Segmento inviato</string>
+    <string name="downvote">Negativo</string>
+    <string name="repeat_mode_all">Ripeti tutto</string>
+    <string name="successfully_removed_from_playlist">\"%1$s\" rimosso correttamente dalla playlist.</string>
 </resources>

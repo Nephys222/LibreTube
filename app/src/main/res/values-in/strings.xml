@@ -503,5 +503,25 @@
     <string name="automatic_once">Otomatis sekali</string>
     <string name="sb_create_segment">Buat segmen</string>
     <string name="segment_type">Jenis segmen</string>
-    <string name="sb_invalid_segment">Segmen awal atau akhir tidak valid</string>
+    <string name="sb_invalid_segment">Awal atau akhir segmen tidak valid</string>
+    <string name="filename_too_long">Nama berkas terlalu panjang!</string>
+    <string name="contribute_to_sponsorblock">Berkontribusi ke SponsorBlock</string>
+    <string name="sponsorblock_user_id">ID pengguna SponsorBlock</string>
+    <string name="donate">Donasi</string>
+    <string name="no_fullscreen_resolution">Resolusi tanpa layar penuh</string>
+    <string name="playback_during_call_summary">Hal ini juga memengaruhi aplikasi untuk tidak lagi menangani fokus audio apa pun.</string>
+    <string name="music_artists">Artis YT Music</string>
+    <string name="playback_during_call">Lanjutkan pemutar</string>
+    <string name="same_as_fullscreen">Sama seperti layar penuh</string>
+    <string name="autoplay_playlists_summary">Putar video berikutnya dalam daftar putar secara otomatis terlepas dari pengaturan pemutaran otomatis yang dipilih</string>
+    <string name="autoplay_playlists">Putar daftar putar secara otomatis</string>
+    <string name="remember_playback_speed">Ingat kecepatan pemutaran</string>
+    <string name="vote_for_segment">Pilih segmen</string>
+    <string name="upvote">Naikkan</string>
+    <string name="segment">Segmen</string>
+    <string name="undo">Urungkan</string>
+    <string name="segment_submitted">Segmen telah dikirim</string>
+    <string name="downvote">Turunkan</string>
+    <string name="repeat_mode_all">Ulangi semua</string>
+    <string name="successfully_removed_from_playlist">Berhasil dihapus \"%1$s\" dari daftar putar.</string>
 </resources>

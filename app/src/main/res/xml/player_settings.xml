@@ -133,6 +133,12 @@
             android:title="@string/queue_insert_related_videos"
             app:key="queue_insert_related_videos" />
 
+        <SwitchPreferenceCompat
+            android:defaultValue="false"
+            android:summary="@string/autoplay_playlists_summary"
+            android:title="@string/autoplay_playlists"
+            app:key="autoplay_playlists" />
+
     </PreferenceCategory>
 
 
@@ -166,6 +172,25 @@
             android:title="@string/auto_fullscreen_shorts"
             app:key="auto_fullscreen_shorts" />
 
+        <SwitchPreferenceCompat
+            android:icon="@drawable/ic_headphones"
+            android:summaryOff="@string/disabled"
+            android:summaryOn="@string/enabled"
+            app:disableDependentsState="true"
+            app:defaultValue="true"
+            app:key="remember_playback_speed"
+            app:title="@string/remember_playback_speed" />
+
+        <com.github.libretube.ui.views.SliderPreference
+            android:dependency="remember_playback_speed"
+            android:icon="@drawable/ic_speed"
+            app:defValue="1.0"
+            app:key="playback_speed"
+            app:stepSize="0.1"
+            app:title="@string/playback_speed"
+            app:valueFrom="0.2"
+            app:valueTo="4.0" />
+
     </PreferenceCategory>
 
     <PreferenceCategory app:title="@string/background_mode">
@@ -197,6 +222,13 @@
             app:defaultValue="false"
             app:key="pause_screen_off"
             app:title="@string/pauseOnScreenOff" />
+
+        <SwitchPreferenceCompat
+            android:icon="@drawable/ic_call"
+            android:summary="@string/playback_during_call_summary"
+            app:defaultValue="false"
+            app:key="playback_during_call"
+            app:title="@string/playback_during_call" />
 
     </PreferenceCategory>
 

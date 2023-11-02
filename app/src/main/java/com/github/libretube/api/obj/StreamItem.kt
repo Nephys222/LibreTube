@@ -1,10 +1,13 @@
 package com.github.libretube.api.obj
 
+import android.os.Parcelable
 import com.github.libretube.db.obj.LocalPlaylistItem
 import com.github.libretube.extensions.toID
+import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.Serializable
 
 @Serializable
+@Parcelize
 data class StreamItem(
     val url: String? = null,
     val type: String? = null,
@@ -17,10 +20,10 @@ data class StreamItem(
     val duration: Long? = null,
     val views: Long? = null,
     val uploaderVerified: Boolean? = null,
-    val uploaded: Long? = null,
+    val uploaded: Long = 0,
     val shortDescription: String? = null,
     val isShort: Boolean = false
-) {
+) : Parcelable {
     fun toLocalPlaylistItem(playlistId: String): LocalPlaylistItem {
         return LocalPlaylistItem(
             playlistId = playlistId.toInt(),

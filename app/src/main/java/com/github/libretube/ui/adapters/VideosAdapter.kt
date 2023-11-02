@@ -5,6 +5,8 @@ import android.content.Context
 import android.text.format.DateUtils
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.core.os.bundleOf
+import androidx.core.view.isGone
 import androidx.core.view.updateLayoutParams
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -12,6 +14,7 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.RecyclerView.LayoutManager
 import com.github.libretube.R
 import com.github.libretube.api.obj.StreamItem
+import com.github.libretube.constants.IntentData
 import com.github.libretube.constants.PreferenceKeys
 import com.github.libretube.databinding.AllCaughtUpRowBinding
 import com.github.libretube.databinding.TrendingRowBinding
@@ -66,7 +69,7 @@ class VideosAdapter(
             it.url?.toID() == videoId
         }.takeIf { it > 0 } ?: return
         streamItems.removeAt(index)
-        visibleCount -= 1
+        visibleCount--
         notifyItemRemoved(index)
         notifyItemRangeChanged(index, itemCount)
     }
@@ -102,9 +105,7 @@ class VideosAdapter(
     @SuppressLint("SetTextI18n")
     override fun onBindViewHolder(holder: VideosViewHolder, position: Int) {
         val video = streamItems[position]
-
         val videoId = video.url?.toID()
-        val videoName = video.title
 
         videoId?.let {
             (holder.trendingRowBinding?.watchProgress ?: holder.videoRowBinding!!.watchProgress)
@@ -115,27 +116,35 @@ class VideosAdapter(
             holder.videoRowBinding ?: holder.trendingRowBinding
                 ?: holder.allCaughtUpBinding
             )!!.root.context
-        val uploadDate =
-            video.uploaded?.takeIf { it > 0 }?.let { TextUtils.formatRelativeDate(context, it) }
+        val activity = (context as BaseActivity)
+        val fragmentManager = activity.supportFragmentManager
+
+        val uploadDateStr = video.uploaded.takeIf { it > 0 }
+            ?.let { TextUtils.formatRelativeDate(context, it) }
+            ?.toString()
 
         // Trending layout
         holder.trendingRowBinding?.apply {
             // set a fixed width for better visuals
             root.updateLayoutParams {
                 when (forceMode) {
-                    ForceMode.RELATED -> width = 210.dpToPx().toInt()
-                    ForceMode.HOME -> width = 250.dpToPx().toInt()
+                    ForceMode.RELATED -> width = 210f.dpToPx()
+                    ForceMode.HOME -> width = 250f.dpToPx()
                     else -> {}
                 }
             }
 
             textViewTitle.text = video.title
-            textViewChannel.text = root.context.getString(
-                R.string.trending_views,
-                video.uploaderName,
-                video.views.formatShort(),
-                uploadDate?.toString().orEmpty()
-            )
+            textViewChannel.text = if ((video.views ?: 0L) > 0L) {
+                root.context.getString(
+                    R.string.trending_views,
+                    video.uploaderName,
+                    video.views.formatShort(),
+                    uploadDateStr
+                )
+            } else {
+                "${video.uploaderName} ${TextUtils.SEPARATOR} $uploadDateStr"
+            }
             video.duration?.let { thumbnailDuration.setFormattedDuration(it, video.isShort) }
             channelImage.setOnClickListener {
                 NavigationHelper.navigateChannel(root.context, video.uploaderUrl)
@@ -145,17 +154,17 @@ class VideosAdapter(
             root.setOnClickListener {
                 NavigationHelper.navigateVideo(root.context, video.url)
             }
-            root.setOnLongClickListener {
-                if (videoId == null || videoName == null) return@setOnLongClickListener true
 
-                VideoOptionsBottomSheet(video) {
+            root.setOnLongClickListener {
+                fragmentManager.setFragmentResultListener(
+                    VideoOptionsBottomSheet.VIDEO_OPTIONS_SHEET_REQUEST_KEY,
+                    activity
+                ) { _, _ ->
                     notifyItemChanged(position)
                 }
-                    .show(
-                        (root.context as BaseActivity).supportFragmentManager,
-                        VideoOptionsBottomSheet::class.java.name
-                    )
-
+                val sheet = VideoOptionsBottomSheet()
+                sheet.arguments = bundleOf(IntentData.streamItem to video)
+                sheet.show(fragmentManager, VideosAdapter::class.java.name)
                 true
             }
         }
@@ -167,7 +176,7 @@ class VideosAdapter(
             videoInfo.text = root.context.getString(
                 R.string.normal_views,
                 video.views.formatShort(),
-                uploadDate?.let { " ${TextUtils.SEPARATOR} $it" }
+                uploadDateStr?.let { " ${TextUtils.SEPARATOR} $it" }
             )
 
             thumbnailDuration.text = video.duration?.let { DateUtils.formatElapsedTime(it) }
@@ -181,6 +190,8 @@ class VideosAdapter(
                 channelContainer.setOnClickListener {
                     NavigationHelper.navigateChannel(root.context, video.uploaderUrl)
                 }
+            } else {
+                channelImageContainer.isGone = true
             }
 
             root.setOnClickListener {
@@ -188,14 +199,15 @@ class VideosAdapter(
             }
 
             root.setOnLongClickListener {
-                if (videoId == null || videoName == null) return@setOnLongClickListener true
-                VideoOptionsBottomSheet(video) {
+                fragmentManager.setFragmentResultListener(
+                    VideoOptionsBottomSheet.VIDEO_OPTIONS_SHEET_REQUEST_KEY,
+                    activity
+                ) { _, _ ->
                     notifyItemChanged(position)
                 }
-                    .show(
-                        (root.context as BaseActivity).supportFragmentManager,
-                        VideoOptionsBottomSheet::class.java.name
-                    )
+                val sheet = VideoOptionsBottomSheet()
+                sheet.arguments = bundleOf(IntentData.streamItem to video)
+                sheet.show(fragmentManager, VideosAdapter::class.java.name)
                 true
             }
         }

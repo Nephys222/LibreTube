@@ -62,6 +62,7 @@
     <string name="instance">Instance</string>
     <string name="customization">Adjustments</string>
     <string name="website">Website</string>
+    <string name="donate">Donate</string>
     <string name="uploaderAndVideoCount">%1$s • %2$d videos</string>
     <string name="subscriberAndVideoCounts">%1$s subscribers • %2$d videos</string>
     <string name="videoCount">%1$d videos</string>
@@ -80,6 +81,7 @@
     <string name="music_videos">YT Music Videos</string>
     <string name="music_albums">YT Music Albums</string>
     <string name="music_playlists">YT Music Playlists</string>
+    <string name="music_artists">YT Music Artists</string>
     <string name="sponsorblock">SponsorBlock</string>
     <string name="sponsorblock_summary">Uses the https://sponsor.ajay.app API</string>
     <string name="segment_skipped">Skipped segment</string>
@@ -268,6 +270,7 @@
     <string name="resize_mode_zoom">Zoom</string>
     <string name="repeat_mode_none">None</string>
     <string name="repeat_mode_current">Current</string>
+    <string name="repeat_mode_all">Repeat all</string>
     <string name="backup_restore">Backup &amp; restore</string>
     <string name="backup">Backup</string>
     <string name="picture_in_picture">Picture-in-Picture</string>
@@ -339,6 +342,8 @@
     <string name="bookmark">Bookmark</string>
     <string name="clear_bookmarks">Clear bookmarks</string>
     <string name="queue_insert_related_videos">Insert related videos</string>
+    <string name="autoplay_playlists">Autoplay playlists</string>
+    <string name="autoplay_playlists_summary">Automatically play next video in playlists regardless of selected autoplay setting</string>
     <string name="local_playlists">Local playlists</string>
     <string name="brightness">Brightness</string>
     <string name="volume">Volume</string>
@@ -443,6 +448,17 @@
     <string name="uploader_name">Uploader name</string>
     <string name="duration_span">Duration: %1$s</string>
     <string name="remove_watched_videos">Remove watched videos</string>
+    <string name="no_fullscreen_resolution">No-Fullscreen resolution</string>
+    <string name="same_as_fullscreen">Same as fullscreen</string>
+    <string name="playback_during_call">Continue playback during phone call</string>
+    <string name="playback_during_call_summary">Note that this also affects the app to not handle any kind of audio focus anymore.</string>
+    <string name="segment_submitted">Segment submitted</string>
+    <string name="vote_for_segment">Vote for segment</string>
+    <string name="upvote">Up</string>
+    <string name="downvote">Down</string>
+    <string name="undo">Undo</string>
+    <string name="segment">Segment</string>
+
     <!-- Backup & Restore Settings -->
     <string name="import_subscriptions_from">Import subscriptions from</string>
     <string name="export_subscriptions_to">Export subscriptions to</string>
@@ -471,6 +487,11 @@
     <string name="sb_create_segment">Create segment</string>
     <string name="segment_type">Segment type</string>
     <string name="sb_invalid_segment">Invalid segment start or end</string>
+    <string name="contribute_to_sponsorblock">Contribute to SponsorBlock</string>
+    <string name="sponsorblock_user_id">SponsorBlock UserID</string>
+    <string name="filename_too_long">Filename too long!</string>
+    <string name="remember_playback_speed">Remember playback speed</string>
+    <string name="successfully_removed_from_playlist">Successfully removed \"%1$s\" from the playlist.</string>
 
     <!-- Notification channel strings -->
     <string name="download_channel_name">Download Service</string>

@@ -6,20 +6,22 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
+import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
+import com.github.libretube.LibreTubeApp.Companion.PLAYER_CHANNEL_NAME
 import com.github.libretube.R
 import com.github.libretube.constants.IntentData
-import com.github.libretube.constants.PLAYER_CHANNEL_ID
-import com.github.libretube.constants.PLAYER_NOTIFICATION_ID
 import com.github.libretube.db.DatabaseHolder
 import com.github.libretube.db.obj.DownloadWithItems
 import com.github.libretube.enums.FileType
 import com.github.libretube.extensions.toAndroidUri
+import com.github.libretube.extensions.updateParameters
 import com.github.libretube.helpers.PlayerHelper
-import com.github.libretube.helpers.PlayerHelper.loadPlaybackParams
 import com.github.libretube.obj.PlayerNotificationData
 import com.github.libretube.util.NowPlayingNotification
+import com.github.libretube.util.NowPlayingNotification.Companion.PLAYER_NOTIFICATION_ID
 import kotlin.io.path.exists
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -35,7 +37,7 @@ class OfflinePlayerService : LifecycleService() {
     override fun onCreate() {
         super.onCreate()
 
-        val notification = NotificationCompat.Builder(this, PLAYER_CHANNEL_ID)
+        val notification = NotificationCompat.Builder(this, PLAYER_CHANNEL_NAME)
             .setContentTitle(getString(R.string.app_name))
             .setContentText(getString(R.string.playingOnBackground))
             .setSmallIcon(R.drawable.ic_launcher_lockscreen)
@@ -78,13 +80,12 @@ class OfflinePlayerService : LifecycleService() {
      */
     @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
     private fun startAudioPlayer(downloadWithItem: DownloadWithItems): Boolean {
-        player = ExoPlayer.Builder(this)
-            .setUsePlatformDiagnostics(false)
-            .setHandleAudioBecomingNoisy(true)
-            .setAudioAttributes(PlayerHelper.getAudioAttributes(), true)
-            .setLoadControl(PlayerHelper.getLoadControl())
-            .build()
-            .loadPlaybackParams(isBackgroundMode = true)
+        val trackSelector = DefaultTrackSelector(this)
+        trackSelector.updateParameters {
+            setTrackTypeDisabled(C.TRACK_TYPE_VIDEO, true)
+        }
+
+        player = PlayerHelper.createPlayer(this, trackSelector, true)
 
         val audioItem = downloadWithItem.downloadItems.filter { it.path.exists() }
             .firstOrNull { it.type == FileType.AUDIO }
@@ -117,5 +118,13 @@ class OfflinePlayerService : LifecycleService() {
     override fun onBind(intent: Intent): IBinder? {
         super.onBind(intent)
         return null
+    }
+
+    /**
+     * Stop the service when app is removed from the task manager.
+     */
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        super.onTaskRemoved(rootIntent)
+        onDestroy()
     }
 }

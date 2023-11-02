@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.res.Configuration
 import android.util.AttributeSet
 import android.view.View
+import androidx.core.os.bundleOf
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
 import androidx.lifecycle.LifecycleOwner
@@ -11,8 +12,11 @@ import androidx.media3.common.C
 import androidx.media3.exoplayer.trackselection.TrackSelector
 import androidx.media3.ui.PlayerView.ControllerVisibilityListener
 import com.github.libretube.R
+import com.github.libretube.constants.IntentData
+import com.github.libretube.constants.PreferenceKeys
 import com.github.libretube.extensions.toID
 import com.github.libretube.helpers.PlayerHelper
+import com.github.libretube.helpers.PreferenceHelper
 import com.github.libretube.helpers.WindowHelper
 import com.github.libretube.obj.BottomSheetItem
 import com.github.libretube.ui.base.BaseActivity
@@ -141,7 +145,7 @@ class OnlinePlayerView(
         this.playerOptions = playerOptions
 
         playerViewModel.isFullscreen.observe(viewLifecycleOwner) { isFullscreen ->
-            WindowHelper.toggleFullscreen(activity, isFullscreen)
+            WindowHelper.toggleFullscreen(activity.window, isFullscreen)
             updateTopBarMargin()
         }
 
@@ -150,7 +154,7 @@ class OnlinePlayerView(
                 playerViewModel.isFullscreen.value?.let { isFullscreen ->
                     if (!isFullscreen) return@let
                     // Show status bar only not navigation bar if the player controls are visible and hide it otherwise
-                    activity.toggleSystemBars(
+                    activity.window.toggleSystemBars(
                         types = WindowInsetsCompat.Type.statusBars(),
                         showBars = visibility == View.VISIBLE && !isPlayerLocked
                     )
@@ -164,13 +168,20 @@ class OnlinePlayerView(
             PlayerHelper.autoPlayEnabled = isChecked
         }
 
-        binding.sbSubmit.isVisible = PlayerHelper.sponsorBlockEnabled
+        binding.sbSubmit.isVisible = PreferenceHelper.getBoolean(PreferenceKeys.CONTRIBUTE_TO_SB, false)
         binding.sbSubmit.setOnClickListener {
-            val currentPosition = player?.currentPosition?.takeIf { it != C.TIME_UNSET }
+            val currentPosition = player?.currentPosition?.takeIf { it != C.TIME_UNSET } ?: 0
             val duration = player?.duration?.takeIf { it != C.TIME_UNSET }
             val videoId = PlayingQueue.getCurrent()?.url?.toID() ?: return@setOnClickListener
-            SubmitSegmentDialog(videoId, currentPosition ?: 0, duration)
-                .show((context as BaseActivity).supportFragmentManager, null)
+
+            val bundle = bundleOf(
+                IntentData.currentPosition to currentPosition,
+                IntentData.duration to duration,
+                IntentData.videoId to videoId
+            )
+            val newSubmitSegmentDialog = SubmitSegmentDialog()
+            newSubmitSegmentDialog.arguments = bundle
+            newSubmitSegmentDialog.show((context as BaseActivity).supportFragmentManager, null)
         }
     }
 
@@ -178,7 +189,7 @@ class OnlinePlayerView(
         super.hideController()
 
         if (playerViewModel?.isFullscreen?.value == true) {
-            WindowHelper.toggleFullscreen(activity, true)
+            WindowHelper.toggleFullscreen(activity.window, true)
         }
         updateTopBarMargin()
     }

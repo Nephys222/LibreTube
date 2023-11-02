@@ -1,6 +1,6 @@
 # Add project specific ProGuard rules here.
 # You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
+# proguardFiles setting in build.gradle.kts.
 #
 # For more details, see
 #   http://developer.android.com/guide/developing/tools/proguard.html
@@ -28,6 +28,7 @@
 
 # Keep data classes used for Retrofit
 -keep class com.github.libretube.obj.** { *; }
+-keep class com.github.libretube.api.obj.** { *; }
 -keep class com.github.libretube.obj.update.** { *; }
 
 # Keep rules required by Kotlinx Serialization
@@ -110,3 +111,6 @@
 # Fix for miniplayer placing issue in release build
 -keep class androidx.constraintlayout.motion.widget.** { *; }
 -keepclassmembers class androidx.constraintlayout.motion.widget.** { *; }
+
+# Settings fragments are loaded through reflection
+-keep class com.github.libretube.ui.preferences.** { *; }

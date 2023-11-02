@@ -25,12 +25,7 @@ object DashHelper {
         val audioLocale: String? = null
     )
 
-    fun createManifest(
-        streams: Streams,
-        supportsHdr: Boolean,
-        audioOnly: Boolean = false,
-        rewriteUrls: Boolean
-    ): String {
+    fun createManifest(streams: Streams, supportsHdr: Boolean, rewriteUrls: Boolean): String {
         val builder = builderFactory.newDocumentBuilder()
 
         val doc = builder.newDocument()
@@ -45,30 +40,28 @@ object DashHelper {
 
         val adapSetInfos = ArrayList<AdapSetInfo>()
 
-        if (!audioOnly) {
-            for (
-            stream in streams.videoStreams
-                // used to avoid including LBRY HLS inside the streams in the manifest
-                .filter { !it.format.orEmpty().contains("HLS") }
-                .filter { supportsHdr || !it.quality.orEmpty().uppercase().contains("HDR") }
-            ) {
-                // ignore dual format and OTF streams
-                if (!stream.videoOnly!! || stream.indexEnd!! <= 0) {
-                    continue
-                }
-
-                val adapSetInfo = adapSetInfos.find { it.mimeType == stream.mimeType }
-                if (adapSetInfo != null) {
-                    adapSetInfo.formats.add(stream)
-                    continue
-                }
-                adapSetInfos.add(
-                    AdapSetInfo(
-                        stream.mimeType!!,
-                        mutableListOf(stream)
-                    )
-                )
+        for (
+        stream in streams.videoStreams
+            // used to avoid including LBRY HLS inside the streams in the manifest
+            .filter { !it.format.orEmpty().contains("HLS") }
+            .filter { supportsHdr || !it.quality.orEmpty().uppercase().contains("HDR") }
+        ) {
+            // ignore dual format and OTF streams
+            if (!stream.videoOnly!! || stream.indexEnd!! <= 0) {
+                continue
             }
+
+            val adapSetInfo = adapSetInfos.find { it.mimeType == stream.mimeType }
+            if (adapSetInfo != null) {
+                adapSetInfo.formats.add(stream)
+                continue
+            }
+            adapSetInfos.add(
+                AdapSetInfo(
+                    stream.mimeType!!,
+                    mutableListOf(stream)
+                )
+            )
         }
 
         for (stream in streams.audioStreams) {
@@ -176,10 +169,7 @@ object DashHelper {
         return representation
     }
 
-    private fun createSegmentBaseElement(
-        document: Document,
-        stream: PipedStream
-    ): Element {
+    private fun createSegmentBaseElement(document: Document, stream: PipedStream): Element {
         val segmentBase = document.createElement("SegmentBase")
         segmentBase.setAttribute("indexRange", "${stream.indexStart}-${stream.indexEnd}")
 

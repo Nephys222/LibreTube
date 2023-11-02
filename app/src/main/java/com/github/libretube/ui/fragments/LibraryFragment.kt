@@ -21,6 +21,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.github.libretube.R
 import com.github.libretube.api.PlaylistsHelper
 import com.github.libretube.api.obj.Playlists
+import com.github.libretube.constants.IntentData
 import com.github.libretube.constants.PreferenceKeys
 import com.github.libretube.databinding.FragmentLibraryBinding
 import com.github.libretube.db.DatabaseHolder
@@ -31,6 +32,7 @@ import com.github.libretube.helpers.PreferenceHelper
 import com.github.libretube.ui.adapters.PlaylistBookmarkAdapter
 import com.github.libretube.ui.adapters.PlaylistsAdapter
 import com.github.libretube.ui.dialogs.CreatePlaylistDialog
+import com.github.libretube.ui.dialogs.CreatePlaylistDialog.Companion.CREATE_PLAYLIST_DIALOG_REQUEST_KEY
 import com.github.libretube.ui.models.PlayerViewModel
 import com.github.libretube.ui.sheets.BaseBottomSheet
 import kotlinx.coroutines.Dispatchers
@@ -92,10 +94,19 @@ class LibraryFragment : Fragment() {
             fetchPlaylists()
             initBookmarks()
         }
-        binding.createPlaylist.setOnClickListener {
-            CreatePlaylistDialog {
+
+        childFragmentManager.setFragmentResultListener(
+            CREATE_PLAYLIST_DIALOG_REQUEST_KEY,
+            this
+        ) { _, resultBundle ->
+            val isPlaylistCreated = resultBundle.getBoolean(IntentData.playlistTask)
+            if (isPlaylistCreated) {
                 fetchPlaylists()
-            }.show(childFragmentManager, CreatePlaylistDialog::class.java.name)
+            }
+        }
+        binding.createPlaylist.setOnClickListener {
+            CreatePlaylistDialog()
+                .show(childFragmentManager, CreatePlaylistDialog::class.java.name)
         }
 
         val sortOptions = resources.getStringArray(R.array.playlistSortingOptions)
@@ -141,9 +152,8 @@ class LibraryFragment : Fragment() {
 
     private fun updateFABMargin(isMiniPlayerVisible: Boolean) {
         // optimize CreatePlaylistFab bottom margin if miniPlayer active
-        val bottomMargin = if (isMiniPlayerVisible) 64 else 16
         binding.createPlaylist.updateLayoutParams<MarginLayoutParams> {
-            this.bottomMargin = bottomMargin.dpToPx().toInt()
+            bottomMargin = (if (isMiniPlayerVisible) 64f else 16f).dpToPx()
         }
     }
 

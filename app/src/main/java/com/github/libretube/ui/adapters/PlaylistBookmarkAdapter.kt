@@ -1,11 +1,13 @@
 package com.github.libretube.ui.adapters
 
+import android.content.Context
 import android.view.LayoutInflater
 import android.view.ViewGroup
-import androidx.appcompat.app.AppCompatActivity
+import androidx.core.os.bundleOf
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.RecyclerView
 import com.github.libretube.R
+import com.github.libretube.constants.IntentData
 import com.github.libretube.databinding.PlaylistBookmarkRowBinding
 import com.github.libretube.databinding.PlaylistsRowBinding
 import com.github.libretube.db.DatabaseHolder
@@ -13,6 +15,7 @@ import com.github.libretube.db.obj.PlaylistBookmark
 import com.github.libretube.enums.PlaylistType
 import com.github.libretube.helpers.ImageHelper
 import com.github.libretube.helpers.NavigationHelper
+import com.github.libretube.ui.base.BaseActivity
 import com.github.libretube.ui.sheets.PlaylistOptionsBottomSheet
 import com.github.libretube.ui.viewholders.PlaylistBookmarkViewHolder
 import kotlinx.coroutines.CoroutineScope
@@ -38,6 +41,18 @@ class PlaylistBookmarkAdapter(
 
     override fun getItemCount() = bookmarks.size
 
+    private fun showPlaylistOptions(context: Context, bookmark: PlaylistBookmark) {
+        val sheet = PlaylistOptionsBottomSheet()
+        sheet.arguments = bundleOf(
+            IntentData.playlistId to bookmark.playlistId,
+            IntentData.playlistName to bookmark.playlistName,
+            IntentData.playlistType to PlaylistType.PUBLIC
+        )
+        sheet.show(
+            (context as BaseActivity).supportFragmentManager
+        )
+    }
+
     override fun onBindViewHolder(holder: PlaylistBookmarkViewHolder, position: Int) {
         val bookmark = bookmarks[position]
         holder.playlistBookmarkBinding?.apply {
@@ -54,13 +69,7 @@ class PlaylistBookmarkAdapter(
             }
 
             root.setOnLongClickListener {
-                PlaylistOptionsBottomSheet(
-                    playlistId = bookmark.playlistId,
-                    playlistName = bookmark.playlistName.orEmpty(),
-                    playlistType = PlaylistType.PUBLIC
-                ).show(
-                    (root.context as AppCompatActivity).supportFragmentManager
-                )
+                showPlaylistOptions(root.context, bookmark)
                 true
             }
         }
@@ -98,13 +107,7 @@ class PlaylistBookmarkAdapter(
             }
 
             root.setOnLongClickListener {
-                PlaylistOptionsBottomSheet(
-                    playlistId = bookmark.playlistId,
-                    playlistName = bookmark.playlistName.orEmpty(),
-                    playlistType = PlaylistType.PUBLIC
-                ).show(
-                    (root.context as AppCompatActivity).supportFragmentManager
-                )
+                showPlaylistOptions(root.context, bookmark)
                 true
             }
         }

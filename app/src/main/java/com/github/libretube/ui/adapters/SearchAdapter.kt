@@ -2,11 +2,15 @@ package com.github.libretube.ui.adapters
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.core.os.bundleOf
+import androidx.core.view.isGone
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import com.github.libretube.R
+import com.github.libretube.api.JsonHelper
 import com.github.libretube.api.obj.ContentItem
 import com.github.libretube.api.obj.StreamItem
+import com.github.libretube.constants.IntentData
 import com.github.libretube.databinding.ChannelRowBinding
 import com.github.libretube.databinding.PlaylistsRowBinding
 import com.github.libretube.databinding.VideoRowBinding
@@ -24,9 +28,11 @@ import com.github.libretube.ui.sheets.PlaylistOptionsBottomSheet
 import com.github.libretube.ui.sheets.VideoOptionsBottomSheet
 import com.github.libretube.ui.viewholders.SearchViewHolder
 import com.github.libretube.util.TextUtils
+import kotlinx.serialization.encodeToString
 
 class SearchAdapter(
-    private val isChannelAdapter: Boolean = false
+    private val isChannelAdapter: Boolean = false,
+    private val timeStamp: Long = 0
 ) : ListAdapter<ContentItem, SearchViewHolder>(SearchCallback) {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): SearchViewHolder {
         val layoutInflater = LayoutInflater.from(parent.context)
@@ -78,8 +84,9 @@ class SearchAdapter(
             ImageHelper.loadImage(item.thumbnail, thumbnail)
             thumbnailDuration.setFormattedDuration(item.duration, item.isShort)
             videoTitle.text = item.title
+
             val viewsString = item.views.takeIf { it != -1L }?.formatShort().orEmpty()
-            val uploadDate = item.uploaded?.takeIf { it > 0 }?.let {
+            val uploadDate = item.uploaded.takeIf { it > 0 }?.let {
                 " ${TextUtils.SEPARATOR} ${TextUtils.formatRelativeDate(root.context, it)}"
             }.orEmpty()
             videoInfo.text = root.context.getString(
@@ -87,23 +94,34 @@ class SearchAdapter(
                 viewsString,
                 uploadDate
             )
+
             // only display channel related info if not in a channel tab
             if (!isChannelAdapter) {
                 channelName.text = item.uploaderName
                 ImageHelper.loadImage(item.uploaderAvatar, channelImage)
+            } else {
+                channelContainer.isGone = true
             }
+
             root.setOnClickListener {
-                NavigationHelper.navigateVideo(root.context, item.url)
+                NavigationHelper.navigateVideo(root.context, item.url, timestamp = timeStamp)
             }
+
             val videoId = item.url.toID()
+            val activity = (root.context as BaseActivity)
+            val fragmentManager = activity.supportFragmentManager
             root.setOnLongClickListener {
-                VideoOptionsBottomSheet(item.toStreamItem()) {
+                fragmentManager.setFragmentResultListener(
+                    VideoOptionsBottomSheet.VIDEO_OPTIONS_SHEET_REQUEST_KEY,
+                    activity
+                ) { _, _ ->
                     notifyItemChanged(position)
                 }
-                    .show(
-                        (root.context as BaseActivity).supportFragmentManager,
-                        VideoOptionsBottomSheet::class.java.name
-                    )
+                val sheet = VideoOptionsBottomSheet()
+                val contentItemString = JsonHelper.json.encodeToString(item)
+                val streamItem: StreamItem = JsonHelper.json.decodeFromString(contentItemString)
+                sheet.arguments = bundleOf(IntentData.streamItem to streamItem)
+                sheet.show(fragmentManager, SearchAdapter::class.java.name)
                 true
             }
             channelContainer.setOnClickListener {
@@ -134,8 +152,12 @@ class SearchAdapter(
             }
 
             root.setOnLongClickListener {
-                ChannelOptionsBottomSheet(item.url.toID(), item.name)
-                    .show((root.context as BaseActivity).supportFragmentManager)
+                val channelOptionsSheet = ChannelOptionsBottomSheet()
+                channelOptionsSheet.arguments = bundleOf(
+                    IntentData.channelId to item.url.toID(),
+                    IntentData.channelName to item.name
+                )
+                channelOptionsSheet.show((root.context as BaseActivity).supportFragmentManager)
                 true
             }
 
@@ -156,11 +178,16 @@ class SearchAdapter(
             root.setOnLongClickListener {
                 val playlistId = item.url.toID()
                 val playlistName = item.name!!
-                PlaylistOptionsBottomSheet(playlistId, playlistName, PlaylistType.PUBLIC)
-                    .show(
-                        (root.context as BaseActivity).supportFragmentManager,
-                        PlaylistOptionsBottomSheet::class.java.name
-                    )
+                val sheet = PlaylistOptionsBottomSheet()
+                sheet.arguments = bundleOf(
+                    IntentData.playlistId to playlistId,
+                    IntentData.playlistName to playlistName,
+                    IntentData.playlistType to PlaylistType.PUBLIC
+                )
+                sheet.show(
+                    (root.context as BaseActivity).supportFragmentManager,
+                    PlaylistOptionsBottomSheet::class.java.name
+                )
                 true
             }
         }

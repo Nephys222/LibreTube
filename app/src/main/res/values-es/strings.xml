@@ -510,4 +510,24 @@
     <string name="sb_create_segment">Crear segmento</string>
     <string name="segment_type">Tipo de segmento</string>
     <string name="sb_invalid_segment">Inicio o final de segmento inválido</string>
+    <string name="contribute_to_sponsorblock">Contribuir con SponsorBlock</string>
+    <string name="filename_too_long">¡El nombre es demasiado largo!</string>
+    <string name="sponsorblock_user_id">ID de usuario SponsorBlock</string>
+    <string name="donate">Donar</string>
+    <string name="music_artists">Artistas de YouTube Música</string>
+    <string name="no_fullscreen_resolution">Resolución cuando no estás a pantalla completa</string>
+    <string name="same_as_fullscreen">Igual que a pantalla completa</string>
+    <string name="playback_during_call_summary">Esto también hará que la app ya no pueda manejar ningún foco de audio.</string>
+    <string name="playback_during_call">Continuar durante una llamada</string>
+    <string name="autoplay_playlists_summary">Reproduce el siguiente vídeo en las listas aunque desactives la opción \"Reproducción automática\"</string>
+    <string name="autoplay_playlists">Reproducción automática en listas</string>
+    <string name="remember_playback_speed">Recordar la velocidad de reproducción</string>
+    <string name="segment_submitted">Segmento enviado</string>
+    <string name="vote_for_segment">Votar por la sección</string>
+    <string name="upvote">Me gusta</string>
+    <string name="segment">Sección</string>
+    <string name="undo">Deshacer</string>
+    <string name="downvote">No me gusta</string>
+    <string name="repeat_mode_all">Repetir todo</string>
+    <string name="successfully_removed_from_playlist">Eliminado con éxito \"%1$s\" de la lista de reproducción.</string>
 </resources>

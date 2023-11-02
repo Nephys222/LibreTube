@@ -1,14 +1,18 @@
 package com.github.libretube.ui.sheets
 
 import android.os.Bundle
+import androidx.core.os.bundleOf
+import androidx.fragment.app.setFragmentResult
 import androidx.navigation.fragment.NavHostFragment
 import com.github.libretube.R
 import com.github.libretube.api.obj.StreamItem
+import com.github.libretube.constants.IntentData
 import com.github.libretube.constants.PreferenceKeys
 import com.github.libretube.db.DatabaseHelper
 import com.github.libretube.db.DatabaseHolder
 import com.github.libretube.db.obj.WatchPosition
 import com.github.libretube.enums.ShareObjectType
+import com.github.libretube.extensions.parcelable
 import com.github.libretube.extensions.toID
 import com.github.libretube.helpers.BackgroundHelper
 import com.github.libretube.helpers.NavigationHelper
@@ -30,19 +34,16 @@ import kotlinx.coroutines.withContext
  *
  * Needs the [streamItem] to load the content from the right video.
  */
-class VideoOptionsBottomSheet(
-    private val streamItem: StreamItem,
-    private val onVideoChanged: () -> Unit = {}
-) : BaseBottomSheet() {
-    private val shareData = ShareData(currentVideo = streamItem.title)
+class VideoOptionsBottomSheet : BaseBottomSheet() {
+    private lateinit var streamItem: StreamItem
+
     override fun onCreate(savedInstanceState: Bundle?) {
+        streamItem = arguments?.parcelable(IntentData.streamItem)!!
+
         val videoId = streamItem.url?.toID() ?: return
         // List that stores the different menu options. In the future could be add more options here.
         val optionsList = mutableListOf(
-            getString(R.string.playOnBackground),
-            getString(R.string.addToPlaylist),
-            getString(R.string.download),
-            getString(R.string.share)
+            getString(R.string.playOnBackground)
         )
 
         // Check whether the player is running and add queue options
@@ -62,7 +63,7 @@ class VideoOptionsBottomSheet(
 
             if (streamItem.duration == null ||
                 watchPositionEntry == null ||
-                watchPositionEntry.position < streamItem.duration * 1000 * 0.9
+                watchPositionEntry.position < streamItem.duration!! * 1000 * 0.9
             ) {
                 optionsList += getString(R.string.mark_as_watched)
             }
@@ -71,6 +72,12 @@ class VideoOptionsBottomSheet(
                 optionsList += getString(R.string.mark_as_unwatched)
             }
         }
+
+        optionsList += listOf(
+            getString(R.string.addToPlaylist),
+            getString(R.string.download),
+            getString(R.string.share)
+        )
 
         setSimpleItems(optionsList) { which ->
             when (optionsList[which]) {
@@ -81,21 +88,30 @@ class VideoOptionsBottomSheet(
                 }
                 // Add Video to Playlist Dialog
                 getString(R.string.addToPlaylist) -> {
-                    AddToPlaylistDialog(videoId).show(
+                    val newAddToPlaylistDialog = AddToPlaylistDialog()
+                    newAddToPlaylistDialog.arguments = bundleOf(IntentData.videoId to videoId)
+                    newAddToPlaylistDialog.show(
                         parentFragmentManager,
                         AddToPlaylistDialog::class.java.name
                     )
                 }
 
                 getString(R.string.download) -> {
-                    val downloadDialog = DownloadDialog(videoId)
-                    downloadDialog.show(parentFragmentManager, DownloadDialog::class.java.name)
+                    val newFragment = DownloadDialog()
+                    newFragment.arguments = bundleOf(IntentData.videoId to videoId)
+                    newFragment.show(parentFragmentManager, DownloadDialog::class.java.name)
                 }
 
                 getString(R.string.share) -> {
-                    val shareDialog = ShareDialog(videoId, ShareObjectType.VIDEO, shareData)
+                    val bundle = bundleOf(
+                        IntentData.id to videoId,
+                        IntentData.shareObjectType to ShareObjectType.VIDEO,
+                        IntentData.shareData to ShareData(currentVideo = streamItem.title)
+                    )
+                    val newShareDialog = ShareDialog()
+                    newShareDialog.arguments = bundle
                     // using parentFragmentManager is important here
-                    shareDialog.show(parentFragmentManager, ShareDialog::class.java.name)
+                    newShareDialog.show(parentFragmentManager, ShareDialog::class.java.name)
                 }
 
                 getString(R.string.play_next) -> {
@@ -121,9 +137,9 @@ class VideoOptionsBottomSheet(
                         // get the current fragment
                         val fragment = navHostFragment?.childFragmentManager?.fragments
                             ?.firstOrNull() as? SubscriptionsFragment
-                        fragment?.subscriptionsAdapter?.removeItemById(videoId)
+                        fragment?.feedAdapter?.removeItemById(videoId)
                     }
-                    onVideoChanged()
+                    setFragmentResult(VIDEO_OPTIONS_SHEET_REQUEST_KEY, bundleOf())
                 }
 
                 getString(R.string.mark_as_unwatched) -> {
@@ -131,11 +147,15 @@ class VideoOptionsBottomSheet(
                         DatabaseHolder.Database.watchPositionDao().deleteByVideoId(videoId)
                         DatabaseHolder.Database.watchHistoryDao().deleteByVideoId(videoId)
                     }
-                    onVideoChanged()
+                    setFragmentResult(VIDEO_OPTIONS_SHEET_REQUEST_KEY, bundleOf())
                 }
             }
         }
 
         super.onCreate(savedInstanceState)
+    }
+
+    companion object {
+        const val VIDEO_OPTIONS_SHEET_REQUEST_KEY = "video_options_sheet_request_key"
     }
 }

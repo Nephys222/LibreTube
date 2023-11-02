@@ -194,8 +194,8 @@
     <string name="pure_theme_summary">纯白/黑主题</string>
     <string name="no_player_found">未找到外部播放器。 请确保你安装了一个。</string>
     <string name="data_saver_mode">省流量模式</string>
-    <string name="search_history_summary">记忆搜索</string>
-    <string name="watch_history_summary">本地跟踪已观看的视频</string>
+    <string name="search_history_summary">记住搜索词</string>
+    <string name="watch_history_summary">在本地追踪已观看的视频</string>
     <string name="history_summary">观看和搜索记录</string>
     <string name="watch_positions_title">记住观看位置</string>
     <string name="reset_watch_positions">重置</string>
@@ -413,7 +413,7 @@
     <string name="play_automatically">自动播放</string>
     <string name="play_automatically_summary">选择视频时自动开始播放</string>
     <string name="auto_fullscreen_shorts">观看短视频时自动全屏</string>
-    <string name="unlimited_search_history">无限搜索历史条目</string>
+    <string name="unlimited_search_history">不限制搜索历史记录数量</string>
     <string name="duration">时长</string>
     <string name="duration_reversed">时长（倒序）</string>
     <string name="shorts_notifications">短视频通知</string>
@@ -504,4 +504,24 @@
     <string name="sb_create_segment">创建分段</string>
     <string name="segment_type">分段类型</string>
     <string name="sb_invalid_segment">无效的分段开头或结尾</string>
+    <string name="contribute_to_sponsorblock">给 SponsorBlock 出力</string>
+    <string name="filename_too_long">文件名过长！</string>
+    <string name="sponsorblock_user_id">SponsorBlock UserID</string>
+    <string name="donate">捐赠</string>
+    <string name="music_artists">YT Music 艺人</string>
+    <string name="no_fullscreen_resolution">非全屏分辨率</string>
+    <string name="same_as_fullscreen">与全屏一致</string>
+    <string name="playback_during_call_summary">请注意这会使得应用不再处理任何类型的音频聚焦。</string>
+    <string name="playback_during_call">通话期间继续播放</string>
+    <string name="autoplay_playlists_summary">不论选中了什么自动播放设置都自动播放播放列表中的下一个视频</string>
+    <string name="autoplay_playlists">自动播放播放列表</string>
+    <string name="remember_playback_speed">记住播放速度</string>
+    <string name="vote_for_segment">为分段投票</string>
+    <string name="upvote">赞</string>
+    <string name="segment">分段</string>
+    <string name="undo">撤销</string>
+    <string name="segment_submitted">已提交分段</string>
+    <string name="downvote">踩</string>
+    <string name="repeat_mode_all">重复全部</string>
+    <string name="successfully_removed_from_playlist">成功从播放列表中移除了“%1$s”。</string>
 </resources>

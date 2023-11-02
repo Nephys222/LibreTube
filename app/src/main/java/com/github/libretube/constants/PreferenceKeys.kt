@@ -60,6 +60,7 @@ object PreferenceKeys {
     const val AUTO_FULLSCREEN = "auto_fullscreen"
     const val AUTOPLAY = "autoplay"
     const val RELATED_STREAMS = "related_streams_toggle"
+    const val REMEMBER_PLAYBACK_SPEED = "remember_playback_speed"
     const val CUSTOM_PLAYBACK_SPEED = "custom_playback_speed"
     const val PLAYBACK_SPEED = "playback_speed"
     const val BACKGROUND_PLAYBACK_SPEED = "background_playback_speed"
@@ -82,9 +83,9 @@ object PreferenceKeys {
     const val PICTURE_IN_PICTURE = "picture_in_picture"
     const val PLAYER_RESIZE_MODE = "player_resize_mode"
     const val DEARROW = "dearrow"
-    const val ALTERNATIVE_PLAYER_LAYOUT = "alternative_player_layout"
     const val USE_HLS_OVER_DASH = "use_hls"
     const val QUEUE_AUTO_INSERT_RELATED = "queue_insert_related_videos"
+    const val AUTOPLAY_PLAYLISTS = "autoplay_playlists"
     const val PLAYER_SWIPE_CONTROLS = "player_swipe_controls"
     const val PLAYER_PINCH_CONTROL = "player_pinch_control"
     const val CAPTIONS_SIZE = "captions_size"
@@ -102,6 +103,7 @@ object PreferenceKeys {
     const val SB_HIGHLIGHTS = "sb_highlights"
     const val SHOW_TIME_LEFT = "show_time_left"
     const val FALLBACK_PIPED_PROXY = "fallback_piped_proxy"
+    const val ALLOW_PLAYBACK_DURING_CALL = "playback_during_call"
 
     /**
      * Background mode
@@ -144,6 +146,7 @@ object PreferenceKeys {
     const val CLEAR_BOOKMARKS = "clear_bookmarks"
     const val MAX_CONCURRENT_DOWNLOADS = "max_concurrent_downloads"
     const val DISABLE_VIDEO_IMAGE_PROXY = "disable_video_image_proxy"
+    const val CONTRIBUTE_TO_SB = "sb_contribute_key"
 
     /**
      * History

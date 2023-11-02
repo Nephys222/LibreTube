@@ -21,7 +21,6 @@ import com.github.libretube.constants.PreferenceKeys
 import com.github.libretube.databinding.FragmentSubscriptionsBinding
 import com.github.libretube.db.DatabaseHelper
 import com.github.libretube.db.DatabaseHolder
-import com.github.libretube.db.obj.SubscriptionGroup
 import com.github.libretube.extensions.dpToPx
 import com.github.libretube.extensions.formatShort
 import com.github.libretube.extensions.toID
@@ -30,12 +29,14 @@ import com.github.libretube.helpers.PreferenceHelper
 import com.github.libretube.ui.adapters.LegacySubscriptionAdapter
 import com.github.libretube.ui.adapters.SubscriptionChannelAdapter
 import com.github.libretube.ui.adapters.VideosAdapter
+import com.github.libretube.ui.models.EditChannelGroupsModel
 import com.github.libretube.ui.models.PlayerViewModel
 import com.github.libretube.ui.models.SubscriptionsViewModel
 import com.github.libretube.ui.sheets.BaseBottomSheet
 import com.github.libretube.ui.sheets.ChannelGroupsSheet
 import com.github.libretube.util.PlayingQueue
 import com.google.android.material.chip.Chip
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
@@ -45,11 +46,12 @@ class SubscriptionsFragment : Fragment() {
 
     private val viewModel: SubscriptionsViewModel by activityViewModels()
     private val playerModel: PlayerViewModel by activityViewModels()
-    private var channelGroups = listOf<SubscriptionGroup>()
+    private val channelGroupsModel: EditChannelGroupsModel by activityViewModels()
     private var selectedFilterGroup = 0
     private var isCurrentTabSubChannels = false
 
-    var subscriptionsAdapter: VideosAdapter? = null
+    var feedAdapter: VideosAdapter? = null
+    private var channelsAdapter: SubscriptionChannelAdapter? = null
     private var selectedSortOrder = PreferenceHelper.getInt(PreferenceKeys.FEED_SORT_ORDER, 0)
         set(value) {
             PreferenceHelper.putInt(PreferenceKeys.FEED_SORT_ORDER, value)
@@ -155,7 +157,11 @@ class SubscriptionsFragment : Fragment() {
                 viewModel.videoFeed.value != null // scroll view is at bottom
             ) {
                 binding.subRefresh.isRefreshing = true
-                subscriptionsAdapter?.updateItems()
+                if (isCurrentTabSubChannels) {
+                    channelsAdapter?.updateItems()
+                } else {
+                    feedAdapter?.updateItems()
+                }
                 binding.subRefresh.isRefreshing = false
             }
         }
@@ -164,13 +170,27 @@ class SubscriptionsFragment : Fragment() {
         // otherwise the last channel would be invisible
         playerModel.isMiniPlayerVisible.observe(viewLifecycleOwner) {
             binding.subChannelsContainer.updateLayoutParams<MarginLayoutParams> {
-                val newMargin = if (it) 64 else 0
-                bottomMargin = newMargin.dpToPx().toInt()
+                bottomMargin = (if (it) 64f else 0f).dpToPx()
             }
         }
 
-        lifecycleScope.launch {
-            initChannelGroups()
+        binding.channelGroups.setOnCheckedStateChangeListener { group, checkedIds ->
+            selectedFilterGroup = group.children.indexOfFirst { it.id == checkedIds.first() }
+            showFeed()
+        }
+
+        channelGroupsModel.groups.observe(viewLifecycleOwner) {
+            lifecycleScope.launch { initChannelGroups() }
+        }
+
+        binding.editGroups.setOnClickListener {
+            ChannelGroupsSheet().show(childFragmentManager, null)
+        }
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            val groups = DatabaseHolder.Database.subscriptionGroupsDao().getAll()
+                .sortedBy { it.index }
+            channelGroupsModel.groups.postValue(groups)
         }
     }
 
@@ -195,9 +215,7 @@ class SubscriptionsFragment : Fragment() {
     }
 
     @SuppressLint("InflateParams")
-    private suspend fun initChannelGroups() {
-        channelGroups = DatabaseHolder.Database.subscriptionGroupsDao().getAll()
-
+    private fun initChannelGroups() {
         val binding = _binding ?: return
 
         binding.chipAll.isChecked = true
@@ -209,8 +227,7 @@ class SubscriptionsFragment : Fragment() {
         binding.channelGroups.removeAllViews()
         binding.channelGroups.addView(binding.chipAll)
 
-        channelGroups = channelGroups.sortedBy { it.index }
-        channelGroups.forEachIndexed { index, group ->
+        channelGroupsModel.groups.value?.forEachIndexed { index, group ->
             val chip = layoutInflater.inflate(R.layout.filter_chip, null) as Chip
             chip.apply {
                 id = View.generateViewId()
@@ -219,30 +236,20 @@ class SubscriptionsFragment : Fragment() {
                 setOnLongClickListener {
                     // the index must be increased by one to skip the "all channels" group button
                     playByGroup(index + 1)
-
                     true
                 }
             }
 
             binding.channelGroups.addView(chip)
-        }
 
-        binding.channelGroups.setOnCheckedStateChangeListener { group, checkedIds ->
-            selectedFilterGroup = group.children.indexOfFirst { it.id == checkedIds.first() }
-            showFeed()
-        }
-
-        binding.editGroups.setOnClickListener {
-            ChannelGroupsSheet(channelGroups.toMutableList()) {
-                lifecycleScope.launch { initChannelGroups() }
-            }.show(childFragmentManager, null)
+            if (index + 1 == selectedFilterGroup) binding.channelGroups.check(chip.id)
         }
     }
 
     private fun List<StreamItem>.filterByGroup(groupIndex: Int): List<StreamItem> {
         if (groupIndex == 0) return this
 
-        val group = channelGroups.getOrNull(selectedFilterGroup - 1)
+        val group = channelGroupsModel.groups.value?.getOrNull(groupIndex - 1)
         return filter {
             val channelId = it.uploaderUrl.orEmpty().toID()
             group?.channels?.contains(channelId) != false
@@ -297,9 +304,7 @@ class SubscriptionsFragment : Fragment() {
         // add an "all caught up item"
         if (selectedSortOrder == 0) {
             val lastCheckedFeedTime = PreferenceHelper.getLastCheckedFeedTime()
-            val caughtUpIndex = feed.indexOfFirst {
-                (it.uploaded ?: 0L) / 1000 < lastCheckedFeedTime
-            }
+            val caughtUpIndex = feed.indexOfFirst { it.uploaded / 1000 < lastCheckedFeedTime }
             if (caughtUpIndex > 0) {
                 sortedFeed.add(
                     caughtUpIndex,
@@ -315,11 +320,11 @@ class SubscriptionsFragment : Fragment() {
         binding.subFeedContainer.isGone = notLoaded
         binding.emptyFeed.isVisible = notLoaded
 
-        subscriptionsAdapter = VideosAdapter(
+        feedAdapter = VideosAdapter(
             sortedFeed.toMutableList(),
             showAllAtOnce = false
         )
-        binding.subFeed.adapter = subscriptionsAdapter
+        binding.subFeed.adapter = feedAdapter
         binding.toggleSubsText.text = getString(R.string.subscriptions)
 
         PreferenceHelper.updateLastFeedWatchedTime()
@@ -345,7 +350,8 @@ class SubscriptionsFragment : Fragment() {
             binding.subChannels.adapter = LegacySubscriptionAdapter(subscriptions)
         } else {
             binding.subChannels.layoutManager = LinearLayoutManager(context)
-            binding.subChannels.adapter = SubscriptionChannelAdapter(subscriptions.toMutableList())
+            channelsAdapter = SubscriptionChannelAdapter(subscriptions.toMutableList())
+            binding.subChannels.adapter = channelsAdapter
         }
 
         binding.subRefresh.isRefreshing = false

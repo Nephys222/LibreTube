@@ -12,32 +12,34 @@ import androidx.core.app.ServiceCompat
 import androidx.core.net.toUri
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
+import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
+import com.github.libretube.LibreTubeApp.Companion.PLAYER_CHANNEL_NAME
 import com.github.libretube.R
 import com.github.libretube.api.JsonHelper
 import com.github.libretube.api.RetrofitInstance
 import com.github.libretube.api.obj.Segment
 import com.github.libretube.api.obj.Streams
 import com.github.libretube.constants.IntentData
-import com.github.libretube.constants.PLAYER_CHANNEL_ID
-import com.github.libretube.constants.PLAYER_NOTIFICATION_ID
+import com.github.libretube.db.DatabaseHelper
 import com.github.libretube.db.DatabaseHolder.Database
 import com.github.libretube.db.obj.WatchPosition
 import com.github.libretube.extensions.parcelableExtra
 import com.github.libretube.extensions.setMetadata
 import com.github.libretube.extensions.toID
+import com.github.libretube.extensions.updateParameters
 import com.github.libretube.helpers.PlayerHelper
 import com.github.libretube.helpers.PlayerHelper.checkForSegments
-import com.github.libretube.helpers.PlayerHelper.loadPlaybackParams
 import com.github.libretube.helpers.ProxyHelper
 import com.github.libretube.obj.PlayerNotificationData
 import com.github.libretube.parcelable.PlayerData
 import com.github.libretube.util.NowPlayingNotification
+import com.github.libretube.util.NowPlayingNotification.Companion.PLAYER_NOTIFICATION_ID
 import com.github.libretube.util.PlayingQueue
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -106,7 +108,7 @@ class OnlinePlayerService : LifecycleService() {
     override fun onCreate() {
         super.onCreate()
 
-        val notification = NotificationCompat.Builder(this, PLAYER_CHANNEL_ID)
+        val notification = NotificationCompat.Builder(this, PLAYER_CHANNEL_NAME)
             .setContentTitle(getString(R.string.app_name))
             .setContentText(getString(R.string.playingOnBackground))
             .setSmallIcon(R.drawable.ic_launcher_lockscreen)
@@ -170,10 +172,14 @@ class OnlinePlayerService : LifecycleService() {
             if (!keepQueue) PlayingQueue.clear()
 
             if (PlayingQueue.isEmpty()) {
-                PlayingQueue.updateQueue(streams!!.toStreamItem(videoId), playlistId, channelId)
-                insertRelatedStreamsToQueue()
+                PlayingQueue.updateQueue(
+                    streams!!.toStreamItem(videoId),
+                    playlistId,
+                    channelId,
+                    streams!!.relatedStreams
+                )
             } else if (PlayingQueue.isLast() && playlistId == null && channelId == null) {
-                insertRelatedStreamsToQueue()
+                PlayingQueue.insertRelatedStreams(streams!!.relatedStreams)
             }
 
             // save the current stream to the queue
@@ -236,15 +242,11 @@ class OnlinePlayerService : LifecycleService() {
 
         val trackSelector = DefaultTrackSelector(this)
         PlayerHelper.applyPreferredAudioQuality(this, trackSelector)
+        trackSelector.updateParameters {
+            setTrackTypeDisabled(C.TRACK_TYPE_VIDEO, true)
+        }
 
-        player = ExoPlayer.Builder(this)
-            .setUsePlatformDiagnostics(false)
-            .setHandleAudioBecomingNoisy(true)
-            .setAudioAttributes(PlayerHelper.getAudioAttributes(), true)
-            .setLoadControl(PlayerHelper.getLoadControl())
-            .setTrackSelector(trackSelector)
-            .build()
-            .loadPlaybackParams(isBackgroundMode = true)
+        player = PlayerHelper.createPlayer(this, trackSelector, true)
 
         /**
          * Listens for changed playbackStates (e.g. pause, end)
@@ -259,7 +261,7 @@ class OnlinePlayerService : LifecycleService() {
             override fun onPlaybackStateChanged(state: Int) {
                 when (state) {
                     Player.STATE_ENDED -> {
-                        if (PlayerHelper.autoPlayEnabled && !isTransitioning) playNextVideo()
+                        if (PlayerHelper.shouldPlayNextVideo(playlistId != null) && !isTransitioning) playNextVideo()
                     }
 
                     Player.STATE_IDLE -> {
@@ -269,6 +271,13 @@ class OnlinePlayerService : LifecycleService() {
                     Player.STATE_BUFFERING -> {}
                     Player.STATE_READY -> {
                         isTransitioning = false
+
+                        // save video to watch history when the video starts playing or is being resumed
+                        // waiting for the player to be ready since the video can't be claimed to be watched
+                        // while it did not yet start actually, but did buffer only so far
+                        lifecycleScope.launch(Dispatchers.IO) {
+                            streams?.let { DatabaseHelper.addToWatchHistory(videoId, it) }
+                        }
                     }
                 }
             }
@@ -312,7 +321,6 @@ class OnlinePlayerService : LifecycleService() {
             PlayerHelper.createDashSource(
                 streams,
                 this,
-                true,
                 disableProxy
             ) to MimeTypes.APPLICATION_MPD
         } else {
@@ -350,13 +358,6 @@ class OnlinePlayerService : LifecycleService() {
         handler.postDelayed(this::checkForSegments, 100)
 
         player?.checkForSegments(this, segments, sponsorBlockConfig)
-    }
-
-    private fun insertRelatedStreamsToQueue() {
-        if (!PlayerHelper.autoInsertRelatedVideos) return
-        streams?.relatedStreams?.toTypedArray()?.let {
-            PlayingQueue.add(*it, skipExisting = true)
-        }
     }
 
     /**

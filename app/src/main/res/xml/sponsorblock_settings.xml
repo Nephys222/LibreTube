@@ -18,6 +18,18 @@
         app:title="@string/sponsorblock_notifications" />
 
     <SwitchPreferenceCompat
+        android:summaryOff="@string/disabled"
+        android:summaryOn="@string/enabled"
+        app:defaultValue="false"
+        app:key="sb_contribute_key"
+        app:title="@string/contribute_to_sponsorblock" />
+
+    <EditTextPreference
+        android:dependency="sb_contribute_key"
+        app:key="sb_user_id"
+        app:title="@string/sponsorblock_user_id" />
+
+    <SwitchPreferenceCompat
         app:defaultValue="false"
         app:key="dearrow"
         app:summary="@string/dearrow_summary"
@@ -37,6 +49,8 @@
         app:title="@string/sb_custom_colors" />
 
     <PreferenceCategory app:title="@string/category_segments">
+
+        <!-- When changing default values, they must also be changed in the PlayerHelper.kt file! -->
 
         <com.github.libretube.ui.views.SbSpinnerPreference
             app:defaultValue="automatic"

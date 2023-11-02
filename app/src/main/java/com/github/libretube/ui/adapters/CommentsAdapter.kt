@@ -1,13 +1,13 @@
 package com.github.libretube.ui.adapters
 
 import android.annotation.SuppressLint
-import android.text.method.LinkMovementMethod
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.view.ViewGroup.MarginLayoutParams
 import android.widget.Toast
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.os.bundleOf
+import androidx.core.text.method.LinkMovementMethodCompat
 import androidx.core.text.parseAsHtml
 import androidx.core.view.isGone
 import androidx.core.view.isVisible
@@ -35,6 +35,7 @@ import com.github.libretube.util.TextUtils
 class CommentsAdapter(
     private val fragment: Fragment?,
     private val videoId: String,
+    private val channelAvatar: String?,
     private val comments: MutableList<Comment>,
     private val isRepliesAdapter: Boolean = false,
     private val handleLink: ((url: String) -> Unit)?,
@@ -71,14 +72,23 @@ class CommentsAdapter(
     override fun onBindViewHolder(holder: CommentsViewHolder, position: Int) {
         val comment = comments[position]
         holder.binding.apply {
-            commentInfos.text = comment.author + TextUtils.SEPARATOR + comment.commentedTime
+            commentAuthor.text = comment.author
+            if (comment.channelOwner) {
+                commentAuthor.setBackgroundResource(R.drawable.comment_channel_owner_bg)
+            }
+            commentInfos.text = TextUtils.SEPARATOR + comment.commentedTime
 
-            commentText.movementMethod = LinkMovementMethod.getInstance()
+            commentText.movementMethod = LinkMovementMethodCompat.getInstance()
             commentText.text = comment.commentText?.replace("</a>", "</a> ")
                 ?.parseAsHtml(tagHandler = HtmlParser(LinkHandler(handleLink ?: {})))
 
             ImageHelper.loadImage(comment.thumbnail, commentorImage)
             likesTextView.text = comment.likeCount.formatShort()
+
+            if (comment.creatorReplied && !channelAvatar.isNullOrBlank()) {
+                ImageHelper.loadImage(channelAvatar, creatorReplyImageView)
+                creatorReplyImageView.isVisible = true
+            }
 
             if (comment.verified) verifiedImageView.isVisible = true
             if (comment.pinned) pinnedImageView.isVisible = true

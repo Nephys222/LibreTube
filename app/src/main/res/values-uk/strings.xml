@@ -513,4 +513,23 @@
     <string name="sb_create_segment">Створити сегмент</string>
     <string name="segment_type">Тип сегмента</string>
     <string name="sb_invalid_segment">Недійсний початок або кінець сегмента</string>
+    <string name="contribute_to_sponsorblock">Зробити внесок до SponsorBlock</string>
+    <string name="filename_too_long">Назва файлу задовга!</string>
+    <string name="sponsorblock_user_id">UserID у SponsorBlock</string>
+    <string name="donate">Підтримати</string>
+    <string name="music_artists">Виконавці YT Music</string>
+    <string name="no_fullscreen_resolution">Роздільність для не повноекранного режиму</string>
+    <string name="same_as_fullscreen">Така ж як для повноекранного режиму</string>
+    <string name="playback_during_call_summary">Зауважте, що це також впливає на те, що застосунок більше не працюватиме з будь-яким типом аудіофокусу.</string>
+    <string name="playback_during_call">Продовжити відтворення під час телефонного виклику</string>
+    <string name="autoplay_playlists_summary">Автоматично відтворювати наступне відео в добірках незалежно від обраних налаштувань автовідтворення</string>
+    <string name="autoplay_playlists">Автовідтворення добірок</string>
+    <string name="remember_playback_speed">Пам\'ятати швидкість відтворення</string>
+    <string name="vote_for_segment">Проголосувати за сегмент</string>
+    <string name="upvote">Підняти</string>
+    <string name="segment">Сегмент</string>
+    <string name="undo">Скасувати</string>
+    <string name="segment_submitted">Сегмент надіслано</string>
+    <string name="downvote">Понизити</string>
+    <string name="repeat_mode_all">Повторити все</string>
 </resources>

@@ -23,11 +23,16 @@ import com.github.libretube.extensions.TAG
 import com.github.libretube.extensions.hideKeyboard
 import com.github.libretube.extensions.toastFromMainDispatcher
 import com.github.libretube.helpers.PreferenceHelper
+import com.github.libretube.ui.activities.MainActivity
 import com.github.libretube.ui.adapters.SearchAdapter
+import com.github.libretube.ui.dialogs.ShareDialog
+import com.github.libretube.util.TextUtils
+import com.github.libretube.util.TextUtils.toTimeInSeconds
 import com.github.libretube.util.deArrow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
 class SearchResultFragment : Fragment() {
     private var _binding: FragmentSearchResultBinding? = null
@@ -37,7 +42,7 @@ class SearchResultFragment : Fragment() {
     private var query = ""
 
     private lateinit var searchAdapter: SearchAdapter
-    private var apiSearchFilter = "all"
+    private var searchFilter = "all"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -56,6 +61,10 @@ class SearchResultFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        // fixes a bug that the search query will stay the old one when searching for multiple
+        // different queries in a row and navigating to the previous ones through back presses
+        (context as MainActivity).setQuerySilent(query)
+
         binding.searchRecycler.layoutManager = LinearLayoutManager(requireContext())
 
         // add the query to the history
@@ -63,7 +72,7 @@ class SearchResultFragment : Fragment() {
 
         // filter options
         binding.filterChipGroup.setOnCheckedStateChangeListener { _, _ ->
-            apiSearchFilter = when (
+            searchFilter = when (
                 binding.filterChipGroup.checkedChipId
             ) {
                 R.id.chip_all -> "all"
@@ -74,6 +83,7 @@ class SearchResultFragment : Fragment() {
                 R.id.chip_music_videos -> "music_videos"
                 R.id.chip_music_albums -> "music_albums"
                 R.id.chip_music_playlists -> "music_playlists"
+                R.id.chip_music_artists -> "music_artists"
                 else -> throw IllegalArgumentException("Filter out of range")
             }
             fetchSearch()
@@ -95,11 +105,20 @@ class SearchResultFragment : Fragment() {
         _binding?.searchResultsLayout?.isGone = true
 
         lifecycleScope.launch {
+            var timeStamp: Long? = null
+
+            // parse search URLs from YouTube entered in the search bar
+            val searchQuery = query.toHttpUrlOrNull()?.let {
+                val videoId = TextUtils.getVideoIdFromUrl(it.toString()) ?: query
+                timeStamp = it.queryParameter("t")?.toTimeInSeconds()
+                "${ShareDialog.YOUTUBE_FRONTEND_URL}/watch?v=$videoId"
+            } ?: query
+
             repeatOnLifecycle(Lifecycle.State.CREATED) {
                 view?.let { context?.hideKeyboard(it) }
                 val response = try {
                     withContext(Dispatchers.IO) {
-                        RetrofitInstance.api.getSearchResults(query, apiSearchFilter).apply {
+                        RetrofitInstance.api.getSearchResults(searchQuery, searchFilter).apply {
                             items = items.deArrow()
                         }
                     }
@@ -110,9 +129,10 @@ class SearchResultFragment : Fragment() {
                 }
 
                 val binding = _binding ?: return@repeatOnLifecycle
-                searchAdapter = SearchAdapter()
+                searchAdapter = SearchAdapter(timeStamp = timeStamp ?: 0)
                 binding.searchRecycler.adapter = searchAdapter
                 searchAdapter.submitList(response.items)
+
                 binding.searchResultsLayout.isVisible = true
                 binding.progress.isGone = true
                 binding.noSearchResult.isVisible = response.items.isEmpty()
@@ -129,7 +149,7 @@ class SearchResultFragment : Fragment() {
                     withContext(Dispatchers.IO) {
                         RetrofitInstance.api.getSearchResultsNextPage(
                             query,
-                            apiSearchFilter,
+                            searchFilter,
                             nextPage!!
                         ).apply {
                             items = items.deArrow()

@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.core.os.bundleOf
 import androidx.core.view.children
 import androidx.core.view.isGone
 import androidx.core.view.isVisible
@@ -25,6 +26,7 @@ import com.github.libretube.extensions.TAG
 import com.github.libretube.extensions.formatShort
 import com.github.libretube.extensions.toID
 import com.github.libretube.helpers.ImageHelper
+import com.github.libretube.helpers.NavigationHelper
 import com.github.libretube.obj.ChannelTabs
 import com.github.libretube.obj.ShareData
 import com.github.libretube.ui.adapters.SearchAdapter
@@ -154,12 +156,14 @@ class ChannelFragment : Fragment() {
                 )
 
                 binding.channelShare.setOnClickListener {
-                    val shareDialog = ShareDialog(
-                        channelId.toID(),
-                        ShareObjectType.CHANNEL,
-                        shareData
+                    val bundle = bundleOf(
+                        IntentData.id to channelId.toID(),
+                        IntentData.shareObjectType to ShareObjectType.CHANNEL,
+                        IntentData.shareData to shareData
                     )
-                    shareDialog.show(childFragmentManager, ShareDialog::class.java.name)
+                    val newShareDialog = ShareDialog()
+                    newShareDialog.arguments = bundle
+                    newShareDialog.show(childFragmentManager, ShareDialog::class.java.name)
                 }
 
                 nextPage = response.nextpage
@@ -194,6 +198,20 @@ class ChannelFragment : Fragment() {
 
                 ImageHelper.loadImage(response.bannerUrl, binding.channelBanner)
                 ImageHelper.loadImage(response.avatarUrl, binding.channelImage)
+
+                binding.channelImage.setOnClickListener {
+                    NavigationHelper.openImagePreview(
+                        requireContext(),
+                        response.avatarUrl ?: return@setOnClickListener
+                    )
+                }
+
+                binding.channelBanner.setOnClickListener {
+                    NavigationHelper.openImagePreview(
+                        requireContext(),
+                        response.bannerUrl ?: return@setOnClickListener
+                    )
+                }
 
                 // recyclerview of the videos by the channel
                 channelAdapter = VideosAdapter(

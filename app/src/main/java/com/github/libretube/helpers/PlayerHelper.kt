@@ -18,14 +18,19 @@ import androidx.core.net.toUri
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.PlaybackParameters
+import androidx.media3.common.Player
 import androidx.media3.common.Tracks
+import androidx.media3.datasource.DefaultDataSource
+import androidx.media3.datasource.cronet.CronetDataSource
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.LoadControl
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.ui.CaptionStyleCompat
 import com.github.libretube.LibreTubeApp
 import com.github.libretube.R
+import com.github.libretube.api.CronetHelper
 import com.github.libretube.api.obj.ChapterSegment
 import com.github.libretube.api.obj.Segment
 import com.github.libretube.api.obj.Streams
@@ -34,7 +39,10 @@ import com.github.libretube.db.DatabaseHolder
 import com.github.libretube.enums.PlayerEvent
 import com.github.libretube.enums.SbSkipOptions
 import com.github.libretube.extensions.updateParameters
+import com.github.libretube.obj.VideoStats
+import com.github.libretube.util.TextUtils
 import java.util.Locale
+import java.util.concurrent.Executors
 import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
 import kotlinx.coroutines.runBlocking
@@ -44,20 +52,30 @@ object PlayerHelper {
     const val CONTROL_TYPE = "control_type"
     const val SPONSOR_HIGHLIGHT_CATEGORY = "poi_highlight"
     const val ROLE_FLAG_AUTO_GEN_SUBTITLE = C.ROLE_FLAG_SUPPLEMENTARY
+    const val MINIMUM_BUFFER_DURATION = 1000 * 10 // exo default is 50s
+
+    val repeatModes = listOf(
+        Player.REPEAT_MODE_OFF to R.string.repeat_mode_none,
+        Player.REPEAT_MODE_ONE to R.string.repeat_mode_current,
+        Player.REPEAT_MODE_ALL to R.string.repeat_mode_all
+    )
+
+    /**
+     * A list of all categories that are not disabled by default
+     * Also update `sponsorblock_settings.xml` when modifying this!
+     */
+    private val sbDefaultValues = mapOf(
+        "sponsor" to SbSkipOptions.AUTOMATIC,
+        "selfpromo" to SbSkipOptions.AUTOMATIC
+    )
 
     /**
      * Create a base64 encoded DASH stream manifest
      */
-    fun createDashSource(
-        streams: Streams,
-        context: Context,
-        audioOnly: Boolean = false,
-        disableProxy: Boolean
-    ): Uri {
+    fun createDashSource(streams: Streams, context: Context, disableProxy: Boolean): Uri {
         val manifest = DashHelper.createManifest(
             streams,
             DisplayHelper.supportsHdr(context),
-            audioOnly,
             disableProxy
         )
 
@@ -221,7 +239,7 @@ object PlayerHelper {
             .roundToInt()
             .toLong() * 1000
 
-    val playbackSpeed: Float
+    private val playbackSpeed: Float
         get() = PreferenceHelper.getString(
             PreferenceKeys.PLAYBACK_SPEED,
             "1"
@@ -239,12 +257,6 @@ object PlayerHelper {
         get() = PreferenceHelper.getString(
             PreferenceKeys.PLAYER_RESIZE_MODE,
             "fit"
-        )
-
-    val alternativeVideoLayout: Boolean
-        get() = PreferenceHelper.getBoolean(
-            PreferenceKeys.ALTERNATIVE_PLAYER_LAYOUT,
-            false
         )
 
     val autoInsertRelatedVideos: Boolean
@@ -314,13 +326,32 @@ object PlayerHelper {
                 true
             )
 
-    fun getDefaultResolution(context: Context): String {
-        val prefKey = if (NetworkHelper.isNetworkMetered(context)) {
+    fun shouldPlayNextVideo(isPlaylist: Boolean = false): Boolean {
+        return autoPlayEnabled || (
+            isPlaylist && PreferenceHelper.getBoolean(
+                PreferenceKeys.AUTOPLAY_PLAYLISTS,
+                false
+            )
+            )
+    }
+
+    private val handleAudioFocus
+        get() = !PreferenceHelper.getBoolean(
+            PreferenceKeys.ALLOW_PLAYBACK_DURING_CALL,
+            false
+        )
+
+    fun getDefaultResolution(context: Context, isFullscreen: Boolean): Int? {
+        var prefKey = if (NetworkHelper.isNetworkMetered(context)) {
             PreferenceKeys.DEFAULT_RESOLUTION_MOBILE
         } else {
             PreferenceKeys.DEFAULT_RESOLUTION
         }
+        if (!isFullscreen) prefKey += "_no_fullscreen"
+
         return PreferenceHelper.getString(prefKey, "")
+            .replace("p", "")
+            .toIntOrNull()
     }
 
     /**
@@ -410,13 +441,36 @@ object PlayerHelper {
     }
 
     /**
-     * Get the audio attributes to use for the player
+     * Create a basic player, that is used for all types of playback situations inside the app
      */
-    fun getAudioAttributes(): AudioAttributes {
-        return AudioAttributes.Builder()
+    @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
+    fun createPlayer(
+        context: Context,
+        trackSelector: DefaultTrackSelector,
+        isBackgroundMode: Boolean
+    ): ExoPlayer {
+        val cronetDataSourceFactory = CronetDataSource.Factory(
+            CronetHelper.cronetEngine,
+            Executors.newCachedThreadPool()
+        )
+        val dataSourceFactory = DefaultDataSource.Factory(context, cronetDataSourceFactory)
+        val audioAttributes = AudioAttributes.Builder()
             .setUsage(C.USAGE_MEDIA)
             .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
             .build()
+
+        return ExoPlayer.Builder(context)
+            .setUsePlatformDiagnostics(false)
+            .setMediaSourceFactory(DefaultMediaSourceFactory(dataSourceFactory))
+            .setTrackSelector(trackSelector)
+            .setHandleAudioBecomingNoisy(true)
+            .setLoadControl(getLoadControl())
+            .setAudioAttributes(audioAttributes, handleAudioFocus)
+            .setUsePlatformDiagnostics(false)
+            .build()
+            .apply {
+                loadPlaybackParams(isBackgroundMode)
+            }
     }
 
     /**
@@ -428,7 +482,7 @@ object PlayerHelper {
             // cache the last three minutes
             .setBackBuffer(1000 * 60 * 3, true)
             .setBufferDurationsMs(
-                1000 * 10, // exo default is 50s
+                MINIMUM_BUFFER_DURATION,
                 bufferingGoal,
                 DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_MS,
                 DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS
@@ -456,11 +510,16 @@ object PlayerHelper {
         for (category in LibreTubeApp.instance.resources.getStringArray(
             R.array.sponsorBlockSegments
         )) {
-            val state = PreferenceHelper.getString(category + "_category", "off").uppercase()
-            if (SbSkipOptions.valueOf(state) != SbSkipOptions.OFF) {
-                categories[category] = SbSkipOptions.valueOf(state)
+            val defaultCategoryValue = sbDefaultValues.getOrDefault(category, SbSkipOptions.OFF)
+            val skipOption = PreferenceHelper
+                .getString("${category}_category", defaultCategoryValue.name)
+                .let { SbSkipOptions.valueOf(it.uppercase()) }
+
+            if (skipOption != SbSkipOptions.OFF) {
+                categories[category] = skipOption
             }
         }
+
         // Add the highlights category to display in the chapters
         if (sponsorBlockHighlights) categories[SPONSOR_HIGHLIGHT_CATEGORY] = SbSkipOptions.OFF
         return categories
@@ -523,18 +582,19 @@ object PlayerHelper {
     /**
      * Get the name of the currently played chapter
      */
-    fun getCurrentChapterIndex(exoPlayer: ExoPlayer, chapters: List<ChapterSegment>): Int? {
-        val currentPosition = exoPlayer.currentPosition / 1000
+    fun getCurrentChapterIndex(currentPositionMs: Long, chapters: List<ChapterSegment>): Int? {
+        val currentPositionSeconds = currentPositionMs / 1000
         return chapters
-            .filter {
-                it.highlightDrawable == null ||
-                    // remove the video highlight if it's already longer ago than [ChapterSegment.HIGHLIGHT_LENGTH],
-                    // otherwise the SponsorBlock highlight would be shown from its starting point to the end
-                    (currentPosition - it.start) < ChapterSegment.HIGHLIGHT_LENGTH
-            }
             .sortedBy { it.start }
-            .indexOfLast { currentPosition >= it.start }
+            .indexOfLast { currentPositionSeconds >= it.start }
             .takeIf { it >= 0 }
+            ?.takeIf { index ->
+                val chapter = chapters[index]
+                // remove the video highlight if it's already longer ago than [ChapterSegment.HIGHLIGHT_LENGTH],
+                // otherwise the SponsorBlock highlight would be shown from its starting point to the end
+                val isWithinMaxHighlightDuration = (currentPositionSeconds - chapter.start) < ChapterSegment.HIGHLIGHT_LENGTH
+                chapter.highlightDrawable == null || isWithinMaxHighlightDuration
+            }
     }
 
     fun getPosition(videoId: String, duration: Long?): Long? {
@@ -689,5 +749,20 @@ object PlayerHelper {
             isFlagSet(roleFlags, C.ROLE_FLAG_DUB) ||
             isFlagSet(roleFlags, C.ROLE_FLAG_MAIN) ||
             isFlagSet(roleFlags, C.ROLE_FLAG_ALTERNATE)
+    }
+
+    @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
+    fun getVideoStats(player: ExoPlayer, videoId: String): VideoStats {
+        val videoInfo = "${player.videoFormat?.codecs.orEmpty()} ${
+            TextUtils.formatBitrate(
+                player.videoFormat?.bitrate
+            )
+        }"
+        val audioInfo = "${player.audioFormat?.codecs.orEmpty()} ${
+            TextUtils.formatBitrate(player.audioFormat?.bitrate)
+        }"
+        val videoQuality =
+            "${player.videoFormat?.width}x${player.videoFormat?.height} ${player.videoFormat?.frameRate?.toInt()}fps"
+        return VideoStats(videoId, videoInfo, videoQuality, audioInfo)
     }
 }

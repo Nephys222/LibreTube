@@ -510,4 +510,8 @@
     <string name="sb_create_segment">Crear segmento</string>
     <string name="segment_type">Tipo de segmento</string>
     <string name="sb_invalid_segment">Inicio o final de segmento inválido</string>
+    <string name="contribute_to_sponsorblock">Contribuir con SponsorBlock</string>
+    <string name="filename_too_long">¡El nombre es demasiado largo!</string>
+    <string name="sponsorblock_user_id">ID de usuario SponsorBlock</string>
+    <string name="donate">Donar</string>
 </resources>

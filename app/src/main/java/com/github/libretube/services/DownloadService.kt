@@ -16,11 +16,10 @@ import androidx.core.util.set
 import androidx.core.util.valueIterator
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
+import com.github.libretube.LibreTubeApp.Companion.DOWNLOAD_CHANNEL_NAME
 import com.github.libretube.R
 import com.github.libretube.api.CronetHelper
 import com.github.libretube.api.RetrofitInstance
-import com.github.libretube.constants.DOWNLOAD_CHANNEL_ID
-import com.github.libretube.constants.DOWNLOAD_PROGRESS_NOTIFICATION_ID
 import com.github.libretube.constants.IntentData
 import com.github.libretube.db.DatabaseHolder.Database
 import com.github.libretube.db.obj.Download
@@ -63,6 +62,8 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import okio.buffer
 import okio.sink
 import okio.source
@@ -116,7 +117,7 @@ class DownloadService : LifecycleService() {
                     streams.title,
                     streams.description,
                     streams.uploader,
-                    streams.uploadDate,
+                    streams.uploadTimestamp.toLocalDateTime(TimeZone.currentSystemDefault()).date,
                     thumbnailTargetPath
                 )
                 Database.downloadDao().insertDownload(download)
@@ -166,7 +167,7 @@ class DownloadService : LifecycleService() {
         val url = URL(item.url ?: return)
 
         // only fetch the content length if it's not been returned by the API
-        if (item.downloadSize == 0L) {
+        if (item.downloadSize <= 0L) {
             url.getContentLength()?.let { size ->
                 item.downloadSize = size
                 Database.downloadDao().updateDownloadItem(item)
@@ -246,11 +247,14 @@ class DownloadService : LifecycleService() {
         }
 
         setPauseNotification(notificationBuilder, item, completed)
-        pause(item.id)
+
+        downloadQueue[item.id] = false
 
         if (_downloadFlow.firstOrNull { it.first == item.id }?.second == DownloadStatus.Stopped) {
             downloadQueue.remove(item.id, false)
         }
+
+        stopServiceIfDone()
     }
 
     private suspend fun startConnection(
@@ -332,6 +336,10 @@ class DownloadService : LifecycleService() {
     fun pause(id: Int) {
         downloadQueue[id] = false
 
+        lifecycleScope.launch(coroutineContext) {
+            _downloadFlow.emit(id to DownloadStatus.Paused)
+        }
+
         stopServiceIfDone()
     }
 
@@ -390,7 +398,7 @@ class DownloadService : LifecycleService() {
         notificationManager = getSystemService()!!
 
         summaryNotificationBuilder = NotificationCompat
-            .Builder(this, DOWNLOAD_CHANNEL_ID)
+            .Builder(this, DOWNLOAD_CHANNEL_NAME)
             .setSmallIcon(R.drawable.ic_launcher_lockscreen)
             .setContentTitle(getString(R.string.downloading))
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
@@ -409,7 +417,7 @@ class DownloadService : LifecycleService() {
             .getActivity(this@DownloadService, 0, intent, FLAG_CANCEL_CURRENT, false)
 
         return NotificationCompat
-            .Builder(this, DOWNLOAD_CHANNEL_ID)
+            .Builder(this, DOWNLOAD_CHANNEL_NAME)
             .setContentTitle("[${item.type}] ${item.fileName}")
             .setProgress(0, 0, true)
             .setOngoing(true)
@@ -522,6 +530,7 @@ class DownloadService : LifecycleService() {
     }
 
     companion object {
+        private const val DOWNLOAD_PROGRESS_NOTIFICATION_ID = 2
         private const val DOWNLOAD_NOTIFICATION_GROUP = "download_notification_group"
         const val ACTION_SERVICE_STARTED =
             "com.github.libretube.services.DownloadService.ACTION_SERVICE_STARTED"

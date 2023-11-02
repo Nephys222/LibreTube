@@ -6,19 +6,17 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
-import com.github.libretube.constants.NOTIFICATION_WORK_NAME
 import com.github.libretube.constants.PreferenceKeys
 import com.github.libretube.workers.NotificationWorker
 import java.util.concurrent.TimeUnit
 
 object NotificationHelper {
+    private const val NOTIFICATION_WORK_NAME = "NotificationService"
+
     /**
      * Enqueue the work manager task
      */
-    fun enqueueWork(
-        context: Context,
-        existingPeriodicWorkPolicy: ExistingPeriodicWorkPolicy
-    ) {
+    fun enqueueWork(context: Context, existingPeriodicWorkPolicy: ExistingPeriodicWorkPolicy) {
         // get the notification preferences
         PreferenceHelper.initialize(context)
         val notificationsEnabled = PreferenceHelper.getBoolean(
