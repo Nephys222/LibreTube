@@ -42,7 +42,6 @@ import com.github.libretube.ui.fragments.PlayerFragment
 import com.github.libretube.ui.models.PlayerViewModel
 import com.github.libretube.ui.models.SearchViewModel
 import com.github.libretube.ui.models.SubscriptionsViewModel
-import com.github.libretube.ui.tools.SleepTimer
 import com.google.android.material.elevation.SurfaceColors
 
 class MainActivity : BaseActivity() {
@@ -103,10 +102,9 @@ class MainActivity : BaseActivity() {
         }
 
         // set default tab as start fragment
-        navController.graph.setStartDestination(startFragmentId)
-
-        // navigate to the default fragment
-        navController.navigate(startFragmentId)
+        navController.graph = navController.navInflater.inflate(R.navigation.nav).also {
+            it.setStartDestination(startFragmentId)
+        }
 
         binding.bottomNav.setOnApplyWindowInsetsListener(null)
 
@@ -138,8 +136,6 @@ class MainActivity : BaseActivity() {
         PreferenceHelper.getErrorLog().ifBlank { null }?.let {
             ErrorDialog().show(supportFragmentManager, null)
         }
-
-        SleepTimer.setup(this)
 
         setupSubscriptionsBadge()
 

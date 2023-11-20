@@ -7,7 +7,7 @@ import android.text.format.DateUtils
 import com.github.libretube.R
 import com.github.libretube.ui.dialogs.ShareDialog
 import java.time.Instant
-import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -68,8 +68,8 @@ object TextUtils {
     }
 
     fun formatRelativeDate(context: Context, unixTime: Long): CharSequence {
-        val date = LocalDate.ofInstant(Instant.ofEpochMilli(unixTime), ZoneId.systemDefault())
-        val now = LocalDate.now()
+        val date = LocalDateTime.ofInstant(Instant.ofEpochMilli(unixTime), ZoneId.systemDefault())
+        val now = LocalDateTime.now()
         val months = date.until(now, ChronoUnit.MONTHS)
 
         return if (months > 0) {

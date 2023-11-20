@@ -4,7 +4,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.core.view.isGone
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
@@ -56,7 +55,7 @@ class CommentsMainFragment : Fragment() {
             commentsSheet?.binding?.btnScrollToTop?.isVisible = viewModel.currentCommentsPosition != 0
 
             if (!viewBinding.commentsRV.canScrollVertically(1)) {
-                viewModel.fetchNextComments()
+                viewModel.fetchNextComments(requireContext())
             }
         }
         commentsSheet?.updateFragmentInfo(false, getString(R.string.comments))
@@ -72,23 +71,26 @@ class CommentsMainFragment : Fragment() {
         }
         binding.commentsRV.adapter = commentsAdapter
 
-        if (viewModel.commentsPage.value?.comments.orEmpty().isEmpty()) {
-            binding.progress.isVisible = true
+        if (viewModel.commentsPage.value?.comments.isNullOrEmpty()) {
             viewModel.fetchComments()
         } else {
             binding.commentsRV.scrollToPosition(viewModel.currentCommentsPosition)
         }
 
+        viewModel.isLoading.observe(viewLifecycleOwner) {
+            _binding?.progress?.isVisible = it == true
+        }
+
         // listen for new comments to be loaded
         viewModel.commentsPage.observe(viewLifecycleOwner) {
+            if (it == null) return@observe
             val viewBinding = _binding ?: return@observe
 
-            if (it == null) return@observe
-            viewBinding.progress.isGone = true
             if (it.disabled) {
                 viewBinding.errorTV.isVisible = true
                 return@observe
             }
+
             commentsSheet?.updateFragmentInfo(
                 false,
                 "${getString(R.string.comments)} (${it.commentCount.formatShort()})"

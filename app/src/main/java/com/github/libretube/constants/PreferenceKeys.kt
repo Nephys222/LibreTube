@@ -4,6 +4,7 @@ package com.github.libretube.constants
  * keys for the shared preferences
  */
 object PreferenceKeys {
+
     /**
      * Authentication
      */
@@ -18,8 +19,6 @@ object PreferenceKeys {
     const val LANGUAGE = "language"
     const val REGION = "region"
     const val ORIENTATION = "orientation"
-    const val SLEEP_TIMER = "sleep_timer_toggle"
-    const val SLEEP_TIMER_DELAY = "sleep_timer_delay"
     const val SAVE_FEED = "save_feed"
     const val NAVBAR_ITEMS = "navbar_items"
     const val START_FRAGMENT = "start_fragment"
@@ -152,6 +151,8 @@ object PreferenceKeys {
      * History
      */
     const val WATCH_HISTORY_SIZE = "watch_history_size"
+    const val SELECTED_HISTORY_TYPE_FILTER = "filter_history_type"
+    const val SELECTED_HISTORY_STATUS_FILTER = "filter_history_status"
 
     /**
      * Error logs

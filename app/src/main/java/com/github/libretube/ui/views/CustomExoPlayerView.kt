@@ -3,6 +3,7 @@ package com.github.libretube.ui.views
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
+import android.content.pm.ActivityInfo
 import android.content.res.Configuration
 import android.graphics.Color
 import android.os.Handler
@@ -55,6 +56,7 @@ import com.github.libretube.ui.interfaces.PlayerOptions
 import com.github.libretube.ui.listeners.PlayerGestureController
 import com.github.libretube.ui.sheets.BaseBottomSheet
 import com.github.libretube.ui.sheets.PlaybackOptionsSheet
+import com.github.libretube.ui.sheets.SleepTimerSheet
 import com.github.libretube.util.PlayingQueue
 
 @SuppressLint("ClickableViewAccessibility")
@@ -97,10 +99,6 @@ open class CustomExoPlayerView(
 
     private val supportFragmentManager
         get() = activity.supportFragmentManager
-
-    private val hasCutout by lazy {
-        WindowHelper.hasCutout(this)
-    }
 
     private fun toggleController() {
         if (isControllerFullyVisible) hideController() else showController()
@@ -207,13 +205,21 @@ open class CustomExoPlayerView(
             if (isLive) player?.let { it.seekTo(it.duration) }
         }
 
+        // forward touch events to the time bar for better accessibility
+        binding.bottomBar.setOnTouchListener { _, motionEvent ->
+            binding.exoProgress.onTouchEvent(motionEvent)
+        }
+
         updateCurrentPosition()
     }
 
     fun toggleSystemBars(showBars: Boolean) {
         getWindow().toggleSystemBars(
-            types = if (showBars) WindowHelper.getGestureControlledBars(context)
-            else WindowInsetsCompat.Type.systemBars(),
+            types = if (showBars) {
+                WindowHelper.getGestureControlledBars(context)
+            } else {
+                WindowInsetsCompat.Type.systemBars()
+            },
             showBars = showBars
         )
     }
@@ -342,6 +348,12 @@ open class CustomExoPlayerView(
             }
         ) {
             onPlaybackSpeedClicked()
+        },
+        BottomSheetItem(
+            context.getString(R.string.sleep_timer),
+            R.drawable.ic_sleep
+        ) {
+            onSleepTimerClicked()
         }
     )
 
@@ -547,12 +559,23 @@ open class CustomExoPlayerView(
             .show(supportFragmentManager)
     }
 
+    override fun onSleepTimerClicked() {
+        SleepTimerSheet().show(supportFragmentManager)
+    }
+
     open fun isFullscreen() =
         resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
-    override fun onConfigurationChanged(newConfig: Configuration) {
+    override fun onConfigurationChanged(newConfig: Configuration?) {
         super.onConfigurationChanged(newConfig)
 
+        updateMarginsByFullscreenMode()
+    }
+
+    /**
+     * Updates the margins according to the current orientation and fullscreen mode
+     */
+    fun updateMarginsByFullscreenMode() {
         // add a larger bottom margin to the time bar in landscape mode
         binding.progressBar.updateLayoutParams<MarginLayoutParams> {
             bottomMargin = (if (isFullscreen()) 20f else 10f).dpToPx()
@@ -560,19 +583,17 @@ open class CustomExoPlayerView(
 
         updateTopBarMargin()
 
-        // don't add extra padding if there's no cutout
-        if (!hasCutout && binding.topBar.marginStart == 0) return
+        // don't add extra padding if there's no cutout and no margin set that would need to be undone
+        if (!(context as BaseActivity).hasCutout && binding.topBar.marginStart == LANDSCAPE_MARGIN_HORIZONTAL_NONE) return
 
         // add a margin to the top and the bottom bar in landscape mode for notches
-        val newMargin = when (newConfig.orientation) {
-            Configuration.ORIENTATION_LANDSCAPE -> LANDSCAPE_MARGIN_HORIZONTAL
-            else -> 0
-        }
+        val isForcedPortrait = activity.requestedOrientation == ActivityInfo.SCREEN_ORIENTATION_USER_PORTRAIT
+        val horizontalMargin = if (isFullscreen() && !isForcedPortrait) LANDSCAPE_MARGIN_HORIZONTAL else LANDSCAPE_MARGIN_HORIZONTAL_NONE
 
         listOf(binding.topBar, binding.bottomBar).forEach {
             it.updateLayoutParams<MarginLayoutParams> {
-                marginStart = newMargin
-                marginEnd = newMargin
+                marginStart = horizontalMargin
+                marginEnd = horizontalMargin
             }
         }
     }
@@ -596,7 +617,7 @@ open class CustomExoPlayerView(
      */
     fun updateTopBarMargin() {
         binding.topBar.updateLayoutParams<MarginLayoutParams> {
-            topMargin = getTopBarMarginDp().toFloat().dpToPx()
+            topMargin = (if (isFullscreen()) 18f else 0f).dpToPx()
         }
     }
 
@@ -613,22 +634,12 @@ open class CustomExoPlayerView(
         runnableHandler.postDelayed(100, UPDATE_POSITION_TOKEN, this::updateCurrentPosition)
     }
 
-    open fun getTopBarMarginDp(): Int {
-        return if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) 10 else 0
-    }
-
     override fun onSingleTap() {
         toggleController()
     }
 
     override fun onDoubleTapCenterScreen() {
-        player?.let { player ->
-            if (player.isPlaying) {
-                player.pause()
-            } else {
-                player.play()
-            }
-        }
+        player?.togglePlayPauseState()
     }
 
     override fun onDoubleTapLeftScreen() {
@@ -692,16 +703,26 @@ open class CustomExoPlayerView(
     }
 
     override fun onFullscreenChange(isFullscreen: Boolean) {
-        if (PlayerHelper.swipeGestureEnabled && this::brightnessHelper.isInitialized) {
-            if (isFullscreen) {
+        if (isFullscreen) {
+            if (PlayerHelper.swipeGestureEnabled && this::brightnessHelper.isInitialized) {
                 brightnessHelper.restoreSavedBrightness()
-                if (resizeMode == AspectRatioFrameLayout.RESIZE_MODE_ZOOM) {
-                    subtitleView?.setBottomPaddingFraction(SUBTITLE_BOTTOM_PADDING_FRACTION)
-                }
-            } else {
-                brightnessHelper.resetToSystemBrightness(false)
-                subtitleView?.setBottomPaddingFraction(SubtitleView.DEFAULT_BOTTOM_PADDING_FRACTION)
             }
+            subtitleView?.setFixedTextSize(
+                Cue.TEXT_SIZE_TYPE_ABSOLUTE,
+                PlayerHelper.captionsTextSize * 1.5f
+            )
+            if (resizeMode == AspectRatioFrameLayout.RESIZE_MODE_ZOOM) {
+                subtitleView?.setBottomPaddingFraction(SUBTITLE_BOTTOM_PADDING_FRACTION)
+            }
+        } else {
+            if (PlayerHelper.swipeGestureEnabled && this::brightnessHelper.isInitialized) {
+                brightnessHelper.resetToSystemBrightness(false)
+            }
+            subtitleView?.setFixedTextSize(
+                Cue.TEXT_SIZE_TYPE_ABSOLUTE,
+                PlayerHelper.captionsTextSize
+            )
+            subtitleView?.setBottomPaddingFraction(SubtitleView.DEFAULT_BOTTOM_PADDING_FRACTION)
         }
     }
 
@@ -731,5 +752,6 @@ open class CustomExoPlayerView(
         private const val ANIMATION_DURATION = 100L
         private const val AUTO_HIDE_CONTROLLER_DELAY = 2000L
         private val LANDSCAPE_MARGIN_HORIZONTAL = 20f.dpToPx()
+        private val LANDSCAPE_MARGIN_HORIZONTAL_NONE = 0f.dpToPx()
     }
 }

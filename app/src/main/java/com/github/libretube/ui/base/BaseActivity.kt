@@ -8,6 +8,7 @@ import com.github.libretube.constants.PreferenceKeys
 import com.github.libretube.helpers.LocaleHelper
 import com.github.libretube.helpers.PreferenceHelper
 import com.github.libretube.helpers.ThemeHelper
+import com.github.libretube.helpers.WindowHelper
 
 /**
  * Activity that applies the LibreTube theme and the in-app language
@@ -24,6 +25,13 @@ open class BaseActivity : AppCompatActivity() {
             "auto" -> ActivityInfo.SCREEN_ORIENTATION_USER
             else -> throw IllegalArgumentException()
         }
+    }
+
+    /**
+     * Whether the phone of the user has a cutout like a notch or not
+     */
+    val hasCutout by lazy {
+        WindowHelper.hasCutout(window.decorView.rootView)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

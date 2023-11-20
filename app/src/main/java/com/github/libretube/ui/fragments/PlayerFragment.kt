@@ -115,16 +115,16 @@ import com.github.libretube.util.TextUtils.toTimeInSeconds
 import com.github.libretube.util.YoutubeHlsPlaylistParser
 import com.github.libretube.util.deArrow
 import com.google.android.material.elevation.SurfaceColors
+import java.io.IOException
+import java.util.*
+import java.util.concurrent.Executors
+import kotlin.math.abs
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import retrofit2.HttpException
-import java.io.IOException
-import java.util.*
-import java.util.concurrent.Executors
-import kotlin.math.abs
 
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 class PlayerFragment : Fragment(), OnlinePlayerOptions {
@@ -445,7 +445,15 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
             override fun onTransitionCompleted(motionLayout: MotionLayout?, currentId: Int) {
                 if (_binding == null) return
 
-                if (currentId == transitionEndId) {
+                if (currentId == transitionStartId) {
+                    viewModel.isMiniPlayerVisible.value = false
+                    // re-enable captions
+                    updateCurrentSubtitle(currentSubtitle)
+                    binding.player.useController = true
+                    commentsViewModel.setCommentSheetExpand(true)
+                    mainMotionLayout.progress = 0F
+                    changeOrientationMode()
+                } else if (currentId == transitionEndId) {
                     viewModel.isMiniPlayerVisible.value = true
                     // disable captions temporarily
                     updateCurrentSubtitle(null)
@@ -454,14 +462,6 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
                     binding.sbSkipBtn.isGone = true
                     mainMotionLayout.progress = 1F
                     (activity as MainActivity).requestOrientationChange()
-                } else if (currentId == transitionStartId) {
-                    viewModel.isMiniPlayerVisible.value = false
-                    // re-enable captions
-                    updateCurrentSubtitle(currentSubtitle)
-                    binding.player.useController = true
-                    commentsViewModel.setCommentSheetExpand(true)
-                    mainMotionLayout.progress = 0F
-                    changeOrientationMode()
                 }
             }
         })
@@ -596,8 +596,11 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
 
         binding.relatedRecView.layoutManager = LinearLayoutManager(
             context,
-            if (resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT)
-                LinearLayoutManager.HORIZONTAL else LinearLayoutManager.VERTICAL,
+            if (resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) {
+                LinearLayoutManager.HORIZONTAL
+            } else {
+                LinearLayoutManager.VERTICAL
+            },
             false
         )
 
@@ -687,6 +690,8 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
         updateResolutionOnFullscreenChange(true)
 
         openOrCloseFullscreenDialog(true)
+
+        binding.player.updateMarginsByFullscreenMode()
     }
 
     @SuppressLint("SourceLockedOrientationActivity")
@@ -701,7 +706,10 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
 
         viewModel.isFullscreen.value = false
 
-        if (mainActivity.screenOrientationPref == ActivityInfo.SCREEN_ORIENTATION_USER_PORTRAIT) {
+        if (
+            !PlayerHelper.autoFullscreenEnabled &&
+            mainActivity.screenOrientationPref == ActivityInfo.SCREEN_ORIENTATION_USER_PORTRAIT
+        ) {
             mainActivity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_USER_PORTRAIT
         }
 
@@ -713,6 +721,8 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
         openOrCloseFullscreenDialog(false)
 
         checkForNecessaryOrientationRestart()
+
+        binding.player.updateMarginsByFullscreenMode()
     }
 
     private fun openOrCloseFullscreenDialog(open: Boolean) {
@@ -874,7 +884,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
 
             val videoStream = streams.videoStreams.firstOrNull()
             val isShort = PlayingQueue.getCurrent()?.isShort == true ||
-                    (videoStream?.height ?: 0) > (videoStream?.width ?: 0)
+                (videoStream?.height ?: 0) > (videoStream?.width ?: 0)
 
             PlayingQueue.setOnQueueTapListener { streamItem ->
                 streamItem.url?.toID()?.let { playNextVideo(it) }
@@ -887,8 +897,8 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
                 // set media sources for the player
                 initStreamSources()
 
-                if (PreferenceHelper.getBoolean(PreferenceKeys.AUTO_FULLSCREEN_SHORTS, false)
-                    && isShort && binding.playerMotionLayout.progress == 0f
+                if (PreferenceHelper.getBoolean(PreferenceKeys.AUTO_FULLSCREEN_SHORTS, false) &&
+                    isShort && binding.playerMotionLayout.progress == 0f
                 ) {
                     setFullscreen()
                     playerBinding.fullscreen.isVisible = true
@@ -912,7 +922,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
                 if (binding.playerMotionLayout.progress != 1.0f) {
                     // show controllers when not in picture in picture mode
                     val inPipMode = PlayerHelper.pipEnabled &&
-                            PictureInPictureCompat.isInPictureInPictureMode(requireActivity())
+                        PictureInPictureCompat.isInPictureInPictureMode(requireActivity())
                     if (!inPipMode) {
                         binding.player.useController = true
                     }
@@ -1020,11 +1030,14 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
         viewModel.chaptersLiveData.value = streams.chapters
 
         if (PlayerHelper.relatedStreamsEnabled) {
+            val relatedLayoutManager = binding.relatedRecView.layoutManager as LinearLayoutManager
             binding.relatedRecView.adapter = VideosAdapter(
                 streams.relatedStreams.filter { !it.title.isNullOrBlank() }.toMutableList(),
-                forceMode = if (
-                    resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT
-                ) VideosAdapter.Companion.ForceMode.RELATED else VideosAdapter.Companion.ForceMode.TRENDING
+                forceMode = if (relatedLayoutManager.orientation == LinearLayoutManager.HORIZONTAL) {
+                    VideosAdapter.Companion.ForceMode.RELATED
+                } else {
+                    VideosAdapter.Companion.ForceMode.TRENDING
+                }
             )
         }
 
@@ -1350,6 +1363,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
         PlayerHelper.applyPreferredAudioQuality(requireContext(), trackSelector)
 
         exoPlayer = PlayerHelper.createPlayer(requireContext(), trackSelector, false)
+        exoPlayer.setWakeMode(C.WAKE_MODE_NETWORK)
         exoPlayer.addListener(playerListener)
         viewModel.player = exoPlayer
     }

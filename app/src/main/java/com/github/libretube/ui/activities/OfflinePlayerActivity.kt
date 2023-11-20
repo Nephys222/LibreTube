@@ -54,6 +54,30 @@ class OfflinePlayerActivity : BaseActivity() {
     private lateinit var playerBinding: ExoStyledPlayerControlViewBinding
     private val playerViewModel: PlayerViewModel by viewModels()
 
+    private val playerListener = object : Player.Listener {
+        override fun onEvents(player: Player, events: Player.Events) {
+            super.onEvents(player, events)
+            // update the displayed duration on changes
+            playerBinding.duration.text = DateUtils.formatElapsedTime(
+                player.duration / 1000
+            )
+        }
+
+        override fun onPlaybackStateChanged(playbackState: Int) {
+            super.onPlaybackStateChanged(playbackState)
+            // setup seekbar preview
+            if (playbackState == Player.STATE_READY) {
+                binding.player.binding.exoProgress.addListener(
+                    SeekbarPreviewListener(
+                        timeFrameReceiver ?: return,
+                        binding.player.binding,
+                        player.duration
+                    )
+                )
+            }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         WindowHelper.toggleFullscreen(window, true)
 
@@ -79,30 +103,8 @@ class OfflinePlayerActivity : BaseActivity() {
         trackSelector = DefaultTrackSelector(this)
 
         player = PlayerHelper.createPlayer(this, trackSelector, false)
-
-        player.addListener(object : Player.Listener {
-            override fun onEvents(player: Player, events: Player.Events) {
-                super.onEvents(player, events)
-                // update the displayed duration on changes
-                playerBinding.duration.text = DateUtils.formatElapsedTime(
-                    player.duration / 1000
-                )
-            }
-
-            override fun onPlaybackStateChanged(playbackState: Int) {
-                super.onPlaybackStateChanged(playbackState)
-                // setup seekbar preview
-                if (playbackState == Player.STATE_READY) {
-                    binding.player.binding.exoProgress.addListener(
-                        SeekbarPreviewListener(
-                            timeFrameReceiver ?: return,
-                            binding.player.binding,
-                            player.duration
-                        )
-                    )
-                }
-            }
-        })
+        player.setWakeMode(C.WAKE_MODE_LOCAL)
+        player.addListener(playerListener)
 
         playerView = binding.player
         playerView.setShowSubtitleButton(true)
@@ -166,9 +168,7 @@ class OfflinePlayerActivity : BaseActivity() {
             videoUri != null && audioUri != null -> {
                 val videoItem = MediaItem.Builder()
                     .setUri(videoUri)
-                    .apply {
-                        if (subtitle != null) setSubtitleConfigurations(listOf(subtitle))
-                    }
+                    .setSubtitleConfigurations(listOfNotNull(subtitle))
                     .build()
 
                 val videoSource = ProgressiveMediaSource.Factory(FileDataSource.Factory())
@@ -191,18 +191,14 @@ class OfflinePlayerActivity : BaseActivity() {
             videoUri != null -> player.setMediaItem(
                 MediaItem.Builder()
                     .setUri(videoUri)
-                    .apply {
-                        if (subtitle != null) setSubtitleConfigurations(listOf(subtitle))
-                    }
+                    .setSubtitleConfigurations(listOfNotNull(subtitle))
                     .build()
             )
 
             audioUri != null -> player.setMediaItem(
                 MediaItem.Builder()
                     .setUri(audioUri)
-                    .apply {
-                        if (subtitle != null) setSubtitleConfigurations(listOf(subtitle))
-                    }
+                    .setSubtitleConfigurations(listOfNotNull(subtitle))
                     .build()
             )
         }
