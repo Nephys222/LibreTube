@@ -526,6 +526,9 @@
     <string name="successfully_removed_from_playlist">成功从播放列表中移除了“%1$s”。</string>
     <string name="watched">已关注</string>
     <string name="finished">已完成</string>
-    <string name="bottom_reached">已到达底部！</string>
     <string name="no_segments_found">此视频尚无分段。</string>
+    <string name="time_in_minutes">分钟为单位</string>
+    <string name="invalid_input">无效输入</string>
+    <string name="disable_sleep_timer">禁用睡眠定时器</string>
+    <string name="start_sleep_timer">开启睡眠定时器</string>
 </resources>
