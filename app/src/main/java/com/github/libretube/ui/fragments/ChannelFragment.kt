@@ -224,7 +224,7 @@ class ChannelFragment : Fragment() {
         // recyclerview of the videos by the channel
         channelAdapter = VideosAdapter(
             response.relatedStreams.toMutableList(),
-            forceMode = VideosAdapter.Companion.ForceMode.CHANNEL
+            forceMode = VideosAdapter.Companion.LayoutMode.CHANNEL_ROW
         )
         binding.channelRecView.adapter = channelAdapter
 
@@ -233,6 +233,8 @@ class ChannelFragment : Fragment() {
 
     private fun setupTabs(tabs: List<ChannelTab>) {
         this.channelTabs = tabs
+
+        val binding = _binding ?: return
 
         binding.tabChips.children.forEach { chip ->
             val resourceTab = possibleTabs.firstOrNull { it.chipId == chip.id }

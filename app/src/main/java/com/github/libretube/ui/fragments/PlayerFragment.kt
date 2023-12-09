@@ -480,8 +480,6 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
         if (PlayerHelper.pipEnabled) {
             PictureInPictureCompat.setPictureInPictureParams(activity, pipParams)
         }
-        binding.relPlayerPip.isVisible = PictureInPictureCompat
-            .isPictureInPictureAvailable(activity)
     }
 
     private fun onManualPlayerClose() {
@@ -628,10 +626,6 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
                 newFragment.arguments = bundleOf(IntentData.videoId to videoId)
                 newFragment.show(childFragmentManager, DownloadDialog::class.java.name)
             }
-        }
-
-        binding.relPlayerPip.setOnClickListener {
-            PictureInPictureCompat.enterPictureInPictureMode(requireActivity(), pipParams)
         }
 
         binding.playerChannel.setOnClickListener {
@@ -1034,9 +1028,9 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
             binding.relatedRecView.adapter = VideosAdapter(
                 streams.relatedStreams.filter { !it.title.isNullOrBlank() }.toMutableList(),
                 forceMode = if (relatedLayoutManager.orientation == LinearLayoutManager.HORIZONTAL) {
-                    VideosAdapter.Companion.ForceMode.RELATED
+                    VideosAdapter.Companion.LayoutMode.RELATED_COLUMN
                 } else {
-                    VideosAdapter.Companion.ForceMode.TRENDING
+                    VideosAdapter.Companion.LayoutMode.TRENDING_ROW
                 }
             )
         }
