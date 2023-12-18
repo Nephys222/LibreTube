@@ -14,38 +14,34 @@ import com.github.libretube.services.OfflinePlayerService
 import com.github.libretube.ui.dialogs.ShareDialog
 
 class DownloadOptionsBottomSheet : BaseBottomSheet() {
-    private lateinit var videoId: String
-    private lateinit var uploader: String
-
     override fun onCreate(savedInstanceState: Bundle?) {
-        videoId = arguments?.getString(IntentData.videoId)!!
-        uploader = arguments?.getString(IntentData.channelName)!!
+        val videoId = arguments?.getString(IntentData.videoId)!!
 
         val options = listOf(
             R.string.playOnBackground,
             R.string.go_to_video,
             R.string.share,
             R.string.delete
-        ).map { getString(it) }
+        )
 
-        setSimpleItems(options) { selectedIndex ->
-            when (selectedIndex) {
-                0 -> {
+        setSimpleItems(options.map { getString(it) }) { which ->
+            when (options[which]) {
+                R.string.playOnBackground -> {
                     val playerIntent = Intent(requireContext(), OfflinePlayerService::class.java)
                         .putExtra(IntentData.videoId, videoId)
                     context?.stopService(playerIntent)
                     ContextCompat.startForegroundService(requireContext(), playerIntent)
                 }
 
-                1 -> {
+                R.string.go_to_video -> {
                     NavigationHelper.navigateVideo(requireContext(), videoId = videoId)
                 }
 
-                2 -> {
-                    val shareData = ShareData(currentVideo = uploader)
+                R.string.share -> {
+                    val shareData = ShareData(currentVideo = videoId)
                     val bundle = bundleOf(
                         IntentData.id to videoId,
-                        IntentData.shareObjectType to ShareObjectType.CHANNEL,
+                        IntentData.shareObjectType to ShareObjectType.VIDEO,
                         IntentData.shareData to shareData
                     )
                     val newShareDialog = ShareDialog()
@@ -53,7 +49,7 @@ class DownloadOptionsBottomSheet : BaseBottomSheet() {
                     newShareDialog.show(parentFragmentManager, null)
                 }
 
-                3 -> {
+                R.string.delete -> {
                     setFragmentResult(DELETE_DOWNLOAD_REQUEST_KEY, bundleOf())
                     dialog?.dismiss()
                 }
