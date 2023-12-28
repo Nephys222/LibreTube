@@ -5,11 +5,11 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.view.SoftwareKeyboardControllerCompat
 import androidx.core.view.isGone
 import androidx.core.view.isVisible
-import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.GridLayoutManager
 import com.github.libretube.R
 import com.github.libretube.api.RetrofitInstance
 import com.github.libretube.constants.IntentData
@@ -18,11 +18,12 @@ import com.github.libretube.databinding.FragmentSearchResultBinding
 import com.github.libretube.db.DatabaseHelper
 import com.github.libretube.db.obj.SearchHistoryItem
 import com.github.libretube.extensions.TAG
-import com.github.libretube.extensions.hideKeyboard
+import com.github.libretube.extensions.ceilHalf
 import com.github.libretube.extensions.toastFromMainDispatcher
 import com.github.libretube.helpers.PreferenceHelper
 import com.github.libretube.ui.activities.MainActivity
 import com.github.libretube.ui.adapters.SearchAdapter
+import com.github.libretube.ui.base.DynamicLayoutManagerFragment
 import com.github.libretube.ui.dialogs.ShareDialog
 import com.github.libretube.util.TextUtils
 import com.github.libretube.util.TextUtils.toTimeInSeconds
@@ -32,7 +33,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
-class SearchResultFragment : Fragment() {
+class SearchResultFragment : DynamicLayoutManagerFragment() {
     private var _binding: FragmentSearchResultBinding? = null
     private val binding get() = _binding!!
 
@@ -56,14 +57,16 @@ class SearchResultFragment : Fragment() {
         return binding.root
     }
 
+    override fun setLayoutManagers(gridItems: Int) {
+        _binding?.searchRecycler?.layoutManager = GridLayoutManager(context, gridItems.ceilHalf())
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
         // fixes a bug that the search query will stay the old one when searching for multiple
         // different queries in a row and navigating to the previous ones through back presses
         (context as MainActivity).setQuerySilent(query)
-
-        binding.searchRecycler.layoutManager = LinearLayoutManager(requireContext())
 
         // add the query to the history
         addToHistory(query)
@@ -112,7 +115,7 @@ class SearchResultFragment : Fragment() {
                 "${ShareDialog.YOUTUBE_FRONTEND_URL}/watch?v=$videoId"
             } ?: query
 
-            view?.let { context?.hideKeyboard(it) }
+            view?.let { SoftwareKeyboardControllerCompat(it).hide() }
             val response = try {
                 withContext(Dispatchers.IO) {
                     RetrofitInstance.api.getSearchResults(searchQuery, searchFilter).apply {

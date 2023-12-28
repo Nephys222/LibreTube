@@ -52,7 +52,9 @@ class PlaylistOptionsBottomSheet : BaseBottomSheet() {
             optionsList.add(R.string.clonePlaylist)
 
             // only add the bookmark option to the playlist if public
-            optionsList.add(if (isBookmarked) R.string.remove_bookmark else R.string.add_to_bookmarks)
+            optionsList.add(
+                if (isBookmarked) R.string.remove_bookmark else R.string.add_to_bookmarks
+            )
         } else {
             optionsList.add(R.string.renamePlaylist)
             optionsList.add(R.string.change_playlist_description)
@@ -66,8 +68,12 @@ class PlaylistOptionsBottomSheet : BaseBottomSheet() {
                 // play the playlist in the background
                 R.string.playOnBackground -> {
                     val playlist = withContext(Dispatchers.IO) {
-                        PlaylistsHelper.getPlaylist(playlistId)
+                        runCatching { PlaylistsHelper.getPlaylist(playlistId) }
+                    }.getOrElse {
+                        context?.toastFromMainDispatcher(R.string.error)
+                        return@setSimpleItems
                     }
+
                     playlist.relatedStreams.firstOrNull()?.let {
                         BackgroundHelper.playOnBackground(
                             requireContext(),

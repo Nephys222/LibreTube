@@ -27,6 +27,7 @@ import androidx.core.graphics.drawable.toDrawable
 import androidx.core.net.toUri
 import androidx.core.os.bundleOf
 import androidx.core.os.postDelayed
+import androidx.core.view.SoftwareKeyboardControllerCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.isGone
 import androidx.core.view.isInvisible
@@ -67,7 +68,6 @@ import com.github.libretube.db.obj.WatchPosition
 import com.github.libretube.enums.PlayerEvent
 import com.github.libretube.enums.ShareObjectType
 import com.github.libretube.extensions.formatShort
-import com.github.libretube.extensions.hideKeyboard
 import com.github.libretube.extensions.parcelable
 import com.github.libretube.extensions.seekBy
 import com.github.libretube.extensions.serializableExtra
@@ -114,17 +114,16 @@ import com.github.libretube.util.TextUtils
 import com.github.libretube.util.TextUtils.toTimeInSeconds
 import com.github.libretube.util.YoutubeHlsPlaylistParser
 import com.github.libretube.util.deArrow
-import com.google.android.material.elevation.SurfaceColors
-import java.io.IOException
-import java.util.*
-import java.util.concurrent.Executors
-import kotlin.math.abs
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import retrofit2.HttpException
+import java.io.IOException
+import java.util.*
+import java.util.concurrent.Executors
+import kotlin.math.abs
 
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 class PlayerFragment : Fragment(), OnlinePlayerOptions {
@@ -201,8 +200,8 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
 
     private val fullscreenDialog by lazy {
         object : Dialog(requireContext(), android.R.style.Theme_Black_NoTitleBar_Fullscreen) {
+            @Deprecated("Deprecated in Java", ReplaceWith("onbackpressedispatcher and callback"))
             override fun onBackPressed() {
-                super.onBackPressed()
                 unsetFullscreen()
             }
         }
@@ -387,7 +386,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        context?.hideKeyboard(view)
+        SoftwareKeyboardControllerCompat(view).hide()
 
         // reset the callbacks of the playing queue
         PlayingQueue.resetToDefaults()
@@ -1363,7 +1362,11 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
      */
     private fun initializePlayerNotification() {
         if (!this::nowPlayingNotification.isInitialized) {
-            nowPlayingNotification = NowPlayingNotification(requireContext(), exoPlayer, false)
+            nowPlayingNotification = NowPlayingNotification(
+                requireContext(),
+                exoPlayer,
+                NowPlayingNotification.Companion.NowPlayingNotificationType.VIDEO_ONLINE
+            )
         }
         val playerNotificationData = PlayerNotificationData(
             streams.title,

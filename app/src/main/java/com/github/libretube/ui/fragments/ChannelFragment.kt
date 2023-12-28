@@ -9,9 +9,8 @@ import androidx.core.os.bundleOf
 import androidx.core.view.children
 import androidx.core.view.isGone
 import androidx.core.view.isVisible
-import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.GridLayoutManager
 import com.github.libretube.R
 import com.github.libretube.api.RetrofitInstance
 import com.github.libretube.api.SubscriptionHelper
@@ -28,17 +27,19 @@ import com.github.libretube.obj.ChannelTabs
 import com.github.libretube.obj.ShareData
 import com.github.libretube.ui.adapters.SearchAdapter
 import com.github.libretube.ui.adapters.VideosAdapter
+import com.github.libretube.ui.base.DynamicLayoutManagerFragment
 import com.github.libretube.ui.dialogs.ShareDialog
 import com.github.libretube.ui.extensions.setupSubscriptionButton
 import com.github.libretube.ui.sheets.AddChannelToGroupSheet
 import com.github.libretube.util.deArrow
+import java.io.IOException
+import kotlin.math.ceil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import retrofit2.HttpException
-import java.io.IOException
 
-class ChannelFragment : Fragment() {
+class ChannelFragment : DynamicLayoutManagerFragment() {
     private var _binding: FragmentChannelBinding? = null
     private val binding get() = _binding!!
 
@@ -77,10 +78,15 @@ class ChannelFragment : Fragment() {
         return binding.root
     }
 
+    override fun setLayoutManagers(gridItems: Int) {
+        _binding?.channelRecView?.layoutManager = GridLayoutManager(
+            context,
+            ceil((gridItems.toDouble() / 2)).toInt()
+        )
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-        binding.channelRecView.layoutManager = LinearLayoutManager(context)
 
         binding.channelRefresh.setOnRefreshListener {
             fetchChannel()
@@ -110,7 +116,7 @@ class ChannelFragment : Fragment() {
 
         try {
             if (binding.tabChips.checkedChipId == binding.videos.id) {
-                fetchChannelNextPage(nextPages[0] ?: return@launch)?.let {
+                fetchChannelNextPage(nextPages[0] ?: return@launch).let {
                     nextPages[0] = it
                 }
             } else {
@@ -121,7 +127,7 @@ class ChannelFragment : Fragment() {
                     tab.name == possibleTabs[currentTabIndex - 1].identifierName
                 }
                 val nextPage = nextPages[currentTabIndex] ?: return@launch
-                fetchTabNextPage(nextPage, channelTab)?.let {
+                fetchTabNextPage(nextPage, channelTab).let {
                     nextPages[currentTabIndex] = it
                 }
             }

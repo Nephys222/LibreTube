@@ -66,9 +66,11 @@ class AddToPlaylistDialog : DialogFragment() {
                     CreatePlaylistDialog().show(childFragmentManager, null)
                 }
                 getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener {
-                    val index = binding.playlistsSpinner.selectedItemPosition
-                    val playlist = playlists[index]
+                    val playlistIndex = binding.playlistsSpinner.selectedItemPosition
+
+                    val playlist = playlists.getOrElse(playlistIndex) { return@setOnClickListener }
                     viewModel.lastSelectedPlaylistId = playlist.id!!
+
                     dialog?.hide()
                     lifecycleScope.launch {
                         addToPlaylist(playlist.id, playlist.name!!)
@@ -81,28 +83,23 @@ class AddToPlaylistDialog : DialogFragment() {
     private fun fetchPlaylists(binding: DialogAddToPlaylistBinding) {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.CREATED) {
-                val response = try {
+                playlists = try {
                     PlaylistsHelper.getPlaylists()
                 } catch (e: Exception) {
                     Log.e(TAG(), e.toString())
                     Toast.makeText(context, R.string.unknown_error, Toast.LENGTH_SHORT).show()
                     return@repeatOnLifecycle
-                }
+                }.filter { !it.name.isNullOrEmpty() }
 
-                playlists = response.filter { !it.name.isNullOrEmpty() }
+                binding.playlistsSpinner.items = playlists.map { it.name!! }
+
                 if (playlists.isEmpty()) return@repeatOnLifecycle
-
-                binding.playlistsSpinner.adapter =
-                    ArrayAdapter(
-                        requireContext(),
-                        R.layout.dropdown_item,
-                        playlists.map { it.name!! }
-                    )
 
                 // select the last used playlist
                 viewModel.lastSelectedPlaylistId?.let { id ->
-                    val latestIndex = response.indexOfFirst { it.id == id }.takeIf { it >= 0 } ?: 0
-                    binding.playlistsSpinner.setSelection(latestIndex)
+                    binding.playlistsSpinner.selectedItemPosition = playlists
+                        .indexOfFirst { it.id == id }
+                        .takeIf { it >= 0 } ?: 0
                 }
             }
         }
