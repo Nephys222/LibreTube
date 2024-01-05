@@ -48,6 +48,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.hls.HlsMediaSource
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.github.libretube.NavDirections
 import com.github.libretube.R
 import com.github.libretube.api.CronetHelper
 import com.github.libretube.api.JsonHelper
@@ -97,6 +98,7 @@ import com.github.libretube.ui.base.BaseActivity
 import com.github.libretube.ui.dialogs.AddToPlaylistDialog
 import com.github.libretube.ui.dialogs.DownloadDialog
 import com.github.libretube.ui.dialogs.ShareDialog
+import com.github.libretube.ui.extensions.animateDown
 import com.github.libretube.ui.extensions.setupSubscriptionButton
 import com.github.libretube.ui.interfaces.OnlinePlayerOptions
 import com.github.libretube.ui.listeners.SeekbarPreviewListener
@@ -186,6 +188,9 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
     private var seekBarPreviewListener: SeekbarPreviewListener? = null
     private var scrubbingTimeBar = false
     private var chaptersBottomSheet: ChaptersBottomSheet? = null
+
+    // True when the video was closed through the close button on PiP mode
+    private var closedVideo = false
 
     /**
      * The orientation of the `fragment_player.xml` that's currently used
@@ -429,8 +434,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
                 if (_binding == null) return
 
                 mainMotionLayout.progress = abs(progress)
-                binding.player.hideController()
-                binding.player.useController = false
+                disableController()
                 commentsViewModel.setCommentSheetExpand(false)
                 chaptersBottomSheet?.dismiss()
                 transitionEndId = endId
@@ -452,7 +456,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
                     viewModel.isMiniPlayerVisible.value = true
                     // disable captions temporarily
                     updateCurrentSubtitle(null)
-                    binding.player.useController = false
+                    disableController()
                     commentsViewModel.setCommentSheetExpand(null)
                     binding.sbSkipBtn.isGone = true
                     mainMotionLayout.progress = 1F
@@ -461,12 +465,18 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
             }
         })
 
-        binding.playerMotionLayout.addSwipeUpListener {
-            if (this::streams.isInitialized && PlayerHelper.fullscreenGesturesEnabled) {
-                binding.player.hideController()
-                setFullscreen()
+        binding.playerMotionLayout
+            .addSwipeUpListener {
+                if (this::streams.isInitialized && PlayerHelper.fullscreenGesturesEnabled) {
+                    binding.player.hideController()
+                    setFullscreen()
+                }
             }
-        }
+            .addSwipeDownListener {
+                if (viewModel.isMiniPlayerVisible.value == true) {
+                    closeMiniPlayer()
+                }
+            }
 
         binding.playerMotionLayout.progress = 1F
         binding.playerMotionLayout.transitionToStart()
@@ -475,6 +485,16 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
         if (PlayerHelper.pipEnabled) {
             PictureInPictureCompat.setPictureInPictureParams(activity, pipParams)
         }
+    }
+
+    private fun closeMiniPlayer() {
+        binding
+            .playerMotionLayout
+            .animateDown(
+                duration = 300L,
+                dy = 500F,
+                onEnd = ::killPlayerFragment,
+            )
     }
 
     private fun onManualPlayerClose() {
@@ -627,8 +647,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
             if (!this::streams.isInitialized) return@setOnClickListener
 
             val activity = view?.context as MainActivity
-            val bundle = bundleOf(IntentData.channelId to streams.uploaderUrl)
-            activity.navController.navigate(R.id.channelFragment, bundle)
+            activity.navController.navigate(NavDirections.openChannel(streams.uploaderUrl))
             activity.binding.mainMotionLayout.transitionToEnd()
             binding.playerMotionLayout.transitionToEnd()
         }
@@ -757,6 +776,11 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
     override fun onResume() {
         super.onResume()
 
+        if (closedVideo) {
+            closedVideo = false
+            nowPlayingNotification.refreshNotification()
+        }
+
         // re-enable and load video stream
         if (this::trackSelector.isInitialized) {
             trackSelector.updateParameters {
@@ -787,6 +811,12 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
             context?.unregisterReceiver(broadcastReceiver)
         }
 
+        _binding = null
+
+        stopVideoPlay()
+    }
+
+    private fun stopVideoPlay() {
         try {
             saveWatchPosition()
 
@@ -796,8 +826,6 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
         } catch (e: Exception) {
             e.printStackTrace()
         }
-
-        _binding = null
     }
 
     // save the watch position if video isn't finished and option enabled
@@ -1049,8 +1077,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
     private fun showAutoPlayCountdown() {
         if (!PlayingQueue.hasNext()) return
 
-        binding.player.useController = false
-        binding.player.hideController()
+        disableController()
         binding.autoplayCountdown.setHideSelfListener {
             // could fail if the video already got closed before
             runCatching {
@@ -1508,19 +1535,21 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
         super.onPictureInPictureModeChanged(isInPictureInPictureMode)
         if (isInPictureInPictureMode) {
             // hide and disable exoPlayer controls
-            binding.player.hideController()
-            binding.player.useController = false
+            disableController()
 
             updateCurrentSubtitle(null)
 
             openOrCloseFullscreenDialog(true)
         } else {
+            binding.player.useController = true
+
             // close button got clicked in PiP mode
             // pause the video and keep the app alive
-            if (lifecycle.currentState == Lifecycle.State.CREATED) exoPlayer.pause()
-
-            // enable exoPlayer controls again
-            binding.player.useController = true
+            if (lifecycle.currentState == Lifecycle.State.CREATED) {
+                exoPlayer.pause()
+                nowPlayingNotification.cancelNotification()
+                closedVideo = true
+            }
 
             updateCurrentSubtitle(currentSubtitle)
 
@@ -1588,6 +1617,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
     }
 
     private fun killPlayerFragment() {
+        stopVideoPlay()
         viewModel.isFullscreen.value = false
         viewModel.isMiniPlayerVisible.value = false
 
@@ -1600,8 +1630,6 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
         mainActivity.supportFragmentManager.commit {
             remove(this@PlayerFragment)
         }
-
-        onDestroy()
     }
 
     /**
@@ -1646,5 +1674,10 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
         } else {
             checkForNecessaryOrientationRestart()
         }
+    }
+
+    private fun disableController() {
+        binding.player.useController = false
+        binding.player.hideController()
     }
 }

@@ -4,6 +4,7 @@ plugins {
     id("kotlin-android")
     id("kotlinx-serialization")
     id("kotlin-parcelize")
+    id("androidx.navigation.safeargs.kotlin")
 }
 
 android {
@@ -13,8 +14,8 @@ android {
         applicationId = "com.github.libretube"
         minSdk = 21
         targetSdk = 33
-        versionCode = 45
-        versionName = "0.20.1"
+        versionCode = 46
+        versionName = "0.21.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         resValue("string", "app_name", "LibreTube")
 

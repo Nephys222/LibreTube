@@ -10,15 +10,16 @@ import androidx.core.view.children
 import androidx.core.view.isGone
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.GridLayoutManager
 import com.github.libretube.R
 import com.github.libretube.api.RetrofitInstance
-import com.github.libretube.api.SubscriptionHelper
 import com.github.libretube.api.obj.ChannelTab
 import com.github.libretube.constants.IntentData
 import com.github.libretube.databinding.FragmentChannelBinding
 import com.github.libretube.enums.ShareObjectType
 import com.github.libretube.extensions.TAG
+import com.github.libretube.extensions.ceilHalf
 import com.github.libretube.extensions.formatShort
 import com.github.libretube.extensions.toID
 import com.github.libretube.helpers.ImageHelper
@@ -32,22 +33,21 @@ import com.github.libretube.ui.dialogs.ShareDialog
 import com.github.libretube.ui.extensions.setupSubscriptionButton
 import com.github.libretube.ui.sheets.AddChannelToGroupSheet
 import com.github.libretube.util.deArrow
-import java.io.IOException
-import kotlin.math.ceil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import retrofit2.HttpException
+import java.io.IOException
 
 class ChannelFragment : DynamicLayoutManagerFragment() {
     private var _binding: FragmentChannelBinding? = null
     private val binding get() = _binding!!
+    private val args by navArgs<ChannelFragmentArgs>()
 
     private var channelId: String? = null
     private var channelName: String? = null
     private var channelAdapter: VideosAdapter? = null
     private var isLoading = true
-    private var isSubscribed: Boolean? = false
 
     private val possibleTabs = arrayOf(
         ChannelTabs.Shorts,
@@ -61,12 +61,8 @@ class ChannelFragment : DynamicLayoutManagerFragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        arguments?.let {
-            channelId = it.getString(IntentData.channelId)?.toID()
-            channelName = it.getString(IntentData.channelName)
-                ?.replace("/c/", "")
-                ?.replace("/user/", "")
-        }
+        channelId = args.channelId?.toID()
+        channelName = args.channelName?.replace("/c/", "")?.replace("/user/", "")
     }
 
     override fun onCreateView(
@@ -81,7 +77,7 @@ class ChannelFragment : DynamicLayoutManagerFragment() {
     override fun setLayoutManagers(gridItems: Int) {
         _binding?.channelRecView?.layoutManager = GridLayoutManager(
             context,
-            ceil((gridItems.toDouble() / 2)).toInt()
+            gridItems.ceilHalf()
         )
     }
 
@@ -171,8 +167,6 @@ class ChannelFragment : DynamicLayoutManagerFragment() {
         val shareData = ShareData(currentChannel = response.name)
 
         val channelId = channelId ?: return@launch
-        // fetch and update the subscription status
-        isSubscribed = SubscriptionHelper.isSubscribed(channelId) ?: false
 
         binding.channelSubscribe.setupSubscriptionButton(
             channelId,
