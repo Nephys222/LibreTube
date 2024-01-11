@@ -3,6 +3,7 @@ package com.github.libretube.helpers
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Color
 import android.net.Uri
 import android.widget.ImageView
 import androidx.core.graphics.drawable.toBitmapOrNull
@@ -19,46 +20,65 @@ import com.github.libretube.util.DataSaverMode
 import java.nio.file.Path
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.io.File
 
 object ImageHelper {
     lateinit var imageLoader: ImageLoader
+
+    private val Context.coilFile get() = cacheDir.resolve("coil")
 
     /**
      * Initialize the image loader
      */
     fun initializeImageLoader(context: Context) {
-        val maxImageCacheSize = PreferenceHelper.getString(
-            PreferenceKeys.MAX_IMAGE_CACHE,
-            ""
-        )
+        val maxCacheSize = PreferenceHelper.getString(PreferenceKeys.MAX_IMAGE_CACHE, "128")
 
         imageLoader = ImageLoader.Builder(context)
             .callFactory(CronetHelper.callFactory)
+            .crossfade(true)
             .apply {
-                when (maxImageCacheSize) {
-                    "" -> {
-                        diskCachePolicy(CachePolicy.DISABLED)
-                    }
+                if (maxCacheSize.isEmpty()) {
+                    diskCachePolicy(CachePolicy.DISABLED)
+                } else {
+                    diskCachePolicy(CachePolicy.ENABLED)
+                    memoryCachePolicy(CachePolicy.ENABLED)
 
-                    else -> diskCache(
-                        DiskCache.Builder()
-                            .directory(context.cacheDir.resolve("coil"))
-                            .maxSizeBytes(maxImageCacheSize.toInt() * 1024 * 1024L)
-                            .build()
+                    val diskCache = generateDiskCache(
+                        directory = context.coilFile,
+                        size = maxCacheSize.toInt()
                     )
+                    diskCache(diskCache)
                 }
             }
+            .build()
+    }
+
+    private fun generateDiskCache(directory: File, size: Int): DiskCache {
+        return DiskCache.Builder()
+            .directory(directory)
+            .maxSizeBytes(size * 1024 * 1024L)
             .build()
     }
 
     /**
      * load an image from a url into an imageView
      */
-    fun loadImage(url: String?, target: ImageView) {
+    fun loadImage(url: String?, target: ImageView, whiteBackground: Boolean = false) {
         // only load the image if the data saver mode is disabled
-        if (DataSaverMode.isEnabled(target.context) || url == null) return
+        if (DataSaverMode.isEnabled(target.context) || url.isNullOrEmpty()) return
         val urlToLoad = ProxyHelper.unwrapImageUrl(url)
-        target.load(urlToLoad, imageLoader)
+
+        val request = ImageRequest.Builder(target.context)
+            .data(urlToLoad)
+            .listener { _, result ->
+                // set the background to white for transparent images
+                if (whiteBackground) target.setBackgroundColor(Color.WHITE)
+
+                target.setImageDrawable(result.drawable)
+            }
+            .build()
+
+        imageLoader.enqueue(request)
     }
 
     suspend fun downloadImage(context: Context, url: String, path: Path) {

@@ -5,6 +5,7 @@ plugins {
     id("kotlinx-serialization")
     id("kotlin-parcelize")
     id("androidx.navigation.safeargs.kotlin")
+    alias(libs.plugins.baselineprofile)
 }
 
 android {
@@ -14,8 +15,8 @@ android {
         applicationId = "com.github.libretube"
         minSdk = 21
         targetSdk = 33
-        versionCode = 46
-        versionName = "0.21.0"
+        versionCode = 47
+        versionName = "0.21.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         resValue("string", "app_name", "LibreTube")
 
@@ -56,6 +57,7 @@ android {
         jvmTarget = "17"
     }
 
+    // Comment this block if issues occur while generating the baseline profile
     splits {
         abi {
             isEnable = true
@@ -135,4 +137,8 @@ dependencies {
     /* Room */
     ksp(libs.room.compiler)
     implementation(libs.room)
+
+    /* Baseline profile generation */
+    implementation(libs.androidx.profileinstaller)
+    "baselineProfile"(project(":baselineprofile"))
 }

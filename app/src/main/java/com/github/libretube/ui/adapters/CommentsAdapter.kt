@@ -22,6 +22,7 @@ import com.github.libretube.api.obj.Comment
 import com.github.libretube.constants.IntentData
 import com.github.libretube.databinding.CommentsRowBinding
 import com.github.libretube.extensions.formatShort
+import com.github.libretube.extensions.toID
 import com.github.libretube.helpers.ClipboardHelper
 import com.github.libretube.helpers.ImageHelper
 import com.github.libretube.helpers.NavigationHelper
@@ -82,11 +83,11 @@ class CommentsAdapter(
             commentText.text = comment.commentText?.replace("</a>", "</a> ")
                 ?.parseAsHtml(tagHandler = HtmlParser(LinkHandler(handleLink ?: {})))
 
-            ImageHelper.loadImage(comment.thumbnail, commentorImage)
+            ImageHelper.loadImage(comment.thumbnail, commentorImage, true)
             likesTextView.text = comment.likeCount.formatShort()
 
             if (comment.creatorReplied && !channelAvatar.isNullOrBlank()) {
-                ImageHelper.loadImage(channelAvatar, creatorReplyImageView)
+                ImageHelper.loadImage(channelAvatar, creatorReplyImageView, true)
                 creatorReplyImageView.isVisible = true
             }
 

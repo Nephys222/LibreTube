@@ -30,9 +30,11 @@ import com.github.libretube.databinding.FragmentAudioPlayerBinding
 import com.github.libretube.extensions.normalize
 import com.github.libretube.extensions.seekBy
 import com.github.libretube.extensions.toID
+import com.github.libretube.extensions.togglePlayPauseState
 import com.github.libretube.helpers.AudioHelper
 import com.github.libretube.helpers.BackgroundHelper
 import com.github.libretube.helpers.ImageHelper
+import com.github.libretube.helpers.NavBarHelper
 import com.github.libretube.helpers.NavigationHelper
 import com.github.libretube.helpers.PlayerHelper
 import com.github.libretube.helpers.ThemeHelper
@@ -44,6 +46,7 @@ import com.github.libretube.ui.models.PlayerViewModel
 import com.github.libretube.ui.sheets.ChaptersBottomSheet
 import com.github.libretube.ui.sheets.PlaybackOptionsSheet
 import com.github.libretube.ui.sheets.PlayingQueueSheet
+import com.github.libretube.ui.sheets.SleepTimerSheet
 import com.github.libretube.ui.sheets.VideoOptionsBottomSheet
 import com.github.libretube.util.DataSaverMode
 import com.github.libretube.util.PlayingQueue
@@ -152,12 +155,16 @@ class AudioPlayerFragment : Fragment(), AudioPlayerOptions {
             }
         }
 
+        binding.sleepTimer.setOnClickListener {
+            SleepTimerSheet().show(childFragmentManager)
+        }
+
         binding.openVideo.setOnClickListener {
             BackgroundHelper.stopBackgroundPlay(requireContext())
             killFragment()
             NavigationHelper.navigateVideo(
                 context = requireContext(),
-                videoId = PlayingQueue.getCurrent()?.url?.toID(),
+                videoUrlOrId = PlayingQueue.getCurrent()?.url,
                 timestamp = playerService?.player?.currentPosition?.div(1000) ?: 0,
                 keepQueue = true,
                 forceVideo = true
@@ -182,11 +189,11 @@ class AudioPlayerFragment : Fragment(), AudioPlayerOptions {
         binding.thumbnail.setOnTouchListener(listener)
 
         binding.playPause.setOnClickListener {
-            if (isPaused) playerService?.play() else playerService?.pause()
+            playerService?.player?.togglePlayPauseState()
         }
 
         binding.miniPlayerPause.setOnClickListener {
-            if (isPaused) playerService?.play() else playerService?.pause()
+            playerService?.player?.togglePlayPauseState()
         }
 
         binding.showMore.setOnClickListener {
@@ -201,7 +208,7 @@ class AudioPlayerFragment : Fragment(), AudioPlayerOptions {
             bar.progress = audioHelper.getVolumeWithScale(bar.max)
         }
 
-        if (!PlayerHelper.playAutomatically) updatePlayPauseButton(false)
+        if (!PlayerHelper.playAutomatically) updatePlayPauseButton()
     }
 
     private fun killFragment() {
@@ -216,6 +223,7 @@ class AudioPlayerFragment : Fragment(), AudioPlayerOptions {
     private fun initializeTransitionLayout() {
         mainActivity.binding.container.isVisible = true
         val mainMotionLayout = mainActivity.binding.mainMotionLayout
+        mainMotionLayout.progress = 0F
 
         val surfaceColor = SurfaceColors.getColorForElevation(requireContext(), 3f)
         binding.audioPlayerContainer.setBackgroundColor(surfaceColor)
@@ -227,7 +235,9 @@ class AudioPlayerFragment : Fragment(), AudioPlayerOptions {
                 endId: Int,
                 progress: Float
             ) {
-                mainMotionLayout.progress = abs(progress)
+                if (NavBarHelper.hasTabs()) {
+                    mainMotionLayout.progress = abs(progress)
+                }
                 transitionEndId = endId
                 transitionStartId = startId
             }
@@ -235,7 +245,9 @@ class AudioPlayerFragment : Fragment(), AudioPlayerOptions {
             override fun onTransitionCompleted(motionLayout: MotionLayout?, currentId: Int) {
                 if (currentId == transitionEndId) {
                     viewModel.isMiniPlayerVisible.value = true
-                    mainMotionLayout.progress = 1F
+                    if (NavBarHelper.hasTabs()) {
+                        mainMotionLayout.progress = 1F
+                    }
                 } else if (currentId == transitionStartId) {
                     viewModel.isMiniPlayerVisible.value = false
                     mainMotionLayout.progress = 0F
@@ -336,16 +348,18 @@ class AudioPlayerFragment : Fragment(), AudioPlayerOptions {
         handler.postDelayed(this::updateSeekBar, 200)
     }
 
-    private fun updatePlayPauseButton(isPlaying: Boolean) {
-        val iconResource = if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play
-        binding.playPause.setIconResource(iconResource)
-        binding.miniPlayerPause.setImageResource(iconResource)
+    private fun updatePlayPauseButton() {
+        playerService?.player?.let {
+            val iconRes = PlayerHelper.getPlayPauseActionIcon(it)
+            binding.playPause.setIconResource(iconRes)
+            binding.miniPlayerPause.setImageResource(iconRes)
+        }
     }
 
     private fun handleServiceConnection() {
         viewModel.player = playerService?.player
-        playerService?.onIsPlayingChanged = { isPlaying ->
-            updatePlayPauseButton(isPlaying)
+        playerService?.onStateOrPlayingChanged = { isPlaying ->
+            updatePlayPauseButton()
             isPaused = !isPlaying
         }
         playerService?.onNewVideo = { streams, videoId ->
@@ -362,7 +376,7 @@ class AudioPlayerFragment : Fragment(), AudioPlayerOptions {
 
     override fun onDestroy() {
         // unregister all listeners and the connected [playerService]
-        playerService?.onIsPlayingChanged = null
+        playerService?.onStateOrPlayingChanged = null
         runCatching {
             activity?.unbindService(connection)
         }
@@ -373,7 +387,7 @@ class AudioPlayerFragment : Fragment(), AudioPlayerOptions {
     }
 
     override fun onSingleTap() {
-        if (isPaused) playerService?.play() else playerService?.pause()
+        playerService?.player?.togglePlayPauseState()
     }
 
     override fun onLongTap() {

@@ -146,8 +146,7 @@ class PlaylistFragment : DynamicLayoutManagerFragment() {
 
             binding.playlistInfo.text = getChannelAndVideoString(response, response.videos)
             binding.playlistInfo.setOnClickListener {
-                (context as MainActivity).navController
-                    .navigate(NavDirections.openChannel(response.uploaderUrl))
+                NavigationHelper.navigateChannel(requireContext(), response.uploaderUrl)
             }
 
             binding.playlistDescription.text = response.description?.parseAsHtml()
@@ -200,7 +199,7 @@ class PlaylistFragment : DynamicLayoutManagerFragment() {
                 if (playlistFeed.isEmpty()) return@setOnClickListener
                 NavigationHelper.navigateVideo(
                     requireContext(),
-                    response.relatedStreams.first().url?.toID(),
+                    response.relatedStreams.first().url,
                     playlistId
                 )
             }
@@ -230,7 +229,7 @@ class PlaylistFragment : DynamicLayoutManagerFragment() {
                     PlayingQueue.add(*queue.toTypedArray())
                     NavigationHelper.navigateVideo(
                         requireContext(),
-                        queue.first().url?.toID(),
+                        queue.first().url,
                         playlistId = playlistId,
                         keepQueue = true
                     )

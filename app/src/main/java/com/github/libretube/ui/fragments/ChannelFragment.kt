@@ -61,8 +61,10 @@ class ChannelFragment : DynamicLayoutManagerFragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        channelId = args.channelId?.toID()
-        channelName = args.channelName?.replace("/c/", "")?.replace("/user/", "")
+        channelName = args.channelName
+            ?.replace("/c/", "")
+            ?.replace("/user/", "")
+        channelId = args.channelId
     }
 
     override fun onCreateView(
@@ -214,7 +216,7 @@ class ChannelFragment : DynamicLayoutManagerFragment() {
         }
 
         ImageHelper.loadImage(response.bannerUrl, binding.channelBanner)
-        ImageHelper.loadImage(response.avatarUrl, binding.channelImage)
+        ImageHelper.loadImage(response.avatarUrl, binding.channelImage, true)
 
         binding.channelImage.setOnClickListener {
             NavigationHelper.openImagePreview(

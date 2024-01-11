@@ -79,6 +79,7 @@ import com.github.libretube.extensions.togglePlayPauseState
 import com.github.libretube.extensions.updateParameters
 import com.github.libretube.helpers.BackgroundHelper
 import com.github.libretube.helpers.ImageHelper
+import com.github.libretube.helpers.NavBarHelper
 import com.github.libretube.helpers.NavigationHelper
 import com.github.libretube.helpers.PlayerHelper
 import com.github.libretube.helpers.PlayerHelper.SPONSOR_HIGHLIGHT_CATEGORY
@@ -235,7 +236,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
                 }
 
                 PlayerEvent.Next -> {
-                    playNextVideo()
+                    playNextVideo(PlayingQueue.getNext())
                 }
 
                 PlayerEvent.Background -> {
@@ -423,6 +424,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
     private fun initializeTransitionLayout() {
         mainActivity.binding.container.isVisible = true
         val mainMotionLayout = mainActivity.binding.mainMotionLayout
+        mainMotionLayout.progress = 0F
 
         binding.playerMotionLayout.addTransitionListener(object : TransitionAdapter() {
             override fun onTransitionChange(
@@ -433,7 +435,9 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
             ) {
                 if (_binding == null) return
 
-                mainMotionLayout.progress = abs(progress)
+                if (NavBarHelper.hasTabs()) {
+                    mainMotionLayout.progress = abs(progress)
+                }
                 disableController()
                 commentsViewModel.setCommentSheetExpand(false)
                 chaptersBottomSheet?.dismiss()
@@ -459,7 +463,9 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
                     disableController()
                     commentsViewModel.setCommentSheetExpand(null)
                     binding.sbSkipBtn.isGone = true
-                    mainMotionLayout.progress = 1F
+                    if (NavBarHelper.hasTabs()) {
+                        mainMotionLayout.progress = 1F
+                    }
                     (activity as MainActivity).requestOrientationChange()
                 }
             }
@@ -628,7 +634,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
         }
 
         playerBinding.skipNext.setOnClickListener {
-            playNextVideo()
+            playNextVideo(PlayingQueue.getNext())
         }
 
         binding.relPlayerDownload.setOnClickListener {
@@ -647,7 +653,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
             if (!this::streams.isInitialized) return@setOnClickListener
 
             val activity = view?.context as MainActivity
-            activity.navController.navigate(NavDirections.openChannel(streams.uploaderUrl))
+            NavigationHelper.navigateChannel(requireContext(), streams.uploaderUrl)
             activity.binding.mainMotionLayout.transitionToEnd()
             binding.playerMotionLayout.transitionToEnd()
         }
@@ -998,6 +1004,11 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
 
     // used for autoplay and skipping to next video
     private fun playNextVideo(nextId: String? = null) {
+        if (nextId == null && PlayingQueue.repeatMode == Player.REPEAT_MODE_ONE) {
+            exoPlayer.seekTo(0)
+            return
+        }
+
         val nextVideoId = nextId ?: PlayingQueue.getNext()
         // by making sure that the next and the current video aren't the same
         saveWatchPosition()
@@ -1032,7 +1043,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
         binding.descriptionLayout.setStreams(streams)
 
         binding.apply {
-            ImageHelper.loadImage(streams.uploaderAvatar, binding.playerChannelImage)
+            ImageHelper.loadImage(streams.uploaderAvatar, binding.playerChannelImage, true)
             playerChannelName.text = streams.uploader
             titleTextView.text = streams.title
             playerChannelSubCount.text = context?.getString(
@@ -1149,13 +1160,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
     }
 
     private fun updatePlayPauseButton() {
-        binding.playImageView.setImageResource(
-            when {
-                exoPlayer.isPlaying -> R.drawable.ic_pause
-                exoPlayer.playbackState == Player.STATE_ENDED -> R.drawable.ic_restart
-                else -> R.drawable.ic_play
-            }
-        )
+        binding.playImageView.setImageResource(PlayerHelper.getPlayPauseActionIcon(exoPlayer))
     }
 
     private suspend fun initializeHighlight(highlight: Segment) {
