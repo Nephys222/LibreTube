@@ -273,8 +273,6 @@
     <string name="local_subscriptions">Suscripciones locales</string>
     <string name="preferences">Preferencias</string>
     <string name="backup_customInstances">Instancias personalizadas</string>
-    <string name="save_feed">Cargar contenido en segundo plano</string>
-    <string name="save_feed_summary">Cargar el feed de suscripción en segundo plano y evitar que se vuelva a cargar al cambiar de pestaña</string>
     <string name="play_next">Reproducir el siguiente</string>
     <string name="navigation_bar">Barra de navegación</string>
     <string name="change_region">Tendencias parece no estar disponible para la región actual. Selecciona otra en la configuración.</string>
@@ -344,7 +342,7 @@
     <string name="nothing_selected">¡Nada seleccionado!</string>
     <string name="color_violet">Violeta Versátil</string>
     <string name="failed_fetching_instances">No se pudieron obtener las instancias disponibles.</string>
-    <string name="hide_watched_from_feed">Ocultar vídeos vistos</string>
+    <string name="hide_watched_from_feed">Ocultar los vídeos ya vistos</string>
     <string name="hide_watched_from_feed_summary">No mostrar los vídeos vistos más del 90% en la pestaña de suscripciones</string>
     <string name="playlistUrl">URL de la lista de reproducción</string>
     <string name="pause_on_quit">Pausar al salir</string>
@@ -541,4 +539,16 @@
     <string name="rich_caption_rendering">Renderizado de subtítulos enriquecidos</string>
     <string name="rich_caption_rendering_summary">Renderizar los subtítulos web para una experiencia más rica y personalizada</string>
     <string name="copy_tooltip">Copiar</string>
+    <string name="export_groups">Exportar los grupos de canales</string>
+    <string name="import_groups">Importar los grupos de canales</string>
+    <string name="change">Cambiar</string>
+    <string name="change_instance">Cambiar de instancia</string>
+    <string name="suggest_change_instance">La carga tarda más de lo habitual. Considere cambiar la instancia</string>
+    <string name="delete_all">¡Se eliminarán todas las descargas!</string>
+    <string name="download_playlist">Descargar lista de reproducción</string>
+    <string name="enqueueing_playlist_download">Vídeos en cola para descargar de la lista de reproducción %1$s</string>
+    <string name="download_playlist_note">Por favor, sleccione la calidad máxima de audio/vídeo que desea descargar. Los subtítulos sólo se descargarán si están disponibles.</string>
+    <string name="enqueue_playlist_description">Muestra una notificación cuando se ponen en cola vídeos de una lista de reproducción para ser descargados.</string>
+    <string name="audio_language">Idioma del audio</string>
+    <string name="default_language">Predeterminado</string>
 </resources>

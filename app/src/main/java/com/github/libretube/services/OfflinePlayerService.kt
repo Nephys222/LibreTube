@@ -19,12 +19,12 @@ import com.github.libretube.constants.IntentData
 import com.github.libretube.db.DatabaseHolder
 import com.github.libretube.db.obj.DownloadWithItems
 import com.github.libretube.enums.FileType
+import com.github.libretube.enums.NotificationId
 import com.github.libretube.extensions.toAndroidUri
 import com.github.libretube.extensions.updateParameters
 import com.github.libretube.helpers.PlayerHelper
 import com.github.libretube.obj.PlayerNotificationData
 import com.github.libretube.util.NowPlayingNotification
-import com.github.libretube.util.NowPlayingNotification.Companion.PLAYER_NOTIFICATION_ID
 import kotlin.io.path.exists
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -63,22 +63,34 @@ class OfflinePlayerService : LifecycleService() {
             .setSmallIcon(R.drawable.ic_launcher_lockscreen)
             .build()
 
-        startForeground(PLAYER_NOTIFICATION_ID, notification)
+        startForeground(NotificationId.PLAYER_PLAYBACK.id, notification)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        videoId = intent?.getStringExtra(IntentData.videoId)!!
-
         lifecycleScope.launch {
             downloadsWithItems = withContext(Dispatchers.IO) {
                 DatabaseHolder.Database.downloadDao().getAll()
             }
-            val downloadWithItems = downloadsWithItems.first { it.download.videoId == videoId }
+            if (downloadsWithItems.isEmpty()) {
+                onDestroy()
+                return@launch
+            }
+
+            val videoId = intent?.getStringExtra(IntentData.videoId)
+
+            val downloadToPlay = if (videoId == null) {
+                downloadsWithItems = downloadsWithItems.shuffled()
+                downloadsWithItems.first()
+            } else {
+                downloadsWithItems.first { it.download.videoId == videoId }
+            }
+
+            this@OfflinePlayerService.videoId = downloadToPlay.download.videoId
 
             createPlayerAndNotification()
 
             // destroy the service if there was no success playing the selected audio/video
-            if (!startAudioPlayer(downloadWithItems)) onDestroy()
+            if (!startAudioPlayer(downloadToPlay)) onDestroy()
         }
 
         return super.onStartCommand(intent, flags, startId)

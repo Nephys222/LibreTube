@@ -45,22 +45,10 @@
             app:title="@string/new_videos_badge" />
 
         <SwitchPreferenceCompat
-            android:icon="@drawable/ic_loading"
-            android:summary="@string/save_feed_summary"
-            app:key="save_feed"
-            app:title="@string/save_feed" />
-
-        <SwitchPreferenceCompat
             android:icon="@drawable/ic_check"
             android:summary="@string/confirm_unsubscribing_summary"
             app:key="confirm_unsubscribing"
             app:title="@string/confirm_unsubscribing" />
-
-        <SwitchPreferenceCompat
-            android:icon="@drawable/ic_invisible"
-            android:summary="@string/hide_watched_from_feed_summary"
-            android:title="@string/hide_watched_from_feed"
-            app:key="hide_watched_from_feed" />
 
     </PreferenceCategory>
 

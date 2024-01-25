@@ -256,8 +256,6 @@
     <string name="open_copied">Отвори</string>
     <string name="local_subscriptions">Локална праћења</string>
     <string name="skip_segment">Прескочи сегмент</string>
-    <string name="save_feed">Учитај фид у позадини</string>
-    <string name="save_feed_summary">Учитавање фида претплате у позадини и спречавање његовог поновног учитавања приликом промене картица</string>
     <string name="navigation_bar">Трака за навигацију</string>
     <string name="push_channel_description">Приказује обавештења када су нови стримови доступни.</string>
     <string name="push_channel_name">Радник обавештења</string>
@@ -349,7 +347,7 @@
     <string name="privacy_alert">Упозорење о приватности</string>
     <string name="username_email">Желите ли да наставите са имејл-адресом која се не препоручује\?</string>
     <string name="proceed">Настави</string>
-    <string name="hide_watched_from_feed">Сакриј одгледане видео снимке из фида</string>
+    <string name="hide_watched_from_feed">Сакриј већ одгледане видео снимке</string>
     <string name="forward">Премотај унапред</string>
     <string name="alternative_pip_controls">Алтернативне контроле слике у слици</string>
     <string name="alternative_pip_controls_summary">Прикажите само звук и контроле за прескакање у слици у слици уместо премотавања унапред и уназад</string>
@@ -541,4 +539,6 @@
     <string name="rich_caption_rendering">Напредни титлови</string>
     <string name="rich_caption_rendering_summary">Приказивање веб-титлова за богатије и прилагођеније искуство</string>
     <string name="copy_tooltip">Копирај</string>
+    <string name="import_groups">Увези групе канала</string>
+    <string name="export_groups">Извези групе канала</string>
 </resources>

@@ -269,8 +269,6 @@
     <string name="local_subscriptions">Yerli abunəlikər</string>
     <string name="preferences">Üstünlüklər</string>
     <string name="backup_customInstances">Fərdi İnstansiyalar</string>
-    <string name="save_feed">Axını arxa planda yüklə</string>
-    <string name="save_feed_summary">Abunəlik axının arxa planda yükləyin və səhifələri dəyişərkən onun yenidən yüklənməsinin qarşısını alın</string>
     <string name="download_channel_name">Yükləmə Xidməti</string>
     <string name="download_channel_description">Media yükləyərkən bildiriş göstərir.</string>
     <string name="push_channel_name">Bildiriş İşçisi</string>
@@ -344,7 +342,7 @@
     <string name="nothing_selected">Heç nə seçilməyib!</string>
     <string name="color_violet">Bütöv Bənövşə</string>
     <string name="failed_fetching_instances">Mövcud instansiyaları əldə etmək mümkün olmadı.</string>
-    <string name="hide_watched_from_feed">Baxılan videoları axından gizlət</string>
+    <string name="hide_watched_from_feed">Artıq baxılan videoları gizlət</string>
     <string name="hide_watched_from_feed_summary">Abunəliklər səhifəsində 90% daha çox baxılan videoları göstərmə</string>
     <string name="playlistUrl">Oynatma Siyahısı URL\'si</string>
     <string name="pause_on_quit">Çıxışda dayandır</string>
@@ -537,4 +535,16 @@
     <string name="rich_caption_rendering">Zəngin titr təqdimatı</string>
     <string name="rich_caption_rendering_summary">Daha zəngin və fərdiləşdirilmiş təcrübə üçün veb titrləri göstər</string>
     <string name="copy_tooltip">Köçür</string>
+    <string name="export_groups">Kanal qrupların ixrac et</string>
+    <string name="import_groups">Kanal qrupların idxal et</string>
+    <string name="change_instance">İnstansiyanı dəyişdir</string>
+    <string name="suggest_change_instance">Yüklənilmə həmişəkindən daha uzun çəkir. İnstansiyanı dəyişdirməyi düşünün</string>
+    <string name="change">Dəyişdir</string>
+    <string name="audio_language">Səs dili</string>
+    <string name="default_language">Standart</string>
+    <string name="download_playlist">Oynatma siyahısın yüklə</string>
+    <string name="download_playlist_note">Xahiş olunur, yükləmək üçün maksimum səs/video keyfiyyətin seç. Titrlər yalnız varsa yükləniləcək.</string>
+    <string name="enqueue_playlist_description">Yükləniləcək pleylistin videoların növbəyə qoyarkən bildiriş göstərir.</string>
+    <string name="enqueueing_playlist_download">%1$s oynatma siyahısın yükləmək üçün videolar növbəyə salınır</string>
+    <string name="delete_all">Bütün yükləmələr silinəcək!</string>
 </resources>

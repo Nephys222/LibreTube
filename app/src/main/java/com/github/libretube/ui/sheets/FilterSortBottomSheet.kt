@@ -10,19 +10,22 @@ import androidx.fragment.app.setFragmentResult
 import com.github.libretube.constants.IntentData
 import com.github.libretube.databinding.FilterSortSheetBinding
 import com.github.libretube.enums.ContentFilter
+import com.github.libretube.extensions.parcelableArrayList
 import com.github.libretube.obj.SelectableOption
 
 class FilterSortBottomSheet: ExpandedBottomSheet() {
-
     private var _binding: FilterSortSheetBinding? = null
     private val binding get() = _binding!!
 
-    private lateinit var sortOptions: Array<SelectableOption>
+    private lateinit var sortOptions: List<SelectableOption>
 
-    private var selectedIndex: Int = 0
+    private var selectedIndex = 0
+    private var hideWatched = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        sortOptions = requireArguments().getParcelableArray(IntentData.sortOptions) as Array<SelectableOption>
+        val arguments = requireArguments()
+        sortOptions = arguments.parcelableArrayList(IntentData.sortOptions)!!
+        hideWatched = arguments.getBoolean(IntentData.hideWatched)
         super.onCreate(savedInstanceState)
     }
 
@@ -38,13 +41,13 @@ class FilterSortBottomSheet: ExpandedBottomSheet() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         addSortOptions()
         observeSortChanges()
+        observeHideWatchedChanges()
         setInitialFiltersState()
         observeFiltersChanges()
     }
 
     private fun addSortOptions() {
-        for (i in sortOptions.indices) {
-            val option = sortOptions.elementAt(i)
+        sortOptions.forEachIndexed { i, option ->
             val rb = createRadioButton(i, option.name)
 
             binding.sortRadioGroup.addView(rb)
@@ -71,10 +74,18 @@ class FilterSortBottomSheet: ExpandedBottomSheet() {
         }
     }
 
+    private fun observeHideWatchedChanges() {
+        binding.hideWatchedCheckbox.setOnCheckedChangeListener { _, checked ->
+            hideWatched = checked
+            notifyChange()
+        }
+    }
+
     private fun setInitialFiltersState() {
         binding.filterVideos.isChecked = ContentFilter.VIDEOS.isEnabled()
         binding.filterShorts.isChecked =  ContentFilter.SHORTS.isEnabled()
         binding.filterLivestreams.isChecked = ContentFilter.LIVESTREAMS.isEnabled()
+        binding.hideWatchedCheckbox.isChecked = hideWatched
     }
 
     private fun observeFiltersChanges() {
@@ -89,7 +100,10 @@ class FilterSortBottomSheet: ExpandedBottomSheet() {
     private fun notifyChange() {
         setFragmentResult(
             requestKey = FILTER_SORT_REQUEST_KEY,
-            result = bundleOf(SELECTED_SORT_OPTION_KEY to selectedIndex)
+            result = bundleOf(
+                IntentData.sortOptions to selectedIndex,
+                IntentData.hideWatched to hideWatched
+            )
         )
     }
 
@@ -100,7 +114,5 @@ class FilterSortBottomSheet: ExpandedBottomSheet() {
 
     companion object {
         const val FILTER_SORT_REQUEST_KEY = "filter_sort_request_key"
-        const val SELECTED_SORT_OPTION_KEY = "selected_sort_option_key"
     }
-
 }

@@ -268,8 +268,6 @@
     <string name="local_subscriptions">Lokale abonnementer</string>
     <string name="preferences">Innstillinger</string>
     <string name="backup_customInstances">Egendefinerte instanser</string>
-    <string name="save_feed">Last inn informasjonsstrøm i bakgrunnen</string>
-    <string name="save_feed_summary">Last inn abonnementsinformasjonsstrømmen i bakgrunnen og forhindre auto-gjenoppfrisking av den</string>
     <string name="play_next">Spill neste</string>
     <string name="download_channel_name">Nedlastingstjeneste</string>
     <string name="download_channel_description">Vis en merknad ved nedlasting av media.</string>
@@ -523,4 +521,20 @@
     <string name="autoplay_playlists">Autospill spillelister</string>
     <string name="remember_playback_speed">Husk avspillingshastighet</string>
     <string name="downvote">Nedover</string>
+    <string name="watched">Sett</string>
+    <string name="add_to_group">Legg til i gruppe</string>
+    <string name="uptime">%.2f%% oppetid</string>
+    <string name="grid_landscape">Rutenettskolonner (liggende)</string>
+    <string name="rich_caption_rendering_summary">Tegn vev-undertekster for rikere og mer tilpasset opplevelse</string>
+    <string name="invalid_input">Ugyldig inndata</string>
+    <string name="start_sleep_timer">Start søvntidsur</string>
+    <string name="import_groups">Importer kanalgrupper</string>
+    <string name="export_groups">Eksporter kanalgrupper</string>
+    <string name="no_segments_found">Ingen segmenter for denne videoen enda.</string>
+    <string name="copy_tooltip">Kopier</string>
+    <string name="disable_sleep_timer">Skru av søvntidsur</string>
+    <string name="time_in_minutes">Tid i minutter</string>
+    <string name="rich_caption_rendering">Avansert undertekstopptegning</string>
+    <string name="successfully_removed_from_playlist">«%1$s» fjernet fra spillelisten.</string>
+    <string name="finished">Fullført</string>
 </resources>
