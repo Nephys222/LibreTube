@@ -78,6 +78,7 @@ import com.github.libretube.extensions.togglePlayPauseState
 import com.github.libretube.extensions.updateParameters
 import com.github.libretube.helpers.BackgroundHelper
 import com.github.libretube.helpers.ImageHelper
+import com.github.libretube.helpers.IntentHelper
 import com.github.libretube.helpers.NavBarHelper
 import com.github.libretube.helpers.NavigationHelper
 import com.github.libretube.helpers.PlayerHelper
@@ -254,6 +255,8 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
     // schedule task to save the watch position each second
     private var watchPositionTimer: Timer? = null
 
+    private var bufferingTimeoutTask: Runnable? = null
+
     private val playerListener = object : Player.Listener {
         override fun onIsPlayingChanged(isPlaying: Boolean) {
             if (PlayerHelper.pipEnabled) {
@@ -347,6 +350,20 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
                 // finish PiP by finishing the activity
                 activity?.finish()
             }
+
+            // Buffering timeout after 10 Minutes
+            if (playbackState == Player.STATE_BUFFERING) {
+                if (bufferingTimeoutTask == null) {
+                    bufferingTimeoutTask = Runnable {
+                        exoPlayer.pause()
+                    }
+                }
+
+                handler.postDelayed(bufferingTimeoutTask!!, PlayerHelper.MAX_BUFFER_DELAY)
+            } else {
+                bufferingTimeoutTask?.let { handler.removeCallbacks(it) }
+            }
+
             super.onPlaybackStateChanged(playbackState)
         }
 
@@ -531,7 +548,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
             // set the max height to not cover the currently playing video
             commentsViewModel.handleLink = this::handleLink
             updateMaxSheetHeight()
-            commentsViewModel.videoId = videoId
+            commentsViewModel.videoIdLiveData.postValue(videoId)
             commentsViewModel.channelAvatar = streams.uploaderAvatar
             CommentsSheet().show(childFragmentManager)
         }
@@ -586,26 +603,16 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
             newShareDialog.show(childFragmentManager, ShareDialog::class.java.name)
         }
 
-        binding.relPlayerShare.setOnLongClickListener {
-            if (!this::streams.isInitialized || streams.hls == null) {
-                return@setOnLongClickListener true
-            }
+        binding.relPlayerExternalPlayer.setOnClickListener {
+            if (!this::streams.isInitialized || streams.hls == null) return@setOnClickListener
 
-            // start an intent with video as mimetype using the hls stream
-            val intent = Intent(Intent.ACTION_VIEW).apply {
-                setDataAndType(streams.hls.orEmpty().toUri(), "video/*")
-                putExtra(Intent.EXTRA_TITLE, streams.title)
-                putExtra("title", streams.title)
-                putExtra("artist", streams.uploader)
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            val context = requireContext()
+            lifecycleScope.launch {
+                val hlsStream = withContext(Dispatchers.IO) {
+                    ProxyHelper.unwrapStreamUrl(streams.hls!!).toUri()
+                }
+                IntentHelper.openWithExternalPlayer(context, hlsStream, streams.title, streams.uploader)
             }
-
-            try {
-                startActivity(intent)
-            } catch (e: Exception) {
-                Toast.makeText(context, R.string.no_player_found, Toast.LENGTH_SHORT).show()
-            }
-            true
         }
 
         binding.relPlayerBackground.setOnClickListener {
@@ -614,6 +621,10 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
 
             // start the background mode
             playOnBackground()
+        }
+
+        binding.relPlayerPip.setOnClickListener {
+            PictureInPictureCompat.enterPictureInPictureMode(requireActivity(), pipParams)
         }
 
         binding.relatedRecView.layoutManager = LinearLayoutManager(
@@ -1113,10 +1124,12 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
      */
     private fun handleLink(link: String) {
         // get video id if the link is a valid youtube video link
-        val videoId = TextUtils.getVideoIdFromUrl(link)
+        val uri = link.toUri()
+        val videoId = TextUtils.getVideoIdFromUri(uri)
+
         if (videoId.isNullOrEmpty()) {
             // not a YouTube video link, thus handle normally
-            val intent = Intent(Intent.ACTION_VIEW, link.toUri())
+            val intent = Intent(Intent.ACTION_VIEW, uri)
             startActivity(intent)
             return
         }
@@ -1124,7 +1137,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
         // check if the video is the current video and has a valid time
         if (videoId == this.videoId) {
             // try finding the time stamp of the url and seek to it if found
-            link.toUri().getQueryParameter("t")?.toTimeInSeconds()?.let {
+            uri.getQueryParameter("t")?.toTimeInSeconds()?.let {
                 exoPlayer.seekTo(it * 1000)
             }
         } else {
