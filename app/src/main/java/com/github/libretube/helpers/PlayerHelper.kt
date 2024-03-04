@@ -36,16 +36,20 @@ import com.github.libretube.api.obj.Segment
 import com.github.libretube.api.obj.Streams
 import com.github.libretube.constants.PreferenceKeys
 import com.github.libretube.db.DatabaseHolder
+import com.github.libretube.db.obj.WatchPosition
 import com.github.libretube.enums.PlayerEvent
 import com.github.libretube.enums.SbSkipOptions
 import com.github.libretube.extensions.updateParameters
 import com.github.libretube.obj.VideoStats
 import com.github.libretube.util.TextUtils
-import kotlinx.coroutines.runBlocking
 import java.util.Locale
 import java.util.concurrent.Executors
 import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 object PlayerHelper {
     private const val ACTION_MEDIA_CONTROL = "media_control"
@@ -53,6 +57,7 @@ object PlayerHelper {
     const val SPONSOR_HIGHLIGHT_CATEGORY = "poi_highlight"
     const val ROLE_FLAG_AUTO_GEN_SUBTITLE = C.ROLE_FLAG_SUPPLEMENTARY
     private const val MINIMUM_BUFFER_DURATION = 1000 * 10 // exo default is 50s
+    const val WATCH_POSITION_TIMER_DELAY_MS = 1000L
 
     /**
      * The maximum amount of time to wait until the video starts playing: 10 minutes
@@ -221,10 +226,11 @@ object PlayerHelper {
             false
         )
 
-    private val behaviorWhenMinimized = PreferenceHelper.getString(
-        PreferenceKeys.BEHAVIOR_WHEN_MINIMIZED,
-        "pip"
-    )
+    private val behaviorWhenMinimized
+        get() = PreferenceHelper.getString(
+            PreferenceKeys.BEHAVIOR_WHEN_MINIMIZED,
+            "pip"
+        )
 
     val pipEnabled: Boolean
         get() = behaviorWhenMinimized == "pip"
@@ -338,11 +344,11 @@ object PlayerHelper {
 
     fun shouldPlayNextVideo(isPlaylist: Boolean = false): Boolean {
         return autoPlayEnabled || (
-                isPlaylist && PreferenceHelper.getBoolean(
-                    PreferenceKeys.AUTOPLAY_PLAYLISTS,
-                    false
-                )
-                )
+            isPlaylist && PreferenceHelper.getBoolean(
+                PreferenceKeys.AUTOPLAY_PLAYLISTS,
+                false
+            )
+            )
     }
 
     private val handleAudioFocus
@@ -386,7 +392,9 @@ object PlayerHelper {
     }
 
     private fun getPendingIntent(activity: Activity, event: PlayerEvent): PendingIntent {
-        val intent = Intent(getIntentAction(activity)).putExtra(CONTROL_TYPE, event)
+        val intent = Intent(getIntentAction(activity))
+            .setPackage(activity.packageName)
+            .putExtra(CONTROL_TYPE, event)
         return PendingIntentCompat.getBroadcast(activity, event.ordinal, intent, 0, false)!!
     }
 
@@ -603,7 +611,7 @@ object PlayerHelper {
             }
     }
 
-    fun getPosition(videoId: String, duration: Long?): Long? {
+    fun getStoredWatchPosition(videoId: String, duration: Long?): Long? {
         if (duration == null) return null
 
         runCatching {
@@ -752,9 +760,9 @@ object PlayerHelper {
      */
     fun haveAudioTrackRoleFlagSet(@C.RoleFlags roleFlags: Int): Boolean {
         return isFlagSet(roleFlags, C.ROLE_FLAG_DESCRIBES_VIDEO) ||
-                isFlagSet(roleFlags, C.ROLE_FLAG_DUB) ||
-                isFlagSet(roleFlags, C.ROLE_FLAG_MAIN) ||
-                isFlagSet(roleFlags, C.ROLE_FLAG_ALTERNATE)
+            isFlagSet(roleFlags, C.ROLE_FLAG_DUB) ||
+            isFlagSet(roleFlags, C.ROLE_FLAG_MAIN) ||
+            isFlagSet(roleFlags, C.ROLE_FLAG_ALTERNATE)
     }
 
     @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
@@ -776,5 +784,16 @@ object PlayerHelper {
         player.isPlaying -> R.drawable.ic_pause
         player.playbackState == Player.STATE_ENDED -> R.drawable.ic_restart
         else -> R.drawable.ic_play
+    }
+
+    fun saveWatchPosition(player: ExoPlayer, videoId: String) {
+        if (player.duration == C.TIME_UNSET || player.currentPosition in listOf(0L, C.TIME_UNSET)) {
+            return
+        }
+
+        val watchPosition = WatchPosition(videoId, player.currentPosition)
+        CoroutineScope(Dispatchers.IO).launch {
+            DatabaseHolder.Database.watchPositionDao().insert(watchPosition)
+        }
     }
 }

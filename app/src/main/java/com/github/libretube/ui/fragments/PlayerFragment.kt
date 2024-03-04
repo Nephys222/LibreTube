@@ -23,6 +23,7 @@ import android.view.ViewGroup.LayoutParams
 import android.widget.Toast
 import androidx.constraintlayout.motion.widget.MotionLayout
 import androidx.constraintlayout.motion.widget.TransitionAdapter
+import androidx.core.content.ContextCompat
 import androidx.core.content.getSystemService
 import androidx.core.graphics.drawable.toDrawable
 import androidx.core.net.toUri
@@ -61,8 +62,6 @@ import com.github.libretube.constants.IntentData
 import com.github.libretube.constants.PreferenceKeys
 import com.github.libretube.databinding.FragmentPlayerBinding
 import com.github.libretube.db.DatabaseHelper
-import com.github.libretube.db.DatabaseHolder.Database
-import com.github.libretube.db.obj.WatchPosition
 import com.github.libretube.enums.PlayerEvent
 import com.github.libretube.enums.ShareObjectType
 import com.github.libretube.extensions.formatShort
@@ -109,17 +108,17 @@ import com.github.libretube.ui.sheets.PlayingQueueSheet
 import com.github.libretube.ui.sheets.StatsSheet
 import com.github.libretube.util.NowPlayingNotification
 import com.github.libretube.util.OnlineTimeFrameReceiver
+import com.github.libretube.util.PauseableTimer
 import com.github.libretube.util.PlayingQueue
 import com.github.libretube.util.TextUtils
 import com.github.libretube.util.TextUtils.toTimeInSeconds
 import com.github.libretube.util.YoutubeHlsPlaylistParser
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.util.*
 import java.util.concurrent.Executors
 import kotlin.math.abs
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 class PlayerFragment : Fragment(), OnlinePlayerOptions {
@@ -238,7 +237,10 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
     }
 
     // schedule task to save the watch position each second
-    private var watchPositionTimer: Timer? = null
+    private val watchPositionTimer = PauseableTimer(
+        onTick = this::saveWatchPosition,
+        delayMillis = PlayerHelper.WATCH_POSITION_TIMER_DELAY_MS
+    )
 
     private var bufferingTimeoutTask: Runnable? = null
 
@@ -269,14 +271,9 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
 
             // Start or pause watch position timer
             if (isPlaying) {
-                watchPositionTimer = Timer()
-                watchPositionTimer!!.scheduleAtFixedRate(object : TimerTask() {
-                    override fun run() {
-                        handler.post(this@PlayerFragment::saveWatchPosition)
-                    }
-                }, 1000, 1000)
+                watchPositionTimer.resume()
             } else {
-                watchPositionTimer?.cancel()
+                watchPositionTimer.pause()
             }
         }
 
@@ -371,9 +368,11 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
         playerLayoutOrientation = resources.configuration.orientation
 
         // broadcast receiver for PiP actions
-        context?.registerReceiver(
+        ContextCompat.registerReceiver(
+            requireContext(),
             broadcastReceiver,
-            IntentFilter(PlayerHelper.getIntentAction(requireContext()))
+            IntentFilter(PlayerHelper.getIntentAction(requireContext())),
+            ContextCompat.RECEIVER_NOT_EXPORTED
         )
 
         fullscreenResolution = PlayerHelper.getDefaultResolution(requireContext(), true)
@@ -498,7 +497,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
             .animateDown(
                 duration = 300L,
                 dy = 500F,
-                onEnd = ::onManualPlayerClose,
+                onEnd = ::onManualPlayerClose
             )
     }
 
@@ -594,6 +593,8 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
             // start the background mode
             playOnBackground()
         }
+
+        binding.relPlayerPip.isVisible = PictureInPictureCompat.isPictureInPictureAvailable(requireContext())
 
         binding.relPlayerPip.setOnClickListener {
             PictureInPictureCompat.enterPictureInPictureMode(requireActivity(), pipParams)
@@ -833,7 +834,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
 
         stopVideoPlay()
 
-        watchPositionTimer?.cancel()
+        watchPositionTimer.destroy()
     }
 
     private fun stopVideoPlay() {
@@ -856,17 +857,8 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
 
     // save the watch position if video isn't finished and option enabled
     private fun saveWatchPosition() {
-        if (!this::exoPlayer.isInitialized || !PlayerHelper.watchPositionsVideo || isTransitioning ||
-            exoPlayer.duration == C.TIME_UNSET || exoPlayer.currentPosition in listOf(
-                0L,
-                C.TIME_UNSET
-            )
-        ) {
-            return
-        }
-        val watchPosition = WatchPosition(videoId, exoPlayer.currentPosition)
-        CoroutineScope(Dispatchers.IO).launch {
-            Database.watchPositionDao().insert(watchPosition)
+        if (this::exoPlayer.isInitialized && !isTransitioning && PlayerHelper.watchPositionsVideo) {
+            PlayerHelper.saveWatchPosition(exoPlayer, videoId)
         }
     }
 
@@ -876,7 +868,11 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
         handler.postDelayed(this::checkForSegments, 100)
         if (!sponsorBlockEnabled || viewModel.segments.isEmpty()) return
 
-        exoPlayer.checkForSegments(requireContext(), viewModel.segments, viewModel.sponsorBlockConfig)
+        exoPlayer.checkForSegments(
+            requireContext(),
+            viewModel.segments,
+            viewModel.sponsorBlockConfig
+        )
             ?.let { segment ->
                 if (viewModel.isMiniPlayerVisible.value == true) return@let
                 binding.sbSkipBtn.isVisible = true
@@ -921,7 +917,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
 
             val videoStream = streams.videoStreams.firstOrNull()
             val isShort = PlayingQueue.getCurrent()?.isShort == true ||
-                    (videoStream?.height ?: 0) > (videoStream?.width ?: 0)
+                (videoStream?.height ?: 0) > (videoStream?.width ?: 0)
 
             PlayingQueue.setOnQueueTapListener { streamItem ->
                 streamItem.url?.toID()?.let { playNextVideo(it) }
@@ -958,7 +954,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
             if (binding.playerMotionLayout.progress != 1.0f) {
                 // show controllers when not in picture in picture mode
                 val inPipMode = PlayerHelper.pipEnabled &&
-                        PictureInPictureCompat.isInPictureInPictureMode(requireActivity())
+                    PictureInPictureCompat.isInPictureInPictureMode(requireActivity())
                 if (!inPipMode) {
                     binding.player.useController = true
                 }
@@ -1285,7 +1281,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
                     timeStamp = 0L
                 } else if (!streams.livestream) {
                     // seek to the saved watch position
-                    PlayerHelper.getPosition(videoId, streams.duration)?.let {
+                    PlayerHelper.getStoredWatchPosition(videoId, streams.duration)?.let {
                         exoPlayer.seekTo(it)
                     }
                 }
@@ -1586,11 +1582,9 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
     }
 
     fun onUserLeaveHint() {
-        if (PlayerHelper.pipEnabled && shouldStartPiP()) {
+        if (shouldStartPiP()) {
             PictureInPictureCompat.enterPictureInPictureMode(requireActivity(), pipParams)
-            return
-        }
-        if (PlayerHelper.pauseOnQuit) {
+        } else if (PlayerHelper.pauseOnQuit) {
             exoPlayer.pause()
         }
     }
@@ -1625,14 +1619,13 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
     /**
      * Detect whether PiP is supported and enabled
      */
-    private fun usePiP(): Boolean {
+    private fun shouldUsePip(): Boolean {
         return PictureInPictureCompat.isPictureInPictureAvailable(requireContext()) && PlayerHelper.pipEnabled
     }
 
     private fun shouldStartPiP(): Boolean {
-        return usePiP() && exoPlayer.isPlaying && !BackgroundHelper.isBackgroundServiceRunning(
-            requireContext()
-        )
+        return shouldUsePip() && exoPlayer.isPlaying &&
+            !BackgroundHelper.isBackgroundServiceRunning(requireContext())
     }
 
     private fun killPlayerFragment() {

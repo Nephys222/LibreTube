@@ -10,6 +10,7 @@ import android.os.IBinder
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat
 import androidx.core.view.isGone
 import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
@@ -155,14 +156,12 @@ class DownloadsFragment : DynamicLayoutManagerFragment() {
             }
         )
 
-
-        if (dbDownloads.isNotEmpty()){
+        if (dbDownloads.isNotEmpty()) {
             binding.deleteAll.isVisible = true
-            binding.deleteAll.setOnClickListener{
+            binding.deleteAll.setOnClickListener {
                 showDeleteAllDialog(binding.root.context, adapter)
             }
         }
-
 
         binding.shuffleBackground.setOnClickListener {
             BackgroundHelper.playOnBackgroundOffline(requireContext(), null)
@@ -190,13 +189,19 @@ class DownloadsFragment : DynamicLayoutManagerFragment() {
         super.onStart()
     }
 
-
     override fun onResume() {
         super.onResume()
-        val filter = IntentFilter()
-        filter.addAction(DownloadService.ACTION_SERVICE_STARTED)
-        filter.addAction(DownloadService.ACTION_SERVICE_STOPPED)
-        context?.registerReceiver(downloadReceiver, filter)
+
+        val filter = IntentFilter().apply {
+            addAction(DownloadService.ACTION_SERVICE_STARTED)
+            addAction(DownloadService.ACTION_SERVICE_STOPPED)
+        }
+        ContextCompat.registerReceiver(
+            requireContext(),
+            downloadReceiver,
+            filter,
+            ContextCompat.RECEIVER_NOT_EXPORTED
+        )
     }
 
     fun bindDownloadService(ids: IntArray? = null) {

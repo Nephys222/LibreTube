@@ -14,6 +14,7 @@ import android.support.v4.media.session.PlaybackStateCompat
 import androidx.annotation.DrawableRes
 import androidx.core.app.NotificationCompat
 import androidx.core.app.PendingIntentCompat
+import androidx.core.content.ContextCompat
 import androidx.core.content.getSystemService
 import androidx.core.graphics.drawable.toBitmap
 import androidx.media.app.NotificationCompat.MediaStyle
@@ -92,7 +93,8 @@ class NowPlayingNotification(
     }
 
     private fun createIntent(action: String): PendingIntent? {
-        val intent = Intent(action).setPackage(context.packageName)
+        val intent = Intent(action)
+            .setPackage(context.packageName)
 
         return PendingIntentCompat
             .getBroadcast(context, 1, intent, PendingIntent.FLAG_CANCEL_CURRENT, false)
@@ -260,13 +262,13 @@ class NowPlayingNotification(
 
     private fun createPlaybackState(@PlaybackStateCompat.State state: Int): PlaybackStateCompat {
         val stateActions = PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
-                PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS or
-                PlaybackStateCompat.ACTION_REWIND or
-                PlaybackStateCompat.ACTION_FAST_FORWARD or
-                PlaybackStateCompat.ACTION_PLAY_PAUSE or
-                PlaybackStateCompat.ACTION_PAUSE or
-                PlaybackStateCompat.ACTION_PLAY or
-                PlaybackStateCompat.ACTION_SEEK_TO
+            PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS or
+            PlaybackStateCompat.ACTION_REWIND or
+            PlaybackStateCompat.ACTION_FAST_FORWARD or
+            PlaybackStateCompat.ACTION_PLAY_PAUSE or
+            PlaybackStateCompat.ACTION_PAUSE or
+            PlaybackStateCompat.ACTION_PLAY or
+            PlaybackStateCompat.ACTION_SEEK_TO
 
         return PlaybackStateCompat.Builder()
             .setActions(stateActions)
@@ -300,8 +302,13 @@ class NowPlayingNotification(
 
             STOP -> {
                 when (notificationType) {
-                    NowPlayingNotificationType.AUDIO_ONLINE -> BackgroundHelper.stopBackgroundPlay(context)
-                    NowPlayingNotificationType.AUDIO_OFFLINE -> BackgroundHelper.stopBackgroundPlay(context, OfflinePlayerService::class.java)
+                    NowPlayingNotificationType.AUDIO_ONLINE -> BackgroundHelper.stopBackgroundPlay(
+                        context
+                    )
+                    NowPlayingNotificationType.AUDIO_OFFLINE -> BackgroundHelper.stopBackgroundPlay(
+                        context,
+                        OfflinePlayerService::class.java
+                    )
                     else -> Unit
                 }
             }
@@ -374,9 +381,17 @@ class NowPlayingNotification(
     }
 
     private fun createActionReceiver() {
-        listOf(PREV, NEXT, REWIND, FORWARD, PLAY_PAUSE, STOP).forEach {
-            context.registerReceiver(notificationActionReceiver, IntentFilter(it))
+        val filter = IntentFilter().apply {
+            listOf(PREV, NEXT, REWIND, FORWARD, PLAY_PAUSE, STOP).forEach {
+                addAction(it)
+            }
         }
+        ContextCompat.registerReceiver(
+            context,
+            notificationActionReceiver,
+            filter,
+            ContextCompat.RECEIVER_NOT_EXPORTED
+        )
     }
 
     /**
@@ -412,7 +427,7 @@ class NowPlayingNotification(
             VIDEO_ONLINE,
             VIDEO_OFFLINE,
             AUDIO_ONLINE,
-            AUDIO_OFFLINE,
+            AUDIO_OFFLINE
         }
     }
 }
