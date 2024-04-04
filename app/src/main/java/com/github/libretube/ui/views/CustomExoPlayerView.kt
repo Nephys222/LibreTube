@@ -269,6 +269,12 @@ open class CustomExoPlayerView(
         super.showController()
     }
 
+    fun showControllerPermanently() {
+        // remove the previous callback from the queue to prevent a flashing behavior
+        cancelHideControllerTask()
+        super.showController()
+    }
+
     override fun onTouchEvent(event: MotionEvent) = false
 
     private fun initRewindAndForward() {
@@ -735,7 +741,7 @@ open class CustomExoPlayerView(
         return super.onInterceptTouchEvent(ev)
     }
 
-    fun onKeyBoardAction(keyCode: Int, event: KeyEvent?): Boolean {
+    fun onKeyBoardAction(keyCode: Int): Boolean {
         when (keyCode) {
             KeyEvent.KEYCODE_SPACE, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> {
                 player?.togglePlayPauseState()
@@ -757,7 +763,7 @@ open class CustomExoPlayerView(
                 fragmentManager.fragments.filterIsInstance<PlayerFragment>().firstOrNull()
                     ?.toggleFullscreen()
             }
-            else -> super.onKeyUp(keyCode, event)
+            else -> return false
         }
 
         return true

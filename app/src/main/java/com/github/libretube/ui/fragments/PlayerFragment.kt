@@ -113,11 +113,11 @@ import com.github.libretube.util.PlayingQueue
 import com.github.libretube.util.TextUtils
 import com.github.libretube.util.TextUtils.toTimeInSeconds
 import com.github.libretube.util.YoutubeHlsPlaylistParser
-import java.util.concurrent.Executors
-import kotlin.math.abs
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.concurrent.Executors
+import kotlin.math.abs
 
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 class PlayerFragment : Fragment(), OnlinePlayerOptions {
@@ -191,7 +191,11 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
             }
 
             override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean {
-                return _binding?.player?.onKeyUp(keyCode, event) ?: true
+                if (_binding?.player?.onKeyUp(keyCode, event) == true) {
+                    return true
+                }
+
+                return super.onKeyUp(keyCode, event)
             }
         }
     }
@@ -309,7 +313,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
                         playNextVideo()
                     }
                 } else {
-                    binding.player.showController()
+                    binding.player.showControllerPermanently()
                 }
             }
 
@@ -692,6 +696,8 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
         openOrCloseFullscreenDialog(true)
 
         binding.player.updateMarginsByFullscreenMode()
+
+        updateFullscreenButtonVisibility()
     }
 
     @SuppressLint("SourceLockedOrientationActivity")
@@ -705,42 +711,39 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
             }
 
         viewModel.isFullscreen.value = false
-
-        if (
-            !PlayerHelper.autoFullscreenEnabled &&
-            mainActivity.screenOrientationPref == ActivityInfo.SCREEN_ORIENTATION_USER_PORTRAIT
-        ) {
-            mainActivity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_USER_PORTRAIT
-        }
-
         playerBinding.fullscreen.setImageResource(R.drawable.ic_fullscreen)
         playerBinding.exoTitle.isInvisible = true
 
-        updateResolutionOnFullscreenChange(false)
+        if (!PlayerHelper.autoFullscreenEnabled) {
+            mainActivity.requestedOrientation = mainActivity.screenOrientationPref
+        }
 
         openOrCloseFullscreenDialog(false)
+        updateResolutionOnFullscreenChange(false)
 
-        checkForNecessaryOrientationRestart()
+        restartActivityIfNeeded()
 
         binding.player.updateMarginsByFullscreenMode()
+
+        updateFullscreenButtonVisibility()
+    }
+
+    private fun updateFullscreenButtonVisibility() {
+        playerBinding.fullscreen.isInvisible = PlayerHelper.autoFullscreenEnabled
     }
 
     /**
      * Enable or disable fullscreen depending on the current state
      */
     fun toggleFullscreen() {
-        // hide player controller
         binding.player.hideController()
+
         if (viewModel.isFullscreen.value == false) {
             // go to fullscreen mode
             setFullscreen()
         } else {
             // exit fullscreen mode
             unsetFullscreen()
-
-            // disable the fullscreen button for auto fullscreen
-            // this is necessary to hide the button after an auto fullscreen for shorts
-            playerBinding.fullscreen.isVisible = !PlayerHelper.autoFullscreenEnabled
         }
     }
 
@@ -940,11 +943,8 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
                 isShort && binding.playerMotionLayout.progress == 0f
             ) {
                 setFullscreen()
-                playerBinding.fullscreen.isVisible = true
-            } else {
-                // disable the fullscreen button for auto fullscreen
-                playerBinding.fullscreen.isVisible = !PlayerHelper.autoFullscreenEnabled
             }
+            updateFullscreenButtonVisibility()
 
             binding.player.apply {
                 useController = false
@@ -1017,19 +1017,19 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
             }
     }
 
-    // used for autoplay and skipping to next video
+    /**
+     * Can be used for autoplay and manually skipping to the next video.
+     */
     private fun playNextVideo(nextId: String? = null) {
         if (nextId == null && PlayingQueue.repeatMode == Player.REPEAT_MODE_ONE) {
             exoPlayer.seekTo(0)
             return
         }
 
-        val nextVideoId = nextId ?: PlayingQueue.getNext()
-        // by making sure that the next and the current video aren't the same
+        // save the current watch position before starting the next video
         saveWatchPosition()
 
-        // save the id of the next stream as videoId and load the next video
-        if (nextVideoId == null) return
+        val nextVideoId = nextId ?: PlayingQueue.getNext() ?: return
 
         isTransitioning = true
         videoId = nextVideoId
@@ -1038,13 +1038,17 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
         arguments?.run {
             val playerData = parcelable<PlayerData>(IntentData.playerData)!!.copy(videoId = videoId)
             putParcelable(IntentData.playerData, playerData)
+            // make sure that autoplay continues without issues as the activity is obviously still alive
+            // when starting to play the next video
+            putBoolean(IntentData.wasIntentStopped, false)
         }
 
         // start to play the next video
         playVideo()
-        // close comment bottom sheet for next video
+
+        // close comment bottom sheet if opened for next video
         runCatching { commentsViewModel.commentsSheetDismiss?.invoke() }
-        // kill the chapters bottom sheet
+        // kill the chapters bottom sheet if opened
         runCatching { chaptersBottomSheet?.dismiss() }
         chaptersBottomSheet = null
     }
@@ -1337,7 +1341,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
             !PreferenceHelper.getBoolean(
                 PreferenceKeys.USE_HLS_OVER_DASH,
                 false
-            ) && streams.videoStreams.isNotEmpty() -> {
+            ) && streams.videoStreams.isNotEmpty() && !PlayerHelper.disablePipedProxy -> {
                 // only use the dash manifest generated by YT if either it's a livestream or no other source is available
                 val dashUri =
                     if (streams.livestream && streams.dash != null) {
@@ -1346,16 +1350,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
                         ).toUri()
                     } else {
                         // skip LBRY urls when checking whether the stream source is usable
-                        val urlToTest = streams.videoStreams.firstOrNull {
-                            !it.quality.orEmpty().contains("LBRY")
-                        }?.url.orEmpty()
-                        val shouldDisableProxy =
-                            ProxyHelper.useYouTubeSourceWithoutProxy(urlToTest)
-                        PlayerHelper.createDashSource(
-                            streams,
-                            requireContext(),
-                            disableProxy = shouldDisableProxy
-                        )
+                        PlayerHelper.createDashSource(streams, requireContext())
                     }
 
                 dashUri to MimeTypes.APPLICATION_MPD
@@ -1657,7 +1652,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
      * Check if the activity needs to be recreated due to an orientation change
      * If true, the activity will be automatically restarted
      */
-    private fun checkForNecessaryOrientationRestart() {
+    private fun restartActivityIfNeeded() {
         val lockedOrientations =
             listOf(
                 ActivityInfo.SCREEN_ORIENTATION_USER_PORTRAIT,
@@ -1696,7 +1691,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
                 else -> unsetFullscreen()
             }
         } else {
-            checkForNecessaryOrientationRestart()
+            restartActivityIfNeeded()
         }
     }
 
@@ -1705,7 +1700,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
         binding.player.hideController()
     }
 
-    fun onKeyUp(keyCode: Int, event: KeyEvent?): Boolean {
-        return _binding?.player?.onKeyBoardAction(keyCode, event) ?: false
+    fun onKeyUp(keyCode: Int): Boolean {
+        return _binding?.player?.onKeyBoardAction(keyCode) ?: false
     }
 }

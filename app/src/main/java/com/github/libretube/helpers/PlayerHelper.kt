@@ -41,6 +41,7 @@ import com.github.libretube.enums.PlayerEvent
 import com.github.libretube.enums.SbSkipOptions
 import com.github.libretube.extensions.updateParameters
 import com.github.libretube.obj.VideoStats
+import com.github.libretube.util.PlayingQueue
 import com.github.libretube.util.TextUtils
 import java.util.Locale
 import java.util.concurrent.Executors
@@ -82,11 +83,10 @@ object PlayerHelper {
     /**
      * Create a base64 encoded DASH stream manifest
      */
-    fun createDashSource(streams: Streams, context: Context, disableProxy: Boolean): Uri {
+    fun createDashSource(streams: Streams, context: Context): Uri {
         val manifest = DashHelper.createManifest(
             streams,
-            DisplayHelper.supportsHdr(context),
-            disableProxy
+            DisplayHelper.supportsHdr(context)
         )
 
         // encode to base64
@@ -336,13 +336,23 @@ object PlayerHelper {
         )
 
     val playAutomatically: Boolean
-        get() = PreferenceHelper
-            .getBoolean(
+        get() = PreferenceHelper.getBoolean(
                 PreferenceKeys.PLAY_AUTOMATICALLY,
                 true
             )
 
+    val disablePipedProxy: Boolean
+        get() = PreferenceHelper.getBoolean(
+                PreferenceKeys.DISABLE_VIDEO_IMAGE_PROXY,
+                false
+            )
+
     fun shouldPlayNextVideo(isPlaylist: Boolean = false): Boolean {
+        // if there is no next video, it obviously should not be played
+        if (!PlayingQueue.hasNext()) {
+            return false
+        }
+
         return autoPlayEnabled || (
             isPlaylist && PreferenceHelper.getBoolean(
                 PreferenceKeys.AUTOPLAY_PLAYLISTS,

@@ -15,8 +15,8 @@ android {
         applicationId = "com.github.libretube"
         minSdk = 21
         targetSdk = 34
-        versionCode = 48
-        versionName = "0.22.0"
+        versionCode = 50
+        versionName = "0.22.2"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         resValue("string", "app_name", "LibreTube")
 
@@ -107,10 +107,6 @@ dependencies {
     implementation(libs.lifecycle.livedata)
     implementation(libs.lifecycle.service)
 
-    /* Testing */
-    androidTestImplementation(libs.androidx.test.junit)
-    androidTestImplementation(libs.androidx.test.espressoCore)
-
     /* Design */
     implementation(libs.material)
 
@@ -126,6 +122,7 @@ dependencies {
 
     /* Retrofit and Kotlinx Serialization */
     implementation(libs.square.retrofit)
+    implementation(libs.logging.interceptor)
     implementation(libs.kotlinx.serialization)
     implementation(libs.kotlinx.datetime)
     implementation(libs.kotlinx.serialization.retrofit)
@@ -142,7 +139,7 @@ dependencies {
 
     /* Baseline profile generation */
     implementation(libs.androidx.profileinstaller)
-    "baselineProfile"(project(":baselineprofile"))
+    baselineProfile(project(":baselineprofile"))
 
     /* AndroidX Paging */
     implementation(libs.androidx.paging)
