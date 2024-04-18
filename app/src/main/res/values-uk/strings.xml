@@ -536,7 +536,7 @@
 \n%1$s до черги на завантаження</string>
     <string name="default_language">Типова</string>
     <string name="download_playlist">Завантажити список відтворення</string>
-    <string name="download_playlist_note">Виберіть максимальну якість завантажуваного аудіо / відео. Субтитри будуть завантажені, лише якщо вони доступні.</string>
+    <string name="download_playlist_note">Виберіть максимальну якість завантажуваного аудіо/відео. Субтитри будуть завантажені, лише якщо вони доступні.</string>
     <string name="enqueue_playlist_description">Показує сповіщення під час створення черги на завантаження відео зі списку відтворення.</string>
     <string name="also_clear_watch_positions">Також очистити позиції перегляду</string>
     <string name="behavior_when_minimized">Поведінка при згортанні</string>
@@ -548,4 +548,7 @@
     <string name="albums">Альбоми</string>
     <string name="import_temp_playlist">Імпортувати тимчасовий список відтворення?</string>
     <string name="import_temp_playlist_summary">Бажаєте створити новий список відтворення під назвою \"%1$s\"? Список відтворення міститиме %2$d відео.</string>
+    <string name="title">Заголовок</string>
+    <string name="contribute_to_dearrow">Зробити внесок у DeArrow</string>
+    <string name="thumbnail_time">Час показу мініатюр</string>
 </resources>

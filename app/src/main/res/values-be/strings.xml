@@ -531,7 +531,7 @@
     <string name="suggest_change_instance">Спампоўка займае больш часу, чым звычайна. Паспрабуйце змяніць сервер</string>
     <string name="delete_all">Ўсе спампоўкі будуць выдалены!</string>
     <string name="download_playlist">Спампаваць плэйліст</string>
-    <string name="download_playlist_note">Абярыце максімальную якасць пампаванага аўдыё / відэа. Субтытры будуць запампаваны толькі пры іх наяўнасці.</string>
+    <string name="download_playlist_note">Абярыце максімальную якасць пампаванага аўдыё/відэа. Субтытры будуць запампаваны толькі пры іх наяўнасці.</string>
     <string name="behavior_when_minimized">Паводзіны пры згортванні</string>
     <string name="gestures">Жэсты</string>
     <string name="also_clear_watch_positions">Таксама ачысціць пазіцыі прагляду</string>
@@ -547,4 +547,7 @@
     <string name="albums">Альбомы</string>
     <string name="import_temp_playlist_summary">Хочаце стварыць новы плэйліст пад назвай «%1$s»? Плэйліст будзе змяшчаць %2$d відэа.</string>
     <string name="import_temp_playlist">Імпартаваць часовы плэйліст?</string>
+    <string name="contribute_to_dearrow">Ўнесці свой ўклад ў DeArrow</string>
+    <string name="title">Загаловак</string>
+    <string name="thumbnail_time">Час паказу мініяцюр</string>
 </resources>
