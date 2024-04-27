@@ -66,7 +66,6 @@ import com.github.libretube.enums.PlayerEvent
 import com.github.libretube.enums.ShareObjectType
 import com.github.libretube.extensions.formatShort
 import com.github.libretube.extensions.parcelable
-import com.github.libretube.extensions.seekBy
 import com.github.libretube.extensions.serializableExtra
 import com.github.libretube.extensions.setMetadata
 import com.github.libretube.extensions.toID
@@ -202,27 +201,19 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
     /**
      * Receiver for all actions in the PiP mode
      */
-    private val broadcastReceiver = object : BroadcastReceiver() {
+    private val playerActionReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            when (intent.serializableExtra<PlayerEvent>(PlayerHelper.CONTROL_TYPE) ?: return) {
-                PlayerEvent.Play -> {
-                    exoPlayer.play()
-                }
+            val event = intent.serializableExtra<PlayerEvent>(PlayerHelper.CONTROL_TYPE) ?: return
 
-                PlayerEvent.Pause -> {
-                    exoPlayer.pause()
-                }
+            if (PlayerHelper.handlePlayerAction(exoPlayer, event)) return
 
-                PlayerEvent.Forward -> {
-                    exoPlayer.seekBy(PlayerHelper.seekIncrement)
-                }
-
-                PlayerEvent.Rewind -> {
-                    exoPlayer.seekBy(-PlayerHelper.seekIncrement)
-                }
-
+            when (event) {
                 PlayerEvent.Next -> {
                     playNextVideo(PlayingQueue.getNext())
+                }
+
+                PlayerEvent.Prev -> {
+                    playNextVideo(PlayingQueue.getPrev())
                 }
 
                 PlayerEvent.Background -> {
@@ -282,6 +273,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
         override fun onEvents(player: Player, events: Player.Events) {
             updateDisplayedDuration()
             super.onEvents(player, events)
+
             if (events.containsAny(
                     Player.EVENT_PLAYBACK_STATE_CHANGED,
                     Player.EVENT_IS_PLAYING_CHANGED,
@@ -289,6 +281,10 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
                 )
             ) {
                 updatePlayPauseButton()
+            }
+
+            if (events.contains(Player.EVENT_TRACKS_CHANGED)) {
+                PlayerHelper.setPreferredAudioQuality(requireContext(), exoPlayer, trackSelector)
             }
         }
 
@@ -372,8 +368,8 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
         // broadcast receiver for PiP actions
         ContextCompat.registerReceiver(
             requireContext(),
-            broadcastReceiver,
-            IntentFilter(PlayerHelper.getIntentAction(requireContext())),
+            playerActionReceiver,
+            IntentFilter(PlayerHelper.getIntentActionName(requireContext())),
             ContextCompat.RECEIVER_NOT_EXPORTED
         )
 
@@ -595,7 +591,8 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
             playOnBackground()
         }
 
-        binding.relPlayerPip.isVisible = PictureInPictureCompat.isPictureInPictureAvailable(requireContext())
+        binding.relPlayerPip.isVisible =
+            PictureInPictureCompat.isPictureInPictureAvailable(requireContext())
 
         binding.relPlayerPip.setOnClickListener {
             PictureInPictureCompat.enterPictureInPictureMode(requireActivity(), pipParams)
@@ -835,7 +832,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
 
         runCatching {
             // unregister the receiver for player actions
-            context?.unregisterReceiver(broadcastReceiver)
+            context?.unregisterReceiver(playerActionReceiver)
         }
 
         _binding = null
@@ -925,7 +922,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
 
             val videoStream = streams.videoStreams.firstOrNull()
             isShort = PlayingQueue.getCurrent()?.isShort == true ||
-                (videoStream?.height ?: 0) > (videoStream?.width ?: 0)
+                    (videoStream?.height ?: 0) > (videoStream?.width ?: 0)
 
             PlayingQueue.setOnQueueTapListener { streamItem ->
                 streamItem.url?.toID()?.let { playNextVideo(it) }
@@ -961,7 +958,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
             if (binding.playerMotionLayout.progress != 1.0f) {
                 // show controllers when not in picture in picture mode
                 val inPipMode = PlayerHelper.pipEnabled &&
-                    PictureInPictureCompat.isInPictureInPictureMode(requireActivity())
+                        PictureInPictureCompat.isInPictureInPictureMode(requireActivity())
                 if (!inPipMode) {
                     binding.player.useController = true
                 }
@@ -1358,7 +1355,6 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
                 this.setPreferredVideoMimeType(mimeType)
             }
         }
-        PlayerHelper.applyPreferredAudioQuality(requireContext(), trackSelector)
     }
 
     /**
@@ -1579,7 +1575,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
 
     private fun shouldStartPiP(): Boolean {
         return shouldUsePip() && exoPlayer.isPlaying &&
-            !BackgroundHelper.isBackgroundServiceRunning(requireContext())
+                !BackgroundHelper.isBackgroundServiceRunning(requireContext())
     }
 
     private fun killPlayerFragment() {

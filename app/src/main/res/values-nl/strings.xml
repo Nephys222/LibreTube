@@ -534,11 +534,13 @@
     <string name="behavior_when_minimized">Gedrag wanneer geminimaliseerd</string>
     <string name="gestures">Gebaren</string>
     <string name="download_playlist_note">Selecteer de maximale audio/videokwaliteit om te downloaden. Bijschriften worden alleen gedownload als ze beschikbaar zijn.</string>
-    <string name="commentedTimeWithSeparator">• %1$s</string>
     <string name="comments_count">Opmerkingen (%1$s)</string>
     <string name="external_player">Externe speler</string>
     <string name="show_updates">Automatisch op updates controleren</string>
     <string name="albums">Albums</string>
     <string name="import_temp_playlist">Tĳdelĳke afspeel­lĳst importeren?</string>
     <string name="import_temp_playlist_summary">Wilt u een nieuwe afspeel­lĳst maken met de naam ‘%1$s’? Deze bevat %2$d video\'s.</string>
+    <string name="thumbnail_time">Miniatuur­tĳd</string>
+    <string name="title">Titel</string>
+    <string name="contribute_to_dearrow">Bĳdragen aan DeArrow</string>
 </resources>
