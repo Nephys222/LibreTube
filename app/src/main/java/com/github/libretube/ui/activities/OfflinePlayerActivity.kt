@@ -49,10 +49,10 @@ import com.github.libretube.ui.models.PlayerViewModel
 import com.github.libretube.util.NowPlayingNotification
 import com.github.libretube.util.OfflineTimeFrameReceiver
 import com.github.libretube.util.PauseableTimer
-import kotlin.io.path.exists
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlin.io.path.exists
 
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 class OfflinePlayerActivity : BaseActivity() {
@@ -300,12 +300,19 @@ class OfflinePlayerActivity : BaseActivity() {
     override fun onDestroy() {
         saveWatchPosition()
 
-        playerViewModel.player = null
-        player.release()
-        watchPositionTimer.destroy()
         nowPlayingNotification?.destroySelf()
+        nowPlayingNotification = null
+        watchPositionTimer.destroy()
 
-        unregisterReceiver(playerActionReceiver)
+        playerViewModel.player = null
+        runCatching {
+            player.stop()
+            player.release()
+        }
+
+        runCatching {
+            unregisterReceiver(playerActionReceiver)
+        }
 
         super.onDestroy()
     }

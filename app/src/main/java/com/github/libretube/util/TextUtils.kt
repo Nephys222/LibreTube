@@ -7,15 +7,16 @@ import android.os.Build
 import android.text.format.DateUtils
 import com.github.libretube.BuildConfig
 import com.github.libretube.R
+import kotlinx.datetime.toJavaLocalDate
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.time.temporal.ChronoUnit
+import java.util.Date
 import kotlin.time.Duration
 import kotlinx.datetime.LocalDate as KotlinLocalDate
-import kotlinx.datetime.toJavaLocalDate
 
 object TextUtils {
     /**
@@ -32,6 +33,8 @@ object TextUtils {
      * Date time formatter which uses the [FormatStyle.MEDIUM] format style.
      */
     private val MEDIUM_DATE_FORMATTER = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
+
+    val defaultPlaylistName get() = Date().toString()
 
     /**
      * Localize the date from a date string, using the medium format.

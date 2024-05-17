@@ -18,11 +18,11 @@ import com.github.libretube.api.obj.Subtitle
 import com.github.libretube.helpers.PlayerHelper
 import com.github.libretube.util.NowPlayingNotification
 import com.github.libretube.util.deArrow
-import java.io.IOException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import retrofit2.HttpException
+import java.io.IOException
 
 @UnstableApi
 class PlayerViewModel : ViewModel() {
@@ -51,6 +51,7 @@ class PlayerViewModel : ViewModel() {
     val chaptersLiveData = MutableLiveData<List<ChapterSegment>>()
 
     val chapters get() = chaptersLiveData.value.orEmpty()
+    var sponsorBlockEnabled = PlayerHelper.sponsorBlockEnabled
 
     /**
      * @return pair of the stream info and the error message if the request was not successful
@@ -60,9 +61,7 @@ class PlayerViewModel : ViewModel() {
             if (isOrientationChangeInProgress && streamsInfo != null) return@withContext streamsInfo to null
 
             streamsInfo = try {
-                RetrofitInstance.api.getStreams(videoId).apply {
-                    relatedStreams = relatedStreams.deArrow()
-                }
+                RetrofitInstance.api.getStreams(videoId).deArrow(videoId)
             } catch (e: IOException) {
                 return@withContext null to context.getString(R.string.unknown_error)
             } catch (e: HttpException) {
