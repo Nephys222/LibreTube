@@ -97,6 +97,7 @@ import com.github.libretube.ui.extensions.animateDown
 import com.github.libretube.ui.extensions.setupSubscriptionButton
 import com.github.libretube.ui.interfaces.OnlinePlayerOptions
 import com.github.libretube.ui.listeners.SeekbarPreviewListener
+import com.github.libretube.ui.models.ChaptersViewModel
 import com.github.libretube.ui.models.CommentsViewModel
 import com.github.libretube.ui.models.PlayerViewModel
 import com.github.libretube.ui.sheets.BaseBottomSheet
@@ -127,6 +128,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
 
     private val viewModel: PlayerViewModel by activityViewModels()
     private val commentsViewModel: CommentsViewModel by activityViewModels()
+    private val chaptersViewModel: ChaptersViewModel by activityViewModels()
 
     // Video information passed by the intent
     private lateinit var videoId: String
@@ -467,6 +469,8 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
                     }
                     (activity as MainActivity).requestOrientationChange()
                 }
+
+                updateMaxSheetHeight()
             }
         })
 
@@ -521,14 +525,19 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
             exoPlayer.togglePlayPauseState()
         }
 
+        activity?.supportFragmentManager
+            ?.setFragmentResultListener(CommentsSheet.HANDLE_LINK_REQUEST_KEY, viewLifecycleOwner) { _, bundle ->
+                bundle.getString(IntentData.url)?.let { handleLink(it) }
+        }
+
         binding.commentsToggle.setOnClickListener {
             if (!this::streams.isInitialized) return@setOnClickListener
             // set the max height to not cover the currently playing video
-            commentsViewModel.handleLink = this::handleLink
             updateMaxSheetHeight()
             commentsViewModel.videoIdLiveData.updateIfChanged(videoId)
-            commentsViewModel.channelAvatar = streams.uploaderAvatar
-            CommentsSheet().show(childFragmentManager)
+            CommentsSheet()
+                .apply { arguments = bundleOf(IntentData.channelAvatar to streams.uploaderAvatar) }
+                .show(childFragmentManager)
         }
 
         // FullScreen button trigger
@@ -634,7 +643,9 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
     }
 
     private fun updateMaxSheetHeight() {
-        viewModel.maxSheetHeightPx = binding.root.height - binding.player.height
+        val maxHeight = binding.root.height - binding.player.height
+        viewModel.maxSheetHeightPx = maxHeight
+        chaptersViewModel.maxSheetHeightPx = maxHeight
     }
 
     private fun playOnBackground() {
@@ -1016,13 +1027,14 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
         playVideo()
 
         // close comment bottom sheet if opened for next video
-        runCatching { commentsViewModel.commentsSheetDismiss?.invoke() }
+        activity?.supportFragmentManager?.fragments?.filterIsInstance<CommentsSheet>()
+                ?.firstOrNull()?.dismiss()
     }
 
     @SuppressLint("SetTextI18n")
     private fun initializePlayerView() {
         // initialize the player view actions
-        binding.player.initialize(doubleTapOverlayBinding, playerGestureControlsViewBinding)
+        binding.player.initialize(doubleTapOverlayBinding, playerGestureControlsViewBinding, chaptersViewModel)
         binding.player.initPlayerOptions(viewModel, viewLifecycleOwner, trackSelector, this)
 
         binding.descriptionLayout.setStreams(streams)
@@ -1040,7 +1052,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
         playerBinding.exoTitle.text = streams.title
 
         // init the chapters recyclerview
-        viewModel.chaptersLiveData.value = streams.chapters
+        chaptersViewModel.chaptersLiveData.value = streams.chapters
 
         if (PlayerHelper.relatedStreamsEnabled) {
             val relatedLayoutManager = binding.relatedRecView.layoutManager as LinearLayoutManager
@@ -1132,8 +1144,8 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
             start = highlightStart,
             highlightDrawable = frame?.toDrawable(requireContext().resources)
         )
-        viewModel.chaptersLiveData.postValue(
-            viewModel.chapters.plus(highlightChapter).sortedBy { it.start }
+        chaptersViewModel.chaptersLiveData.postValue(
+            chaptersViewModel.chapters.plus(highlightChapter).sortedBy { it.start }
         )
 
         withContext(Dispatchers.Main) {
