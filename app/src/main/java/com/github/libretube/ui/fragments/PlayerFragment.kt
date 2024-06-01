@@ -72,6 +72,7 @@ import com.github.libretube.extensions.togglePlayPauseState
 import com.github.libretube.extensions.updateIfChanged
 import com.github.libretube.extensions.updateParameters
 import com.github.libretube.helpers.BackgroundHelper
+import com.github.libretube.helpers.DownloadHelper
 import com.github.libretube.helpers.ImageHelper
 import com.github.libretube.helpers.IntentHelper
 import com.github.libretube.helpers.NavBarHelper
@@ -82,6 +83,7 @@ import com.github.libretube.helpers.PlayerHelper.getVideoStats
 import com.github.libretube.helpers.PlayerHelper.isInSegment
 import com.github.libretube.helpers.PreferenceHelper
 import com.github.libretube.helpers.ProxyHelper
+import com.github.libretube.helpers.ThemeHelper
 import com.github.libretube.helpers.WindowHelper
 import com.github.libretube.obj.PlayerNotificationData
 import com.github.libretube.obj.ShareData
@@ -91,7 +93,6 @@ import com.github.libretube.ui.activities.MainActivity
 import com.github.libretube.ui.adapters.VideosAdapter
 import com.github.libretube.ui.base.BaseActivity
 import com.github.libretube.ui.dialogs.AddToPlaylistDialog
-import com.github.libretube.ui.dialogs.DownloadDialog
 import com.github.libretube.ui.dialogs.ShareDialog
 import com.github.libretube.ui.extensions.animateDown
 import com.github.libretube.ui.extensions.setupSubscriptionButton
@@ -624,9 +625,7 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
             if (streams.duration <= 0) {
                 Toast.makeText(context, R.string.cannotDownload, Toast.LENGTH_SHORT).show()
             } else {
-                val newFragment = DownloadDialog()
-                newFragment.arguments = bundleOf(IntentData.videoId to videoId)
-                newFragment.show(childFragmentManager, DownloadDialog::class.java.name)
+                DownloadHelper.startDownloadDialog(requireContext(), childFragmentManager, videoId)
             }
         }
 
@@ -691,14 +690,6 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
 
     @SuppressLint("SourceLockedOrientationActivity")
     fun unsetFullscreen() {
-        // set status bar icon color back to theme color
-        windowInsetsControllerCompat.isAppearanceLightStatusBars =
-            when (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) {
-                Configuration.UI_MODE_NIGHT_YES -> false
-                Configuration.UI_MODE_NIGHT_NO -> true
-                else -> true
-            }
-
         viewModel.isFullscreen.value = false
 
         if (!PlayerHelper.autoFullscreenEnabled) {
@@ -709,6 +700,9 @@ class PlayerFragment : Fragment(), OnlinePlayerOptions {
         updateResolutionOnFullscreenChange(false)
 
         binding.player.updateMarginsByFullscreenMode()
+
+        // set status bar icon color back to theme color after fullscreen dialog closed!
+        windowInsetsControllerCompat.isAppearanceLightStatusBars = !ThemeHelper.isDarkMode(requireContext())
     }
 
     /**
