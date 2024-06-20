@@ -58,7 +58,10 @@ class SubscriptionsFragment : DynamicLayoutManagerFragment() {
     private val viewModel: SubscriptionsViewModel by activityViewModels()
     private val playerModel: PlayerViewModel by activityViewModels()
     private val channelGroupsModel: EditChannelGroupsModel by activityViewModels()
-    private var selectedFilterGroup = 0
+    private var selectedFilterGroup
+        set(value) = PreferenceHelper.putInt(PreferenceKeys.SELECTED_CHANNEL_GROUP, value)
+        get() = PreferenceHelper.getInt(PreferenceKeys.SELECTED_CHANNEL_GROUP, 0)
+
     private var isCurrentTabSubChannels = false
     private var isAppBarFullyExpanded = true
 
@@ -423,7 +426,7 @@ class SubscriptionsFragment : DynamicLayoutManagerFragment() {
 
     fun removeItem(videoId: String) {
         feedAdapter?.removeItemById(videoId)
-        sortedFeed.removeAll { it.url!!.toID() != videoId }
+        sortedFeed.removeAll { it.url?.toID() != videoId }
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
