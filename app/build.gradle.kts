@@ -143,4 +143,7 @@ dependencies {
 
     /* AndroidX Paging */
     implementation(libs.androidx.paging)
+
+    /* Testing */
+    testImplementation(libs.testng)
 }
